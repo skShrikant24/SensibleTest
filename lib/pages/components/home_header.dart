@@ -1,0 +1,77 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:GrabIt/pages/components/header_pill.dart';
+import 'package:GrabIt/pages/notification_page.dart';
+
+class HomeHeader extends StatelessWidget {
+  const HomeHeader({
+    super.key,
+    required this.onOpenDrawer,
+    this.showGreeting = true, // 👈 optional prop with default = true
+  });
+
+  final VoidCallback onOpenDrawer;
+  final bool showGreeting; // 👈 defines whether greeting should be shown
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              InkWell(
+                onTap: onOpenDrawer,
+                borderRadius: BorderRadius.circular(24),
+                child: const CircleAvatar(
+                  radius: 24,
+                  backgroundImage: AssetImage('assets/icons/profile.png'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const HeaderPill(
+                      icon: Icons.workspace_premium_rounded,
+                      text: '25,000',
+                    ),
+                    const SizedBox(width: 10),
+                    HeaderPill(icon: Icons.notifications_none_rounded,  onTap: () {
+                      Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                      );
+                    },),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // 👇 Conditionally show greeting text
+          if (showGreeting) ...[
+            const SizedBox(height: 18),
+            Text(
+              'Hello, Anya !',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Keep up the great work.',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
