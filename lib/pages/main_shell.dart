@@ -30,7 +30,7 @@ class _MainShellState extends State<MainShell> {
           onSelectTab: (i) => setState(() => _index = i),
         );*/
       case 0:
-        return FeedPage(
+        return StorePage(
           onSelectTab: (i) => setState(() => _index = i),
         );
       case 1:

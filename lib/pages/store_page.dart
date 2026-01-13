@@ -1,8 +1,11 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GrabIt/pages/components/app_drawer.dart';
 import 'package:GrabIt/pages/components/home_header.dart';
 import 'package:GrabIt/pages/product_details_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 class StorePage extends StatelessWidget {
   final ValueChanged<int> onSelectTab;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -66,30 +69,58 @@ class StorePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/store_banner.png',
-                  fit: BoxFit.cover,
+                child: SizedBox(
+                  height: 160,
+                  child: PageView(
+                    children: [
+                      Image.asset('assets/images/store_banner.png', fit: BoxFit.cover),
+                      Image.asset('assets/images/store_banner1.png', fit: BoxFit.cover),
+
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
           // 🧭 Category Tabs
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  _CategoryTab(title: 'All', isActive: true),
-                  _CategoryTab(title: 'Apparel'),
-                  _CategoryTab(title: 'Accessories'),
-                  _CategoryTab(title: 'Stationery'),
-                ],
+              child: FutureBuilder<List<Category>>(
+                future: fetchCategories(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 40,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Text('Failed to load categories');
+                  }
+
+                  final categories = snapshot.data!;
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const _CategoryTab(title: 'All', isActive: true),
+                        ...categories.map(
+                              (cat) => _CategoryTab(title: cat.name),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
+
           const SliverToBoxAdapter(child: Divider()),
 
           // 🛍️ Product Grid
@@ -262,6 +293,40 @@ class _ProductCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+
+Future<List<Category>> fetchCategories() async {
+  final response = await http.get(
+    Uri.parse('https://grabitt.in/webservice.asmx/GetCategory'),
+  );
+
+  if (response.statusCode == 200) {
+    // Remove XML wrapper
+    final jsonString = response.body
+        .replaceAll(RegExp(r'<[^>]*>'), '');
+
+    final List data = json.decode(jsonString);
+
+    return data.map((e) => Category.fromJson(e)).toList();
+  } else {
+    throw Exception('Failed to load categories');
+  }
+}
+
+class Category {
+  final String id;
+  final String name;
+
+  Category({required this.id, required this.name});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['id'],
+      name: json['CategoryName'],
     );
   }
 }
