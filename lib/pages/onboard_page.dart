@@ -157,7 +157,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 32),
           if (isLastPage) ...[
-            _buildButton('Existing', true),
+            _buildButton('Login', true),
             const SizedBox(height: 16),
             _buildButton('Guest', false),
           ] else

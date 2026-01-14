@@ -1,3 +1,4 @@
+import 'package:GrabIt/pages/cart_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GrabIt/pages/course_page.dart';
@@ -33,7 +34,7 @@ class _MainShellState extends State<MainShell> {
         return StorePage(
           onSelectTab: (i) => setState(() => _index = i),
         );
-      case 1:
+     case 2:
       default:
       return ProfilePage(
         onSelectTab: (i) => setState(() => _index = i),

@@ -2,92 +2,220 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GrabIt/pages/checkout_page.dart';
 
-class CartPage extends StatelessWidget {
-  const CartPage({super.key});
+import '../app_State/Cart.dart';
+class CartPage extends StatefulWidget {
+  const CartPage({super.key });
+
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  final cart = CartService.instance;
 
   @override
   Widget build(BuildContext context) {
-    final cartItems = [
-      {'name': 'Disha Group T-Shirt', 'price': 500, 'quantity': 1, 'image': 'assets/images/tshirt.png'},
-      {'name': 'Disha Group Notebook', 'price': 500, 'quantity': 2, 'image': 'assets/images/notebook.png'},
-      {'name': 'Disha Group Pen', 'price': 500, 'quantity': 1, 'image': 'assets/images/pen.png'},
-    ];
+    return AnimatedBuilder(
+      animation: cart,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F5F7),
+          appBar: AppBar(
+            title: Text("My Cart",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            backgroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: cart.items.isEmpty
+              ? _emptyCart()
+              : Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: cart.items.length,
+                  itemBuilder: (context, index) {
+                    final item = cart.items[index];
+                    return _cartItem(item);
+                  },
+                ),
+              ),
+              _checkoutBar(),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-    final subtotal = cartItems.fold<int>(0, (sum, item) => sum + (item['price'] as int) * (item['quantity'] as int));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      appBar: AppBar(
-        title: Text('Cart', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+  Widget _cartItem(CartItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
-      body: Column(
+      child: Row(
         children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: cartItems.length,
-              itemBuilder: (context, index) {
-                final item = cartItems[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(12),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(item['image'] as String, width: 50, height: 50, fit: BoxFit.cover),
-                    ),
-                    title: Text(item['name'] as String, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                    subtitle: Text('Quantity: ${item['quantity']}', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-                    trailing: Text(
-                      '₹${item['price']}',
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                );
-              },
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              item.product.allImages.first,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          const SizedBox(width: 12),
+
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Subtotal', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-                    Text('₹$subtotal', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
-                  ],
+                Text(
+                  item.product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                      fontSize: 14, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CheckoutPage()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text('Checkout', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  "₹${item.product.discountPrice.toInt()}",
+                  style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green),
                 ),
               ],
             ),
+          ),
+
+          Column(
+            children: [
+              Row(
+                children: [
+                  _qtyButton(Icons.remove, () {
+                    setState(() => cart.decrease(item));
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      item.quantity.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  _qtyButton(Icons.add, () {
+                    setState(() => cart.increase(item));
+                  }),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () {
+                  setState(() => cart.remove(item));
+                },
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _qtyButton(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 16),
+      ),
+    );
+  }
+
+  Widget _checkoutBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Subtotal"),
+              Text(
+                "₹${cart.subtotal.toInt()}",
+                style: GoogleFonts.poppins(
+                    fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              padding:
+              const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: cart.items.isEmpty
+                ? null
+                : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CheckoutPage(),
+                ),
+              );
+            },
+            child: const Text(
+              "Checkout",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _emptyCart() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_cart_outlined,
+              size: 90, color: Colors.grey.shade400),
+          const SizedBox(height: 12),
+          Text(
+            "Your cart is empty",
+            style: GoogleFonts.poppins(
+                fontSize: 16, color: Colors.grey.shade600),
           ),
         ],
       ),

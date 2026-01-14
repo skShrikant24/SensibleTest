@@ -6,51 +6,31 @@ import 'package:GrabIt/pages/components/home_header.dart';
 import 'package:GrabIt/pages/product_details_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-class StorePage extends StatelessWidget {
+
+import '../Classes/Category.dart';
+import '../Classes/product.dart';
+
+class StorePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
+  const StorePage({super.key, required this.onSelectTab});
+
+  @override
+  State<StorePage> createState() => _StorePageState();
+}
+
+class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  StorePage({super.key, required this.onSelectTab});
+  String selectedCategory = 'All';
 
-  final List<Map<String, dynamic>> products = [
-    {
-      'name': 'Disha Group T-Shirt',
-      'price': 500,
-      'image': 'assets/images/tshirt.png',
-    },
-    {
-      'name': 'Disha Group Hoodie',
-      'price': 500,
-      'image': 'assets/images/hoodie.png',
-    },
-    {
-      'name': 'Disha Group Cap',
-      'price': 500,
-      'image': 'assets/images/cap.png',
-    },
-    {
-      'name': 'Disha Group Notebook',
-      'price': 500,
-      'image': 'assets/images/notebook.png',
-    },
-    {
-      'name': 'Disha Group Pen',
-      'price': 500,
-      'image': 'assets/images/pen.png',
-    },
-    {
-      'name': 'Disha Group Water Bottle',
-      'price': 500,
-      'image': 'assets/images/bottle.png',
-    },
-  ];
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF4F5F7),
-      drawer: AppDrawer(onSelectTab: onSelectTab, currentTabIndex: 2),
+      //drawer: AppDrawer(onSelectTab: onSelectTab, currentTabIndex: 2),
       body: CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
@@ -73,9 +53,9 @@ class StorePage extends StatelessWidget {
                   height: 160,
                   child: PageView(
                     children: [
-                      Image.asset('assets/images/store_banner.png', fit: BoxFit.cover),
-                      Image.asset('assets/images/store_banner1.png', fit: BoxFit.cover),
-
+                      Image.asset('assets/images/slider.jpg', fit: BoxFit.cover),
+                      Image.asset('assets/images/slide1.jpg', fit: BoxFit.cover),
+                      Image.asset('assets/images/slide2.jpg', fit: BoxFit.cover),
                     ],
                   ),
                 ),
@@ -92,15 +72,11 @@ class StorePage extends StatelessWidget {
               child: FutureBuilder<List<Category>>(
                 future: fetchCategories(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (!snapshot.hasData) {
                     return const SizedBox(
                       height: 40,
                       child: Center(child: CircularProgressIndicator()),
                     );
-                  }
-
-                  if (snapshot.hasError) {
-                    return const Text('Failed to load categories');
                   }
 
                   final categories = snapshot.data!;
@@ -109,9 +85,18 @@ class StorePage extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        const _CategoryTab(title: 'All', isActive: true),
+                        _CategoryTab(
+                          title: 'All',
+                          isActive: selectedCategory == 'All',
+                          onTap: () => setState(() => selectedCategory = 'All'),
+                        ),
                         ...categories.map(
-                              (cat) => _CategoryTab(title: cat.name),
+                              (cat) => _CategoryTab(
+                            title: cat.name,
+                            isActive: selectedCategory == cat.name,
+                            onTap: () =>
+                                setState(() => selectedCategory = cat.name),
+                          ),
                         ),
                       ],
                     ),
@@ -121,171 +106,227 @@ class StorePage extends StatelessWidget {
             ),
           ),
 
+
           const SliverToBoxAdapter(child: Divider()),
 
-          // 🛍️ Product Grid
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.80,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final product = products[index];
-                  return _ProductCard(
-                    name: product['name'],
-                    price: product['price'],
-                    image: product['image'],
+            sliver: FutureBuilder<List<Product>>(
+              future: fetchProducts(category: selectedCategory),
+              builder: (context, snapshot) {
+
+                // 🔄 Loading
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 60),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
                   );
-                },
-                childCount: products.length,
-              ),
+                }
+
+                // ❌ Error
+                if (snapshot.hasError) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 80),
+                      child: Center(
+                        child: Text(
+                          "Something went wrong",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                // 📭 No data OR FAIL
+                final products = snapshot.data ?? [];
+                if (products.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 80),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 80,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "No products found",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // 🛍️ Product Grid
+                return SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.80,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                      final product = products[index];
+                      return _ProductCard(product: product);
+
+                        },
+                    childCount: products.length,
+                  ),
+                );
+              },
             ),
           ),
+
           // 🟣 Banner Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/store_banner1.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          // 🟣 Banner Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/store_banner.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          // 🟣 Banner Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/coching.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+
+
         ],
+
       ),
     );
   }
+
 }
 
 // 🏷️ Category Tabs
 class _CategoryTab extends StatelessWidget {
   final String title;
   final bool isActive;
+  final VoidCallback onTap;
 
-  const _CategoryTab({required this.title, this.isActive = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: 15,
-        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-        color: isActive ? Colors.black : Colors.grey[600],
-      ),
-    );
-  }
-}
-
-// 🛒 Product Card
-class _ProductCard extends StatelessWidget {
-  final String name;
-  final int price;
-  final String image;
-
-  const _ProductCard({
-    required this.name,
-    required this.price,
-    required this.image,
+  const _CategoryTab({
+    required this.title,
+    required this.onTap,
+    this.isActive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.black : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? Colors.black : Colors.grey.shade300,
+          ),
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: isActive ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+// 🛒 Product Card
+class _ProductCard extends StatelessWidget {
+  final Product product;
+
+  const _ProductCard({
+    required this.product,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
       onTap: () {
-        // 👇 Navigate to Product Details Page when tapped
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductDetailsPage(
-              name: name,
-              price: price.toDouble(),
-              description:
-              "Show your support for Disha Group with this stylish and comfortable t-shirt. Made from high-quality materials, it's perfect for everyday wear.",
-              imageUrl: image,
-              sizes: ["S", "M", "L", "XL"],
-              colors: [Colors.black, Colors.white, Colors.blueAccent],
-            ),
+            builder: (_) => ProductDetailsPage(product: product),
           ),
         );
+
+
       },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🖼 Product Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(14)),
-                child: Image.asset(
-                  image,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
+            // 🖼 Image
+            ClipRRect(
+              borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                "https://grabitt.in/${product.productImage}",
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
+
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹ $price',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.red[700],
-                      fontWeight: FontWeight.w600,
-                    ),
+                  const SizedBox(height: 6),
+
+                  Row(
+                    children: [
+                      Text(
+                        "₹${product.discountPrice.toInt()}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "₹${product.originalPrice.toInt()}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -296,6 +337,8 @@ class _ProductCard extends StatelessWidget {
     );
   }
 }
+
+
 
 
 
@@ -317,16 +360,30 @@ Future<List<Category>> fetchCategories() async {
   }
 }
 
-class Category {
-  final String id;
-  final String name;
+Future<List<Product>> fetchProducts({String? category}) async {
+  final url = category == null || category == 'All'
+      ? 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=ALL'
+      : 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=${Uri.encodeComponent(category)}';
 
-  Category({required this.id, required this.name});
+  final response = await http.get(Uri.parse(url));
 
-  factory Category.fromJson(Map<String, dynamic> json) {
-    return Category(
-      id: json['id'],
-      name: json['CategoryName'],
-    );
+  if (response.statusCode == 200) {
+    // Remove XML tags
+    final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+    // 👇 Handle FAIL response
+    if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) {
+      return [];
+    }
+
+    try {
+      final List data = json.decode(cleaned);
+      return data.map((e) => Product.fromJson(e)).toList();
+    } catch (e) {
+      // If JSON parsing fails
+      return [];
+    }
+  } else {
+    return [];
   }
 }

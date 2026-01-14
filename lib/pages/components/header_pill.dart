@@ -5,12 +5,14 @@ class HeaderPill extends StatelessWidget {
     super.key,
     required this.icon,
     this.text,
-    this.onTap, // 👈 added
+    this.badgeCount,
+    this.onTap,
   });
 
   final IconData icon;
   final String? text;
-  final VoidCallback? onTap; // 👈 optional
+  final int? badgeCount; // 👈 NEW
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -31,23 +33,51 @@ class HeaderPill extends StatelessWidget {
           horizontal: text == null ? 10 : 12,
           vertical: 8,
         ),
-        child: Row(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Icon(icon, color: const Color(0xFFFFA000), size: 20),
-            if (text != null) ...[
-              const SizedBox(width: 8),
-              Text(
-                text!,
-                style: GoogleFonts.poppins(
-                    fontSize: 12, fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Icon(icon, color: const Color(0xFFFFA000), size: 20),
+                if (text != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    text!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
+            /// 🔴 BADGE
+            if (badgeCount != null && badgeCount! > 0)
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    badgeCount! > 9 ? '9+' : badgeCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-            ],
           ],
         ),
       ),
     );
 
-    // Wrap in GestureDetector only if clickable
     return onTap != null
         ? GestureDetector(onTap: onTap, child: pill)
         : pill;

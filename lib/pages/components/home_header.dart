@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:GrabIt/pages/components/header_pill.dart';
 import 'package:GrabIt/pages/notification_page.dart';
 
+import '../../app_State/Cart.dart';
+import '../cart_page.dart';
+
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
@@ -37,17 +40,42 @@ class HomeHeader extends StatelessWidget {
                   children: [
                     const HeaderPill(
                       icon: Icons.workspace_premium_rounded,
-                      text: '25,000',
+                      text: '25',
                     ),
                     const SizedBox(width: 10),
-                    HeaderPill(icon: Icons.notifications_none_rounded,  onTap: () {
-                      Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                      );
-                    },),
+
+                    /// 🛒 CART WITH BADGE
+                    AnimatedBuilder(
+                      animation: CartService.instance,
+                      builder: (context, _) {
+                        return HeaderPill(
+                          icon: Icons.shopping_cart_outlined,
+                          badgeCount: CartService.instance.count,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CartPage()),
+                            );
+                          },
+                        );
+                      },
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    HeaderPill(
+                      icon: Icons.notifications_none_rounded,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
+
             ],
           ),
 

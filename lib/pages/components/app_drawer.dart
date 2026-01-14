@@ -127,7 +127,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             const SizedBox(height: 8),
-            DrawerItem(
+         /*   DrawerItem(
               icon: Icons.shopping_bag_outlined,
               label: 'My Cart',
               onTap: () {
@@ -136,7 +136,7 @@ class AppDrawer extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const CartPage()),
                 );
               },
-            ),
+            ),*/
             const SizedBox(height: 8),
             DrawerItem(
               icon: Icons.group_add_outlined,

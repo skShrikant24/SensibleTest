@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_State/Cart.dart';
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
 
@@ -9,120 +10,223 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  bool creditCard = false;
-  bool paypal = false;
-  bool coins = false;
+  String paymentMethod = 'card';
+  final cart = CartService.instance;
 
   @override
   Widget build(BuildContext context) {
-    final orderItems = [
-      {'name': 'Disha Group T-Shirt', 'size': 'M', 'price': 500, 'image': 'assets/images/tshirt.png'},
-      {'name': 'Disha Group T-Shirt', 'size': 'M', 'price': 500, 'image': 'assets/images/tshirt.png'},
-      {'name': 'Disha Group T-Shirt', 'size': 'M', 'price': 500, 'image': 'assets/images/tshirt.png'},
-    ];
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        title: Text('Checkout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18)),
+        title: Text(
+          'Checkout',
+          style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600, fontSize: 18),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon:
+          const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
+
+      // 🟢 Place Order Button
+      bottomNavigationBar: _placeOrderBar(),
+
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
+          _sectionTitle("Shipping Address"),
+          _addressCard(),
+
+          const SizedBox(height: 20),
+          _sectionTitle("Payment Method"),
+          _paymentCard(),
+
+          const SizedBox(height: 20),
+          _sectionTitle("Order Summary"),
+          ...cart.items.map(_orderItem).toList(),
+
+          const SizedBox(height: 16),
+          _totalCard(),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- UI Components ----------------
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.poppins(
+          fontSize: 15, fontWeight: FontWeight.w600),
+    );
+  }
+
+  Widget _addressCard() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: _cardStyle(),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_outlined,
+              color: Colors.redAccent),
+          const SizedBox(width: 10),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              "D-09, High Street,\nBangalore - 560098",
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+          ),
+          TextButton(
+            onPressed: () {},
+            child: const Text("Change"),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _paymentCard() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: _cardStyle(),
+      child: Column(
+        children: [
+          _paymentTile("card", Icons.credit_card, "Credit Card"),
+          _divider(),
+          _paymentTile("paypal", Icons.paypal, "PayPal"),
+          _divider(),
+          _paymentTile("coins", Icons.workspace_premium, "Coins (1000)"),
+        ],
+      ),
+    );
+  }
+
+  Widget _paymentTile(String value, IconData icon, String title) {
+    return RadioListTile<String>(
+      value: value,
+      groupValue: paymentMethod,
+      onChanged: (v) => setState(() => paymentMethod = v!),
+      activeColor: Colors.redAccent,
+      title: Row(
+        children: [
+          Icon(icon, color: Colors.grey.shade700),
+          const SizedBox(width: 8),
+          Text(title,
+              style: GoogleFonts.poppins(fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _orderItem(CartItem item) {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: _cardStyle(),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              item.product.allImages.first,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Shipping Address', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'd-09, high street, banglore-00986',
-                    hintStyle: GoogleFonts.poppins(fontSize: 13),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+                Text(
+                  item.product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                      fontSize: 14, fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 20),
-                Text('Payment Method', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
-                SwitchListTile(
-                  title: const Text('Credit Card'),
-                  value: creditCard,
-                  onChanged: (val) => setState(() => creditCard = val),
-                ),
-                SwitchListTile(
-                  title: const Text('PayPal'),
-                  value: paypal,
-                  onChanged: (val) => setState(() => paypal = val),
-                ),
-                SwitchListTile(
-                  title: Row(
-                    children: const [
-                      Icon(Icons.workspace_premium_rounded, color: Colors.amber),
-                      SizedBox(width: 6),
-                      Text('1000'),
-                    ],
-                  ),
-                  value: coins,
-                  onChanged: (val) => setState(() => coins = val),
-                ),
-                const SizedBox(height: 20),
-                Text('Order Summary', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
-                const SizedBox(height: 8),
-                ...orderItems.map((item) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(10),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(item['image'] as String, width: 50, height: 50, fit: BoxFit.cover),
-                    ),
-                    title: Text(item['name'] as String, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-                    subtitle: Text('Size ${item['size']}', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-                    trailing: Text('₹${item['price']}', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                  ),
-                )),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Subtotal', style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                    Text('₹500', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  "Qty: ${item.quantity}",
+                  style: GoogleFonts.poppins(
+                      fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('Place Order', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-              ),
-            ),
+          Text(
+            "₹${(item.product.discountPrice * item.quantity).toInt()}",
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _totalCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardStyle(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text("Subtotal",
+              style: GoogleFonts.poppins(fontSize: 14)),
+          Text(
+            "₹${cart.subtotal.toInt()}",
+            style: GoogleFonts.poppins(
+                fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeOrderBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: SizedBox(
+        height: 54,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          onPressed: () {},
+          child: Text(
+            "Place Order",
+            style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Divider _divider() => Divider(height: 1, color: Colors.grey.shade200);
+
+  BoxDecoration _cardStyle() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
+        )
+      ],
     );
   }
 }
