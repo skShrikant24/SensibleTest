@@ -37,6 +37,7 @@ class _MainShellState extends State<MainShell> {
      case 2:
       default:
       return ProfilePage(
+        //
         onSelectTab: (i) => setState(() => _index = i),
       );
     }
