@@ -1,6 +1,6 @@
+import 'package:GraBiTT/pages/components/app_drawer.dart';
+import 'package:GraBiTT/pages/components/home_header.dart';
 import 'package:flutter/material.dart';
-import 'package:GrabIt/pages/components/app_drawer.dart';
-import 'package:GrabIt/pages/components/home_header.dart';
 
 class CoursePage extends StatelessWidget {
   final ValueChanged<int> onSelectTab;

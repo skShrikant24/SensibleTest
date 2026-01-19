@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'package:GraBiTT/pages/onboard_page.dart';
 import 'package:flutter/material.dart';
-import 'package:GrabIt/pages/onboard_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -69,7 +69,7 @@ class _SplashPageState extends State<SplashPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -97,7 +97,7 @@ class _SplashPageState extends State<SplashPage>
                 child: const Text(
                   'Grab It',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GrabIt/pages/components/header_pill.dart';
-import 'package:GrabIt/pages/notification_page.dart';
+import 'package:GraBiTT/pages/components/header_pill.dart';
+import 'package:GraBiTT/pages/notification_page.dart';
 
 import '../../app_State/Cart.dart';
 import '../cart_page.dart';
@@ -49,8 +49,10 @@ class HomeHeader extends StatelessWidget {
                       animation: CartService.instance,
                       builder: (context, _) {
                         return HeaderPill(
+                          key: const ValueKey('cart_icon'),
                           icon: Icons.shopping_cart_outlined,
                           badgeCount: CartService.instance.count,
+                          shouldAnimate: CartService.instance.shouldAnimateCart,
                           onTap: () {
                             Navigator.push(
                               context,

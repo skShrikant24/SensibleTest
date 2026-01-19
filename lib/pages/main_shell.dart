@@ -1,11 +1,11 @@
-import 'package:GrabIt/pages/cart_page.dart';
+import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GrabIt/pages/course_page.dart';
-import 'package:GrabIt/pages/feed_page.dart';
-import 'package:GrabIt/pages/home_page.dart';
-import 'package:GrabIt/pages/profile_page.dart';
-import 'package:GrabIt/pages/store_page.dart';
+import 'package:GraBiTT/pages/course_page.dart';
+import 'package:GraBiTT/pages/feed_page.dart';
+import 'package:GraBiTT/pages/home_page.dart';
+import 'package:GraBiTT/pages/profile_page.dart';
+import 'package:GraBiTT/pages/store_page.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});

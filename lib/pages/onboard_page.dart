@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GrabIt/pages/main_shell.dart';
+import 'package:GraBiTT/pages/main_shell.dart';
+import 'package:GraBiTT/pages/login_page.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -105,7 +106,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                ...data.decorativeIcons.map((icon) => _buildDecorativeIcon(icon)),
+                // ...data.decorativeIcons.map((icon) => _buildDecorativeIcon(icon)),
                 Center(
                   child: Image.asset(
                     data.image,
@@ -186,12 +187,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       onTap: () {
         if (_currentPage < _pages.length - 1) {
           _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
-        }else {
-          // On last page, go to the main app shell with bottom navigation
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainShell()),
-
-          );
+        } else {
+          // On last page, navigate based on button
+          if (text == 'Login') {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+          } else {
+            // Guest mode - go to main app
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const MainShell()),
+            );
+          }
         }
       },
       child: Container(

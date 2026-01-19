@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:GrabIt/pages/AI%20Game/game_onboard.dart';
-import 'package:GrabIt/pages/components/app_drawer.dart';
-import 'package:GrabIt/pages/components/home_header.dart';
-import 'package:GrabIt/pages/splash_page.dart';
+import 'package:GraBiTT/pages/AI%20Game/game_onboard.dart';
+import 'package:GraBiTT/pages/components/app_drawer.dart';
+import 'package:GraBiTT/pages/components/home_header.dart';
+import 'package:GraBiTT/pages/splash_page.dart';
 
 
 class HomePage extends StatelessWidget {

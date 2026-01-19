@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:GrabIt/pages/components/app_drawer.dart';
+import 'package:GraBiTT/pages/components/app_drawer.dart';
 
 class ProfilePage extends StatelessWidget {
   final ValueChanged<int> onSelectTab;

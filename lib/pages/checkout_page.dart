@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app_State/Cart.dart';
+import 'waiting_page.dart';
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
 
@@ -201,7 +202,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          onPressed: () {},
+          onPressed: cart.items.isEmpty
+              ? null
+              : () {
+                  // Navigate to waiting page
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WaitingPage(),
+                    ),
+                  );
+                },
           child: Text(
             "Place Order",
             style: GoogleFonts.poppins(

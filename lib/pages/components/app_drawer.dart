@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GrabIt/pages/cart_page.dart';
-import 'package:GrabIt/pages/my_courses_page.dart';
-import 'package:GrabIt/pages/simple_page.dart';
-import 'package:GrabIt/pages/splash_page.dart';
-import 'package:GrabIt/utils/constants.dart';
+import 'package:GraBiTT/pages/cart_page.dart';
+import 'package:GraBiTT/pages/my_courses_page.dart';
+import 'package:GraBiTT/pages/simple_page.dart';
+import 'package:GraBiTT/pages/splash_page.dart';
+import 'package:GraBiTT/utils/constants.dart';
 import 'drawer_item.dart';
 
 class AppDrawer extends StatelessWidget {

@@ -1,6 +1,6 @@
+import 'package:GraBiTT/pages/checkout_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GrabIt/pages/checkout_page.dart';
 
 import '../app_State/Cart.dart';
 class CartPage extends StatefulWidget {

@@ -1,14 +1,159 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../Classes/product.dart';
 import '../app_State/Cart.dart';
-class ProductDetailsPage extends StatelessWidget {
+import '../services/sound_service.dart';
+
+class ProductDetailsPage extends StatefulWidget {
   final Product product;
 
   const ProductDetailsPage({
     super.key,
     required this.product,
   });
+
+  @override
+  State<ProductDetailsPage> createState() => _ProductDetailsPageState();
+}
+
+class _ProductDetailsPageState extends State<ProductDetailsPage>
+    with TickerProviderStateMixin {
+  final GlobalKey _imageKey = GlobalKey();
+  OverlayEntry? _overlayEntry;
+  late AnimationController _flyController;
+  late AnimationController _quoteController;
+  late Animation<Offset> _flyAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+  bool _showQuote = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _flyController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _quoteController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // Paper plane curve animation
+    _flyAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(1, 1),
+    ).animate(CurvedAnimation(
+      parent: _flyController,
+      curve: Curves.easeInOut,
+    ));
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.3).animate(
+      CurvedAnimation(
+        parent: _flyController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      ),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0.0, end: math.pi * 2).animate(
+      CurvedAnimation(
+        parent: _flyController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _flyController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _removeOverlay();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _flyController.dispose();
+    _quoteController.dispose();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {
+      _showQuote = false;
+    });
+  }
+
+  Offset _getCartIconPosition() {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    // Cart icon is in the top right of HomeHeader
+    // Approximate position: right side with padding, accounting for status bar
+    return Offset(screenSize.width - 80, statusBarHeight + 60);
+  }
+
+  Offset _getImagePosition() {
+    final RenderBox? renderBox =
+        _imageKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return Offset.zero;
+
+    final Offset position = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+    return Offset(
+      position.dx + size.width / 2,
+      position.dy + size.height / 2,
+    );
+  }
+
+  void _startPaperPlaneAnimation() {
+    final Offset startPos = _getImagePosition();
+    final Offset endPos = _getCartIconPosition();
+
+    // Reset animations
+    _flyController.reset();
+    _quoteController.reset();
+
+    if (startPos == Offset.zero || endPos == Offset.zero) {
+      // Fallback: just add to cart without animation
+      CartService.instance.addItem(widget.product);
+      CartService.instance.triggerCartAnimation();
+      return;
+    }
+
+    setState(() {
+      _showQuote = true;
+    });
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => _PaperPlaneOverlay(
+        startPos: startPos,
+        endPos: endPos,
+        productImage: widget.product.allImages.first,
+        flyAnimation: _flyAnimation,
+        scaleAnimation: _scaleAnimation,
+        rotationAnimation: _rotationAnimation,
+        showQuote: _showQuote,
+        quoteController: _quoteController,
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+    
+    // Play whoosh sound for paper plane
+    SoundService.instance.playWhoosh();
+    
+    // Start quote animation
+    _quoteController.forward();
+    
+    // Start fly animation
+    _flyController.forward().then((_) {
+      CartService.instance.addItem(widget.product);
+      CartService.instance.triggerCartAnimation();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +172,7 @@ class ProductDetailsPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            onPressed: () {
-              CartService.instance.addItem(product);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Product added to cart"),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-
+            onPressed: _startPaperPlaneAnimation,
             child: const Text(
               "Add to Cart",
               style: TextStyle(
@@ -75,13 +210,16 @@ class ProductDetailsPage extends StatelessWidget {
             child: SizedBox(
               height: 300,
               child: PageView(
-                children: product.allImages
+                children: widget.product.allImages
+                    .asMap()
+                    .entries
                     .map(
-                      (img) => Image.network(
-                    img,
-                    fit: BoxFit.contain,
-                  ),
-                )
+                      (entry) => Image.network(
+                        entry.value,
+                        key: entry.key == 0 ? _imageKey : null,
+                        fit: BoxFit.contain,
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -96,7 +234,7 @@ class ProductDetailsPage extends StatelessWidget {
                 children: [
                   // Category
                   Text(
-                    product.categoryName,
+                    widget.product.categoryName,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: 13,
@@ -106,7 +244,7 @@ class ProductDetailsPage extends StatelessWidget {
 
                   // Name
                   Text(
-                    product.name,
+                    widget.product.name,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -118,7 +256,7 @@ class ProductDetailsPage extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        "₹${product.discountPrice.toInt()}",
+                        "₹${widget.product.discountPrice.toInt()}",
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -127,7 +265,7 @@ class ProductDetailsPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "₹${product.originalPrice.toInt()}",
+                        "₹${widget.product.originalPrice.toInt()}",
                         style: const TextStyle(
                           fontSize: 15,
                           decoration: TextDecoration.lineThrough,
@@ -143,7 +281,7 @@ class ProductDetailsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          "${product.discountPercent}% OFF",
+                          "${widget.product.discountPercent}% OFF",
                           style: const TextStyle(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.w600,
@@ -174,6 +312,127 @@ class ProductDetailsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PaperPlaneOverlay extends StatelessWidget {
+  final Offset startPos;
+  final Offset endPos;
+  final String productImage;
+  final Animation<Offset> flyAnimation;
+  final Animation<double> scaleAnimation;
+  final Animation<double> rotationAnimation;
+  final bool showQuote;
+  final AnimationController quoteController;
+
+  const _PaperPlaneOverlay({
+    required this.startPos,
+    required this.endPos,
+    required this.productImage,
+    required this.flyAnimation,
+    required this.scaleAnimation,
+    required this.rotationAnimation,
+    required this.showQuote,
+    required this.quoteController,
+  });
+
+  Offset _getCurvedPosition(double t) {
+    // Paper plane curve: quadratic bezier curve
+    final double x = startPos.dx + (endPos.dx - startPos.dx) * t;
+    // Create a curve that goes up then down (like a paper plane)
+    final double curveHeight = 100.0;
+    final double y = startPos.dy +
+        (endPos.dy - startPos.dy) * t -
+        curveHeight * math.sin(t * math.pi);
+    return Offset(x, y);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([flyAnimation, scaleAnimation, rotationAnimation]),
+      builder: (context, child) {
+        final double t = flyAnimation.value.dx;
+        final Offset currentPos = _getCurvedPosition(t);
+        final double scale = scaleAnimation.value;
+        final double rotation = rotationAnimation.value;
+
+        return IgnorePointer(
+          child: Stack(
+            children: [
+              // Flying product image
+              Positioned(
+                left: currentPos.dx - 50 * scale,
+                top: currentPos.dy - 50 * scale,
+                child: Transform.rotate(
+                  angle: rotation * 0.5, // Gentle rotation
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          productImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Quote: "Fast as a flight."
+              if (showQuote && t < 0.8)
+                Positioned(
+                  left: currentPos.dx - 60,
+                  top: currentPos.dy - 80,
+                  child: FadeTransition(
+                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: quoteController,
+                        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '"Fast as a flight."',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

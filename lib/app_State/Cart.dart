@@ -18,12 +18,24 @@ class CartService extends ChangeNotifier {
   CartService._();
 
   final List<CartItem> items = [];
+  bool _shouldAnimateCart = false;
 
   double get subtotal => items.fold(
       0, (sum, item) => sum + item.product.discountPrice * item.quantity);
 
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
 
+  bool get shouldAnimateCart => _shouldAnimateCart;
+
+  void triggerCartAnimation() {
+    _shouldAnimateCart = true;
+    notifyListeners();
+    // Reset after a short delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _shouldAnimateCart = false;
+      notifyListeners();
+    });
+  }
 
   void addItem(Product product) {
     final index =
