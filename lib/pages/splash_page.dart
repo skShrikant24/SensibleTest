@@ -53,10 +53,10 @@ class _SplashPageState extends State<SplashPage>
 
     // Navigate after splash
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      // );
     });
   }
 
@@ -69,7 +69,7 @@ class _SplashPageState extends State<SplashPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -80,7 +80,7 @@ class _SplashPageState extends State<SplashPage>
               child: SlideTransition(
                 position: _logoOffset,
                 child: Image.asset(
-                  'assets/images/logo.jpeg',
+                  'assets/images/newlogo.png',
                   width: 200,
                   height: 200,
                 ),
@@ -95,9 +95,9 @@ class _SplashPageState extends State<SplashPage>
               child: SlideTransition(
                 position: _textOffset,
                 child: const Text(
-                  'Grab It',
+                  'GraBiTT',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
