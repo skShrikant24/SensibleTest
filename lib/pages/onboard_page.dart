@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/pages/main_shell.dart';
 import 'package:GraBiTT/pages/login_page.dart';
+import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,43 +15,82 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  Timer? _autoSlideTimer;
 
+  // Restaurant, Grocery, Medical, Chaats and Snacks, Pesticides, Pick & Deliver and last Login Page.
   final List<OnboardingData> _pages = [
     OnboardingData(
       image: 'assets/images/slide1.jpg',
-      title: 'Order Food\nIn Just One Tap',
-      description: 'Discover nearby restaurants and\norder your favorite meals instantly.',
-      decorativeIcons: [
-        DecorativeIcon(icon: Icons.library_books, color: Color(0xFFFF6B6B), top: 200, left: 50),
-        DecorativeIcon(icon: Icons.edit, color: Color(0xFFFF0000), top: 180, right: 80),
-      ],
+      lottieAsset:"assets/animations/Delivery.json",
+      title: 'Food Delivery',
+      description: 'Order your favourite food from your preferred restaurant',
     ),
     OnboardingData(
       image: 'assets/images/slide2.jpg',
-      title: 'Fast Delivery\nAt Your Doorstep',
-      description: 'Hot & fresh food delivered quickly\nfrom the best local kitchens.',
-      decorativeIcons: [
-        DecorativeIcon(icon: Icons.stars, color: Color(0xFFFF6B6B), top: 250, left: 60),
-        DecorativeIcon(icon: Icons.library_books, color: Color(0xFFFF0000), bottom: 350, right: 70),
-      ],
+      lottieAsset:"assets/animations/Grocery.json",
+      title: 'Grocery Delivery',
+      description: 'Daily groceries delivered from trusted local stores',
     ),
     OnboardingData(
       image: 'assets/images/slide3.jpg',
-      title: 'Login / Sign-up',
-      description: 'Start ordering delicious food with GrabIt',
+      lottieAsset:"assets/animations/Doctor.json",
+      title: 'Medicine Delivery',
+      description: 'Fast, safe & reliable pharmacy delivery',
+    ),
+    OnboardingData(
+      image: 'assets/images/slide3.jpg',
+      lottieAsset:"assets/animations/Food.json",
+      title: 'Chaat Items',
+      description: 'Delivery of your favorite chaat items across the city',
+    ),
+    OnboardingData(
+      image: 'assets/images/slide3.jpg',
+      lottieAsset:"assets/animations/Seed.json",
+      title: 'Farmer Supplies',
+      description: 'Pesticides, seeds & fertilizers delivered to farms.',
+      // isLastPage: true,
+    ),OnboardingData(
+      image: 'assets/images/slide3.jpg',
+      lottieAsset:"assets/animations/DeliveryLast.json",
+      title: 'Express Pick & Deliver',
+      description: 'Send your important items anywhere in town.',
       isLastPage: true,
-      decorativeIcons: [
-        DecorativeIcon(icon: Icons.circle, color: Color(0xFF7C4DFF), top: 180, right: 50, size: 15),
-        DecorativeIcon(icon: Icons.circle, color: Color(0xFF00BFA5), top: 200, right: 30, size: 12),
-        DecorativeIcon(icon: Icons.circle, color: Color(0xFFFF6B6B), top: 300, right: 60, size: 10),
-        DecorativeIcon(icon: Icons.circle, color: Color(0xFFFFA726), bottom: 400, left: 80, size: 14),
-        DecorativeIcon(icon: Icons.circle_outlined, color: Color(0xFF9E9E9E), top: 240, left: 50, size: 18),
-      ],
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _startAutoSlide();
+  }
+
+  void _startAutoSlide() {
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_currentPage < _pages.length - 1) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        // Stop timer on last page
+        _stopAutoSlide();
+      }
+    });
+  }
+
+  void _stopAutoSlide() {
+    _autoSlideTimer?.cancel();
+    _autoSlideTimer = null;
+  }
+
+  void _resetAutoSlide() {
+    _stopAutoSlide();
+    _startAutoSlide();
+  }
+
+  @override
   void dispose() {
+    _stopAutoSlide();
     _pageController.dispose();
     super.dispose();
   }
@@ -65,7 +106,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                onPageChanged: (index) => setState(() => _currentPage = index),
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                  // Reset auto-slide timer when user manually swipes
+                  _resetAutoSlide();
+                },
                 itemCount: _pages.length,
                 itemBuilder: (context, index) => _buildPage(_pages[index]),
               ),
@@ -86,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           /// 🔥 LOGO IMAGE
           Image.asset(
-            'assets/images/logo.jpeg',
+            'assets/images/newlogo2.png',
             height: 70,
             fit: BoxFit.contain,
           ),
@@ -107,13 +152,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.center,
               children: [
                 // ...data.decorativeIcons.map((icon) => _buildDecorativeIcon(icon)),
-                Center(
-                  child: Image.asset(
-                    data.image,
-                    height: 280,
-                    fit: BoxFit.contain,
+                  Center(
+                    child: data.lottieAsset != null
+                        ? Lottie.asset(
+                            data.lottieAsset!,
+                            height: 280,
+                            fit: BoxFit.contain,
+                            repeat: true,
+                            animate: true,
+                          )
+                        : Image.asset(
+                            data.image,
+                            height: 280,
+                            fit: BoxFit.contain,
+                          ),
                   ),
-                ),
               ],
             ),
           ),
@@ -135,15 +188,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildDecorativeIcon(DecorativeIcon icon) {
-    return Positioned(
-      top: icon.top,
-      bottom: icon.bottom,
-      left: icon.left,
-      right: icon.right,
-      child: Icon(icon.icon, color: icon.color, size: icon.size),
-    );
-  }
 
   Widget _buildBottomSection() {
     final isLastPage = _currentPage == _pages.length - 1;
@@ -159,8 +203,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 32),
           if (isLastPage) ...[
             _buildButton('Login', true),
-            const SizedBox(height: 16),
-            _buildButton('Guest', false),
+            // const SizedBox(height: 16),
+            // _buildButton('Guest', false),
           ] else
             _buildButton('NEXT', false),
         ],
@@ -221,36 +265,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class OnboardingData {
   final String image;
+  final String? lottieAsset; // Path to Lottie JSON file (e.g., 'assets/animations/animation.json')
   final String title;
   final String description;
   final bool isLastPage;
-  final List<DecorativeIcon> decorativeIcons;
 
   OnboardingData({
     required this.image,
+    this.lottieAsset,
     required this.title,
     required this.description,
-    this.isLastPage = false,
-    this.decorativeIcons = const [],
+    this.isLastPage = false
   });
 }
 
-class DecorativeIcon {
-  final IconData icon;
-  final Color color;
-  final double? top;
-  final double? bottom;
-  final double? left;
-  final double? right;
-  final double size;
-
-  DecorativeIcon({
-    required this.icon,
-    required this.color,
-    this.top,
-    this.bottom,
-    this.left,
-    this.right,
-    this.size = 24,
-  });
-}

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -72,7 +73,7 @@ class _LoginPageState extends State<LoginPage>
       _otpSlideControllers.add(controller);
       
       final animation = Tween<Offset>(
-        begin: const Offset(0, -2),
+        begin: const Offset(0, 0.5),
         end: Offset.zero,
       ).animate(CurvedAnimation(
         parent: controller,
@@ -237,15 +238,17 @@ class _LoginPageState extends State<LoginPage>
         children: [
           // Logo
           Image.asset(
-            'assets/images/logo.jpeg',
-            height: 100,
+            'assets/images/newlogo2.png',
+            width: 200,
+            height: 200,
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 48),
           
           // Title
           Text(
-            'Welcome to GrabIt',
+            "Welcome to GraB iTT!",
+            textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -368,46 +371,48 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildOtpStep() {
-    return Padding(
-      key: const ValueKey('otp'),
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Back button
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black87),
-              onPressed: () {
-                setState(() {
-                  _currentStep = LoginStep.phoneNumber;
-                  _isVerifying = false;
-                });
-              },
+    return SingleChildScrollView(
+      child: Padding(
+        key: const ValueKey('otp'),
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Back button
+            Align(
+              alignment: Alignment.topLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: () {
+                  setState(() {
+                    _currentStep = LoginStep.phoneNumber;
+                    _isVerifying = false;
+                  });
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Title
-          Text(
-            'Enter OTP',
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+            const SizedBox(height: 20),
+            
+            // Title
+            Text(
+              'Enter OTP',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'We sent a code to\n${_phoneController.text}',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey[600],
+            const SizedBox(height: 12),
+            Text(
+              'We sent a code to\n${_phoneController.text}',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 48),
+            const SizedBox(height: 80),
           
           // OTP input boxes with slide animation
           Row(
@@ -426,24 +431,30 @@ class _LoginPageState extends State<LoginPage>
                       width: 2,
                     ),
                   ),
-                  child: TextField(
-                    controller: _otpControllers[index],
-                    focusNode: _otpFocusNodes[index],
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(1),
-                    ],
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                  child: SizedBox(
+                    height: 70,
+                    width: 60,
+                    child: TextField(
+                      controller: _otpControllers[index],
+                      focusNode: _otpFocusNodes[index],
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(1),
+                      ],
+                      style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 21),
+                        isDense: true,
+                        counterText: '',
+                      ),
+                      textAlignVertical: TextAlignVertical.center,
                     onChanged: (value) {
                       // Trigger slide animation when manually entering
                       if (value.isNotEmpty && _otpSlideControllers[index].value == 0) {
@@ -469,10 +480,11 @@ class _LoginPageState extends State<LoginPage>
                     },
                   ),
                 ),
+                ),
               );
             }),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 56),
           
           // Verify button with transformation animation
           SizedBox(
@@ -556,7 +568,8 @@ class _LoginPageState extends State<LoginPage>
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

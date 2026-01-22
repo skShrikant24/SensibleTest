@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:GraBiTT/pages/AI%20Game/game_onboard.dart';
 import 'package:GraBiTT/pages/components/app_drawer.dart';
 import 'package:GraBiTT/pages/components/home_header.dart';
 import 'package:GraBiTT/pages/splash_page.dart';
@@ -70,28 +69,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 100, right: 16), // move up and right
-        child: FloatingActionButton(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const GameOnboard()),
-          ),
-          backgroundColor: const Color(0xFF0000FF), // dark blue shade#0000FF
-          elevation: 6,
-          shape: const CircleBorder(),
-          child: Image.asset(
-            'assets/icons/fab_icon.png',
-            height: 38,
-            width: 38,
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
-
     );
   }
 }

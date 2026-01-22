@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../Classes/product.dart';
 import '../app_State/Cart.dart';
 import '../services/sound_service.dart';
+import 'cart_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Product product;
@@ -21,6 +22,7 @@ class ProductDetailsPage extends StatefulWidget {
 class _ProductDetailsPageState extends State<ProductDetailsPage>
     with TickerProviderStateMixin {
   final GlobalKey _imageKey = GlobalKey();
+  final GlobalKey _cartIconKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   late AnimationController _flyController;
   late AnimationController _quoteController;
@@ -88,11 +90,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   }
 
   Offset _getCartIconPosition() {
-    final Size screenSize = MediaQuery.of(context).size;
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-    // Cart icon is in the top right of HomeHeader
-    // Approximate position: right side with padding, accounting for status bar
-    return Offset(screenSize.width - 80, statusBarHeight + 60);
+    final RenderBox? renderBox =
+        _cartIconKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      // Fallback position if cart icon is not yet rendered
+      final Size screenSize = MediaQuery.of(context).size;
+      final double statusBarHeight = MediaQuery.of(context).padding.top;
+      return Offset(screenSize.width - 40, statusBarHeight + 50);
+    }
+
+    final Offset position = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+    // Return center of the cart icon
+    return Offset(
+      position.dx + size.width / 2,
+      position.dy + size.height / 2,
+    );
   }
 
   Offset _getImagePosition() {
@@ -108,7 +121,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     );
   }
 
-  void _startPaperPlaneAnimation() {
+  void _startPaperPlaneAnimation() async {
+    // Wait a frame to ensure cart icon is rendered
+    await Future.delayed(const Duration(milliseconds: 50));
+    
     final Offset startPos = _getImagePosition();
     final Offset endPos = _getCartIconPosition();
 
@@ -116,12 +132,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     _flyController.reset();
     _quoteController.reset();
 
-    if (startPos == Offset.zero || endPos == Offset.zero) {
+    if (startPos == Offset.zero) {
       // Fallback: just add to cart without animation
       CartService.instance.addItem(widget.product);
       CartService.instance.triggerCartAnimation();
       return;
     }
+    
+    // Use fallback position if cart icon position is not available
+    final Offset finalEndPos = endPos.dx == 0 && endPos.dy == 0 
+        ? Offset(MediaQuery.of(context).size.width - 40, MediaQuery.of(context).padding.top + 50)
+        : endPos;
 
     setState(() {
       _showQuote = true;
@@ -130,7 +151,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     _overlayEntry = OverlayEntry(
       builder: (context) => _PaperPlaneOverlay(
         startPos: startPos,
-        endPos: endPos,
+        endPos: finalEndPos,
         productImage: widget.product.allImages.first,
         flyAnimation: _flyAnimation,
         scaleAnimation: _scaleAnimation,
@@ -203,6 +224,54 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                 fontWeight: FontWeight.w600,
               ),
             ),
+            actions: [
+              // 🛒 Cart Icon with Badge
+              AnimatedBuilder(
+                animation: CartService.instance,
+                builder: (context, _) {
+                  return Stack(
+                    key: _cartIconKey,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CartPage()),
+                          );
+                        },
+                      ),
+                      if (CartService.instance.count > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '${CartService.instance.count}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
 
           // 🖼 Image Slider

@@ -9,8 +9,7 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with SingleTickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _logoOffset;
   late Animation<Offset> _textOffset;
@@ -53,10 +52,10 @@ class _SplashPageState extends State<SplashPage>
 
     // Navigate after splash
     Timer(const Duration(seconds: 3), () {
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      // );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
     });
   }
 
@@ -80,30 +79,38 @@ class _SplashPageState extends State<SplashPage>
               child: SlideTransition(
                 position: _logoOffset,
                 child: Image.asset(
-                  'assets/images/newlogo.png',
+                  'assets/images/newlogo2.png',
                   width: 200,
                   height: 200,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.error,
+                      size: 100,
+                      color: Colors.red
+                    );
+                  },
                 ),
               ),
             ),
 
-            const SizedBox(height: 10),
-
-            // Animated Text
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _textOffset,
-                child: const Text(
-                  'GraBiTT',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            // const SizedBox(height: 20),
+            //
+            // // Animated Text
+            // FadeTransition(
+            //   opacity: _fadeAnimation,
+            //   child: SlideTransition(
+            //     position: _textOffset,
+            //     child: const Text(
+            //       'GraBiTT',
+            //       style: TextStyle(
+            //         color: Colors.black,
+            //         fontSize: 22,
+            //         fontWeight: FontWeight.bold,
+            //       ),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),

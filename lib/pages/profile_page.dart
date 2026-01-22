@@ -54,9 +54,33 @@ class ProfilePage extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
-                    child: CircleAvatar(
-                      radius: 42,
-                      backgroundImage: AssetImage('assets/images/profile.png'),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/profile.png',
+                        width: 84,
+                        height: 84,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.network(
+                            'https://placehold.co/400x400.png',
+                            width: 84,
+                            height: 84,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 84,
+                                height: 84,
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.grey,
+                                  size: 40,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
