@@ -163,7 +163,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
           Text(
-            "₹${(item.product.discountPrice * item.quantity).toInt()}",
+            "₹${(item.product.discountPrice * item.quantity)}",
             style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600),
           ),

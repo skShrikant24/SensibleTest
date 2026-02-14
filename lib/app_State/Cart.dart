@@ -11,7 +11,8 @@ class CartItem {
     this.quantity = 1,
   });
 
-  double get total => product.discountPrice * quantity;
+  // double get total => double.tryParse(product.discountPrice) * double(quantity);
+  double get total => 0.0;
 }
 class CartService extends ChangeNotifier {
   static final CartService instance = CartService._();
@@ -21,7 +22,7 @@ class CartService extends ChangeNotifier {
   bool _shouldAnimateCart = false;
 
   double get subtotal => items.fold(
-      0, (sum, item) => sum + item.product.discountPrice * item.quantity);
+      0, (sum, item) => sum +0.0);
 
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
 

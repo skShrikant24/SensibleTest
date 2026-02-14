@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -179,7 +180,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: StoreProfileTheme.background,
 
       // 🛒 Bottom Add to Cart
       bottomNavigationBar: Padding(
@@ -188,7 +189,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
           height: 52,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: StoreProfileTheme.accentPink,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -210,17 +211,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
         slivers: [
           // 🔙 AppBar
           SliverAppBar(
-            backgroundColor: Colors.white,
+            backgroundColor:StoreProfileTheme.background,
             elevation: 0,
             pinned: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
               onPressed: () => Navigator.pop(context),
             ),
             title: const Text(
               "Product Details",
               style: TextStyle(
-                color: Colors.black,
+                color: StoreProfileTheme.accentPink,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -233,7 +234,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                     key: _cartIconKey,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.pinkAccent),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -287,8 +288,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                         entry.value,
                         key: entry.key == 0 ? _imageKey : null,
                         fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(child: CircularProgressIndicator());
+                        },
                       ),
-                    )
+                )
                     .toList(),
               ),
             ),
@@ -325,7 +330,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                   Row(
                     children: [
                       Text(
-                        "₹${widget.product.discountPrice.toInt()}",
+                        "₹${widget.product.discountPrice}",
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -334,7 +339,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "₹${widget.product.originalPrice.toInt()}",
+                        "₹${widget.product.originalPrice}",
                         style: const TextStyle(
                           fontSize: 15,
                           decoration: TextDecoration.lineThrough,

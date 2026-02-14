@@ -15,46 +15,57 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  /// On Store page: hide bottom bar when scrolling down, show when scrolling up.
+  bool _hideBottomBar = false;
 
   Widget _buildPage(int index) {
     switch (index) {
-      /*case 0:
-        return HomePage(
-          onSelectTab: (i) => setState(() => _index = i),
-        );
-      case 1:
-        return CoursePage(
-          onSelectTab: (i) => setState(() => _index = i),
-        );
-      case 2:
-        return StorePage(
-          onSelectTab: (i) => setState(() => _index = i),
-        );*/
       case 0:
         return StorePage(
           onSelectTab: (i) => setState(() => _index = i),
+          onScrollDirection: (scrollingDown) {
+            setState(() => _hideBottomBar = scrollingDown);
+          },
         );
-     case 2:
+      case 2:
       default:
-      return ProfilePage(
-        //
-        onSelectTab: (i) => setState(() => _index = i),
-      );
+        return ProfilePage(
+          onSelectTab: (i) => setState(() => _index = i),
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final showBottomBar = _index != 0 || !_hideBottomBar;
+
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFF4F5F7),
-      body: _buildPage(_index),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: _BottomBar(
-          index: _index,
-          onChanged: (i) => setState(() => _index = i),
-        ),
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildPage(_index)),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              offset: showBottomBar ? Offset.zero : const Offset(0, 1),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: _BottomBar(
+                  index: _index,
+                  onChanged: (i) => setState(() {
+                    _index = i;
+                    _hideBottomBar = false;
+                  }),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

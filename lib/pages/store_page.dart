@@ -1,3 +1,7 @@
+import 'package:GraBiTT/Classes/Vender.dart';
+import 'package:GraBiTT/Classes/vendor_product.dart';
+import 'package:GraBiTT/pages/category_vendors_page.dart';
+import 'package:GraBiTT/pages/vendor_products_page.dar.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,10 +16,18 @@ import 'package:http/http.dart' as http;
 import '../Classes/Category.dart';
 import '../Classes/product.dart';
 import '../app_State/Cart.dart';
+import '../utils/constants.dart';
 
 class StorePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
-  const StorePage({super.key, required this.onSelectTab});
+  /// Called with true when user scrolls down (hide bar), false when scrolls up (show bar).
+  final ValueChanged<bool>? onScrollDirection;
+
+  const StorePage({
+    super.key,
+    required this.onSelectTab,
+    this.onScrollDirection,
+  });
 
   @override
   State<StorePage> createState() => _StorePageState();
@@ -23,13 +35,58 @@ class StorePage extends StatefulWidget {
 
 class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String selectedCategory = 'All';
+  String selectedCategory = 'all';
   String selectedLanguage = 'EN';
+  bool _isVendorLoading = false;
+  late Future<List<Category>> _categoriesFuture;
+  late Future<List<Vendor>> _vendorsFuture;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  static const double _scrollThreshold = 10.0;
+  double _lastScrollOffset = 0;
+
+  /// When true, bottom nav is hidden (scrolled down) → buttons sit at very bottom.
+  bool _bottomBarHidden = false;
+
+  /// Cached so scrolling (rebuilds) doesn't create a new Future and refetch.
+  late Future<List<Product>> _productsFuture;
+
+  /// Slider images for the current category (getsilder API).
+  late Future<List<String>> _sliderFuture;
+
+  /// Approximate height of main_shell bottom bar (with padding) so buttons sit above it when visible.
+  static const double _bottomBarHeight = 72;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    _categoriesFuture = fetchCategories();
+    // _vendorsFuture = fetchVendorsByCategory("all");
+    // _productsFuture = fetchProducts(category: selectedCategory);
+    // _sliderFuture = fetchSliderImages(selectedCategory);
+  }
+
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final delta = offset - _lastScrollOffset;
+    if (delta > _scrollThreshold) {
+      _lastScrollOffset = offset;
+      setState(() => _bottomBarHidden = true);
+      widget.onScrollDirection?.call(true); // scrolling down → hide bar
+    } else if (delta < -_scrollThreshold) {
+      _lastScrollOffset = offset;
+      setState(() => _bottomBarHidden = false);
+      widget.onScrollDirection?.call(false); // scrolling up → show bar
+    }
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -37,116 +94,125 @@ class _StorePageState extends State<StorePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: StoreProfileTheme.background,
       drawer: AppDrawer(onSelectTab: widget.onSelectTab, currentTabIndex: 2),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // 🔝 Top Header Section
-            SliverToBoxAdapter(
-              child: _buildTopHeader(),
-            ),
+        child: Column(
+          children: [
+            Expanded(
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  // 🔝 Top Header Section
+                  SliverToBoxAdapter(
+                    child: _buildTopHeader(),
+                  ),
 
-            // 🔍 Search Bar
-            SliverToBoxAdapter(
-              child: _buildSearchBar(),
-            ),
+                  // 🔍 Search Bar
+                  SliverToBoxAdapter(
+                    child: _buildSearchBar(),
+                  ),
 
-            // 🏷️ Categories Section
-            SliverToBoxAdapter(
-              child: _buildCategoriesSection(),
-            ),
+                  // 🏷️ Categories Section
+                  SliverToBoxAdapter(
+                    child: _buildCategoriesSection(),
+                  ),
 
-            // 🎯 Recommended/Offers Section
-            SliverToBoxAdapter(
-              child: _buildRecommendedSection(),
-            ),
+                  // 🎯 Recommended/Offers Section
+                  // SliverToBoxAdapter(
+                  //   child: _buildRecommendedSection(),
+                  // ),
 
-            // 🛍️ Products Grid
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              sliver: FutureBuilder<List<Product>>(
-                future: fetchProducts(category: selectedCategory),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 60),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    );
-                  }
+                  // 🛍️ Products Grid
+                  // SliverPadding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //   sliver: FutureBuilder<List<Product>>(
+                  //     future: _productsFuture,
+                  //     builder: (context, snapshot) {
+                  //       if (snapshot.connectionState == ConnectionState.waiting) {
+                  //         return const SliverToBoxAdapter(
+                  //           child: Padding(
+                  //             padding: EdgeInsets.only(top: 60),
+                  //             child: Center(child: CircularProgressIndicator()),
+                  //           ),
+                  //         );
+                  //       }
+                  //
+                  //       if (snapshot.hasError) {
+                  //         return SliverToBoxAdapter(
+                  //           child: Padding(
+                  //             padding: const EdgeInsets.only(top: 80),
+                  //             child: Center(
+                  //               child: Text(
+                  //                 "Something went wrong",
+                  //                 style: GoogleFonts.poppins(color: Colors.grey),
+                  //               ),
+                  //             ),
+                  //           ),
+                  //         );
+                  //       }
+                  //
+                  //       final products = snapshot.data ?? [];
+                  //       if (products.isEmpty) {
+                  //         return SliverToBoxAdapter(
+                  //           child: Padding(
+                  //             padding: const EdgeInsets.only(top: 80),
+                  //             child: Column(
+                  //               children: [
+                  //                 Icon(
+                  //                   Icons.inventory_2_outlined,
+                  //                   size: 80,
+                  //                   color: Colors.grey.shade400,
+                  //                 ),
+                  //                 const SizedBox(height: 12),
+                  //                 Text(
+                  //                   "No products found",
+                  //                   style: GoogleFonts.poppins(
+                  //                     fontSize: 16,
+                  //                     color: Colors.grey.shade600,
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //           ),
+                  //         );
+                  //       }
+                  //
+                  //       return SliverGrid(
+                  //         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  //           crossAxisCount: 2,
+                  //           crossAxisSpacing: 12,
+                  //           mainAxisSpacing: 12,
+                  //           childAspectRatio: 0.80,
+                  //         ),
+                  //         delegate: SliverChildBuilderDelegate(
+                  //           (context, index) {
+                  //             final product = products[index];
+                  //             return _ProductCard(product: product);
+                  //           },
+                  //           childCount: products.length,
+                  //         ),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
 
-                  if (snapshot.hasError) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 80),
-                        child: Center(
-                          child: Text(
-                            "Something went wrong",
-                            style: GoogleFonts.poppins(color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+                  SliverToBoxAdapter(
+                    child:SizedBox(height: 50,),
+                  ),
 
-                  final products = snapshot.data ?? [];
-                  if (products.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 80),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 80,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "No products found",
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
 
-                  return SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.80,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final product = products[index];
-                        return _ProductCard(product: product);
-                      },
-                      childCount: products.length,
-                    ),
-                  );
-                },
+                  // 🔍 Bottom Search Section with Restaurant List
+                  // SliverToBoxAdapter(
+                  //   child: _buildBottomSearchSection(),
+                  // ),
+                  //
+                  // const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                ],
               ),
             ),
-
-            // 🚀 Action Buttons Section
-            SliverToBoxAdapter(
-              child: _buildActionButtons(),
-            ),
-
-            // 🔍 Bottom Search Section with Restaurant List
-            SliverToBoxAdapter(
-              child: _buildBottomSearchSection(),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            // 🚀 Fixed bottom: Pick & Deliver + Quick Order (sticky; when bottom bar hides, sits at bottom)
+            _buildFixedActionButtons(),
           ],
         ),
       ),
@@ -183,7 +249,8 @@ class _StorePageState extends State<StorePage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
+                    color: StoreProfileTheme.lightPink.withValues(alpha: 0.5),
+                    border: Border.all(color: StoreProfileTheme.border),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -292,8 +359,15 @@ class _StorePageState extends State<StorePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: StoreProfileTheme.border.withValues(alpha: 0.2),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: TextField(
           controller: _searchController,
@@ -313,88 +387,55 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  // 🏷️ Categories Section
+  // 🏷️ Categories Section: horizontal chips + grid of categories (image + name)
   Widget _buildCategoriesSection() {
     return FutureBuilder<List<Category>>(
-      future: fetchCategories(),
+      future: _categoriesFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SizedBox(
-              height: 40,
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CircularProgressIndicator()),
           );
         }
 
         final categories = snapshot.data!;
-        final mainCategories = ['Restaurant', 'Grocery Stores', 'Medical'];
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ALL label pointing to Restaurant
-              // Row(
-              //   children: [
-              //     Text(
-              //       'ALL',
-              //       style: GoogleFonts.poppins(
-              //         fontSize: 12,  
-              //         fontWeight: FontWeight.w600,
-              //         color: Colors.grey[600],
-              //       ),
-              //     ),
-              //     const SizedBox(width: 4),
-              //     const Icon(Icons.arrow_right, size: 16, color: Colors.grey),
-              //     const SizedBox(width: 8),
-              //     Text(
-              //       'Restaurant',
-              //       style: GoogleFonts.poppins(
-              //         fontSize: 14,
-              //         fontWeight: FontWeight.w600,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 12),
 
-              // Category Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _CategoryChip(
-                      title: 'All',
-                      isActive: selectedCategory == 'All',
-                      onTap: () => setState(() => selectedCategory = 'All'),
-                    ),
-                    const SizedBox(width: 8),
-                    ...categories.map((cat) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _CategoryChip(
-                            title: cat.name,
-                            isActive: selectedCategory == cat.name,
-                            onTap: () => setState(() => selectedCategory = cat.name),
-                          ),
-                        )),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Home label (underlined)
-              // Text(
-              //   'Home',
-              //   style: GoogleFonts.poppins(
-              //     fontSize: 13,
-              //     fontWeight: FontWeight.w500,
-              //     decoration: TextDecoration.underline,
-              //     color: Colors.grey[700],
+              /// CATEGORY CHIPS
+              // SingleChildScrollView(
+              //   scrollDirection: Axis.horizontal,
+              //   child: Row(
+              //     children: [
+              //       _CategoryChip(
+              //         title: 'All',
+              //         isActive: selectedCategory == 'all',
+              //         onTap: () => _selectCategory('all'),
+              //       ),
+              //       const SizedBox(width: 8),
+              //
+              //       ...categories.map((cat) => Padding(
+              //         padding: const EdgeInsets.only(right: 8),
+              //         child: _CategoryChip(
+              //           title: cat.name,
+              //           isActive: selectedCategory == cat.name,
+              //           onTap: () => _selectCategory(cat.name),
+              //         ),
+              //       )),
+              //     ],
               //   ),
               // ),
+              //
+              // const SizedBox(height: 16),
+
+              /// VENDOR GRID (dynamic)
+              _buildVendorGrid()
             ],
           ),
         );
@@ -402,17 +443,98 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  // 🎯 Recommended/Offers Section
+  Widget _buildVendorGrid() {
+
+    return FutureBuilder<List<Category>>(
+      future: _categoriesFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final categories = snapshot.data!;
+
+        if (categories.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: Text("No vendors found")),
+          );
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: categories.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.82,
+          ),
+          itemBuilder: (context, index) {
+            final vendor = categories[index];
+
+            return _CategoryGridTile(
+              label: vendor.name,
+              imageUrl: vendor.imageUrl,
+              isSelected: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CategoryVendorsPage(
+                      categoryName: vendor.name,
+                      categoryId: vendor.id,
+                    ),
+                  ),
+                );
+              },
+
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+  void _selectCategory(String name) async {
+    setState(() {
+      selectedCategory = name;
+      _isVendorLoading = true;
+    });
+
+    final vendorsFuture = fetchVendorsByCategory(name);
+    // final productsFuture = fetchProducts(category: name);
+    // final sliderFuture = fetchSliderImages(name);
+
+    final vendors = await vendorsFuture;
+
+    setState(() {
+      _vendorsFuture = Future.value(vendors);
+      // _productsFuture = productsFuture;
+      // _sliderFuture = sliderFuture;
+      _isVendorLoading = false;
+    });
+  }
+
+
+
+  // 🎯 Recommended/Offers Section (slider from getsilder API by category)
   Widget _buildRecommendedSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Container(
         height: 180,
         decoration: BoxDecoration(
+          color: StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: StoreProfileTheme.border.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -420,54 +542,87 @@ class _StorePageState extends State<StorePage> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: PageView(
-            children: [
-              Image.asset(
-                'assets/images/slider.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: Center(
-                      child: Text(
-                        'Recommended Section / Offers',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+          child: FutureBuilder<List<String>>(
+            future: _sliderFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  color: StoreProfileTheme.lightPink.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                return Container(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Text(
+                      snapshot.hasData && snapshot.data!.isEmpty
+                          ? 'No slides for this category'
+                          : 'Recommended / Offers',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[600],
                       ),
                     ),
+                  ),
+                );
+              }
+              final urls = snapshot.data!;
+              return PageView.builder(
+                itemCount: urls.length,
+                itemBuilder: (context, index) {
+                  final fullUrl = urls[index];
+                  return Image.network(
+                    fullUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey[600]),
+                        ),
+                      );
+                    },
                   );
                 },
-              ),
-              Image.asset(
-                'assets/images/slide1.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(color: Colors.grey[300]);
-                },
-              ),
-              Image.asset(
-                'assets/images/slide2.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(color: Colors.grey[300]);
-                },
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  // 🚀 Action Buttons: Pick & Deliver, Quick Order
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
+  // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
+  Widget _buildFixedActionButtons() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        _bottomBarHidden ? 16 : 12 + _bottomBarHeight,
+      ),
+      decoration: BoxDecoration(
+        color: StoreProfileTheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: StoreProfileTheme.border.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
+          SizedBox(
+            width: double.infinity,
             child: _ActionButton(
               title: 'Pick & Deliver',
               icon: Icons.local_shipping_outlined,
@@ -476,8 +631,9 @@ class _StorePageState extends State<StorePage> {
               },
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
             child: _ActionButton(
               title: 'Quick order',
               icon: Icons.flash_on,
@@ -501,8 +657,15 @@ class _StorePageState extends State<StorePage> {
           // Search Bar
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: StoreProfileTheme.surface,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: StoreProfileTheme.border.withValues(alpha: 0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: TextField(
               controller: _searchController,
@@ -630,20 +793,111 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.black : Colors.grey[100],
+          color: isActive ? StoreProfileTheme.lightPink : StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? Colors.black : Colors.grey[300]!,
+            color: isActive ? StoreProfileTheme.accentPink : StoreProfileTheme.border,
             width: 1,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: StoreProfileTheme.border.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           title,
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isActive ? Colors.white : Colors.black87,
+            color: isActive ? StoreProfileTheme.accentPink : Colors.black87,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🏷️ Category grid tile: image + name (like reference layout)
+class _CategoryGridTile extends StatelessWidget {
+  final String label;
+  final String? imageUrl;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryGridTile({
+    required this.label,
+    required this.imageUrl,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  static const String _placeholder = 'https://picsum.photos/400/400';
+
+  @override
+  Widget build(BuildContext context) {
+    final url = (imageUrl != null && imageUrl!.trim().isNotEmpty)
+        ? imageUrl!
+        : _placeholder;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: StoreProfileTheme.border.withValues(alpha: 0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: isSelected
+              ? Border.all(color: StoreProfileTheme.accentPink, width: 2)
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 3,
+              child: ClipRRect(
+                // borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) => Image.network(
+                    _placeholder,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -667,15 +921,16 @@ class _ActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: StoreProfileTheme.secondaryGradient,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: StoreProfileTheme.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
+              color: StoreProfileTheme.accentPink.withValues(alpha: 0.15),
+              blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],
@@ -683,7 +938,7 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.redAccent),
+            Icon(icon, size: 20, color: StoreProfileTheme.accentPink),
             const SizedBox(width: 8),
             Text(
               title,
@@ -722,11 +977,11 @@ class _ProductCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: StoreProfileTheme.border.withValues(alpha: 0.12),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -741,13 +996,13 @@ class _ProductCard extends StatelessWidget {
               child: Image.network(
                 product.productImage.isNotEmpty
                     ? "https://grabitt.in/${product.productImage}"
-                    : "https://placehold.co/400x400.png",
+                    : "https://picsum.photos/400/400",
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Image.network(
-                    "https://placehold.co/400x400.png",
+                    "https://picsum.photos/400/400",
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -782,11 +1037,11 @@ class _ProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       Text(
-                        "₹${product.discountPrice.toInt()}",
+                        "₹${product.discountPrice}",
                         style: GoogleFonts.poppins(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -795,7 +1050,7 @@ class _ProductCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        "₹${product.originalPrice.toInt()}",
+                        "₹${product.originalPrice}",
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           decoration: TextDecoration.lineThrough,
@@ -829,6 +1084,71 @@ Future<List<Category>> fetchCategories() async {
   }
 }
 
+Future<List<Vendor>> fetchVendors() async {
+  final response = await http.get(
+    Uri.parse('https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=all'),
+  );
+
+  if (response.statusCode == 200) {
+
+    final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+    final List data = json.decode(jsonString);
+
+    final vendors = data.map((e) => Vendor.fromJson(e)).toList();
+
+    print("__________________");
+    print(vendors);
+
+    return vendors;
+  } else {
+    throw Exception('Failed to load vendors');
+  }
+}
+
+Future<List<Vendor>> fetchVendorsByCategory(String category) async {
+  try {
+    final url =
+        'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=${Uri.encodeComponent(category)}';
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode != 200) return [];
+
+    /// Remove XML wrapper
+    final cleaned = response.body
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .trim();
+
+    print("VENDOR API RAW => $cleaned");
+
+    /// 🚨 HANDLE NON JSON RESPONSES
+    if (cleaned.isEmpty ||
+        cleaned.toLowerCase() == 'no data' ||
+        cleaned.toLowerCase() == 'fail' ||
+        cleaned == 'null') {
+      return [];
+    }
+
+    /// Sometimes API returns single object instead of array
+    dynamic decoded = json.decode(cleaned);
+
+    if (decoded is List) {
+      return decoded.map((e) => Vendor.fromJson(e)).toList();
+    }
+
+    if (decoded is Map) {
+      final map = Map<String, dynamic>.from(decoded);
+      return [Vendor.fromJson(map)];
+    }
+
+
+    return [];
+  } catch (e) {
+    print("Vendor Parse Error => $e");
+    return [];
+  }
+}
+
 Future<List<Product>> fetchProducts({String? category}) async {
   final url = category == null || category == 'All'
       ? 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=ALL'
@@ -850,6 +1170,49 @@ Future<List<Product>> fetchProducts({String? category}) async {
       return [];
     }
   } else {
+    return [];
+  }
+}
+
+/// Fetches slider image URLs for the given category.
+/// API: GET https://grabitt.in/webservice.asmx/getsilder?category=string
+Future<List<String>> fetchSliderImages(String category) async {
+  final url = category == 'All' || category.isEmpty
+      ? 'https://grabitt.in/webservice.asmx/getsilder?category=ALL'
+      : 'https://grabitt.in/webservice.asmx/getsilder?category=${Uri.encodeComponent(category)}';
+
+  try {
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode != 200) return [];
+
+    final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+    if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) return [];
+
+    final decoded = json.decode(cleaned);
+
+    if (decoded is! List) return [];
+
+    const String uploadsBase = 'https://grabitt.in/uploads/';
+    final List<String> urls = [];
+    for (final item in decoded) {
+      if (item is String) {
+        if (item.trim().isNotEmpty) {
+          final name = item.trim();
+          urls.add(name.startsWith('http') ? name : '$uploadsBase${Uri.encodeComponent(name)}');
+        }
+      } else if (item is Map) {
+        // API returns: {"Id":"1","Category":"Restaurants","Images":"1.jpg",...}
+        final raw = item['Images'] ?? item['image'] ?? item['Image'] ?? item['SliderImage'] ?? item['url'] ?? item['path'] ?? item['sliderimage'];
+        if (raw != null && raw.toString().trim().isNotEmpty) {
+          final imageName = raw.toString().trim();
+          final fullUrl = imageName.startsWith('http') ? imageName : '$uploadsBase${Uri.encodeComponent(imageName)}';
+          urls.add(fullUrl);
+        }
+      }
+    }
+    return urls;
+  } catch (e) {
     return [];
   }
 }
@@ -937,9 +1300,9 @@ class _RestaurantListItem extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.blue[700],
+                color: StoreProfileTheme.accentPink,
                 decoration: TextDecoration.underline,
-                decorationColor: Colors.blue[700],
+                decorationColor: StoreProfileTheme.accentPink,
               ),
             ),
           ),

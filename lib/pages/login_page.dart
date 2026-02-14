@@ -1,10 +1,17 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:GraBiTT/utils/constants.dart';
+import 'package:GraBiTT/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/pages/main_shell.dart';
-//jjjjjjjjj
+import 'package:GraBiTT/pages/signup_page.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:readotp/readotp.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:sms_autofill/sms_autofill.dart';
+
 enum LoginStep { phoneNumber, otp, success }
 
 class LoginPage extends StatefulWidget {
@@ -26,12 +33,19 @@ class _LoginPageState extends State<LoginPage>
   Animation<double>? _jumpAnimation;
   bool _isPhoneValid = false;
   
-  // OTP input
+  // OTP input (used with PinFieldAutoFill for SMS autofill)
+  String _otpCode = '';
+  String? _storedOtp;
+  Map<String, dynamic>? _loggedInUser;
+  bool _isCheckingUser = false;
+  bool _isSendingOtp = false;
+  bool _isResendingOtp = false;
+
+  // Legacy 4-box OTP (kept for manual entry fallback / animation)
   final List<TextEditingController> _otpControllers = List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(4, (_) => FocusNode());
   List<AnimationController> _otpSlideControllers = [];
   List<Animation<Offset>> _otpSlideAnimations = [];
-  String _otpCode = '';
   
   // Verification success
   AnimationController? _successController;
@@ -39,6 +53,10 @@ class _LoginPageState extends State<LoginPage>
   Animation<double>? _scaleAnimation;
   bool _isVerifying = false;
   bool _isVerified = false;
+
+  // SMS read (readotp) for OTP autofill when user grants READ_SMS
+  ReadOtp? _readOtp;
+  StreamSubscription? _smsSubscription;
 
   @override
   void initState() {
@@ -121,74 +139,177 @@ class _LoginPageState extends State<LoginPage>
     });
   }
 
+  /// Check user by phone -> if not found show alert and go to signup; else send OTP and go to OTP step.
   Future<void> _sendOtp() async {
     if (!_isPhoneValid) return;
-    
-    setState(() {
-      _currentStep = LoginStep.otp;
-    });
-    
-    // Simulate OTP auto-read after a delay
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    // Auto-fill OTP with animation
-    if (mounted && _currentStep == LoginStep.otp) {
-      _autoFillOtp('1234'); // In production, get from SMS
+    final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (phone.length < 10) return;
+
+    setState(() => _isCheckingUser = true);
+    final result = await AuthService.instance.getUserByPhone(phone);
+    if (!mounted) return;
+
+    if (!result.found || result.user == null) {
+      setState(() => _isCheckingUser = false);
+      _showUserNotFoundAndNavigateToSignup();
+      return;
     }
+
+    final otp = '${1000 + Random().nextInt(9000)}';
+    setState(() => _isSendingOtp = true);
+    final sendResult = await AuthService.instance.sendOtp(phone, otp);
+    if (!mounted) return;
+
+    setState(() {
+      _isCheckingUser = false;
+      _isSendingOtp = false;
+    });
+
+    if (!sendResult.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(sendResult.message ?? 'Failed to send OTP')),
+      );
+      return;
+    }
+
+    _storedOtp = otp;
+    _loggedInUser = result.user;
+    _otpCode = '';
+    for (var c in _otpControllers) c.clear();
+    setState(() => _currentStep = LoginStep.otp);
+
+    try {
+      await SmsAutoFill().listenForCode();
+    } catch (_) {}
+    _startSmsListener();
   }
 
-  void _autoFillOtp(String otp) {
-    for (int i = 0; i < 4 && i < otp.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 150), () {
-        if (mounted && _currentStep == LoginStep.otp) {
-          _otpControllers[i].text = otp[i];
-          _otpSlideControllers[i].forward();
-          if (i < 3) {
-            _otpFocusNodes[i + 1].requestFocus();
-          }
+  /// Request SMS permission and start listening for incoming SMS to auto-fill OTP.
+  void _startSmsListener() async {
+    try {
+      final status = await Permission.sms.request();
+      if (!mounted || status != PermissionStatus.granted) return;
+      _readOtp?.dispose();
+      _readOtp = ReadOtp();
+      _readOtp!.start();
+      if (!mounted) return;
+      _smsSubscription?.cancel();
+      _smsSubscription = _readOtp!.smsStream.listen((sms) {
+        final body = sms.body;
+        final match = RegExp(r'\d{4}').firstMatch(body);
+        if (match != null && mounted && _currentStep == LoginStep.otp && !_isVerified) {
+          final code = match.group(0)!;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _currentStep == LoginStep.otp) _onPinCodeChanged(code);
+          });
         }
       });
-    }
-    
-    // Auto-verify after OTP is filled (simulating auto-read SMS)
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted && _currentStep == LoginStep.otp) {
-        final enteredOtp = _otpControllers.map((c) => c.text).join();
-        if (enteredOtp.length == 4) {
-          _verifyOtp();
-        }
-      }
-    });
+    } catch (_) {}
   }
 
-  Future<void> _verifyOtp() async {
-    setState(() {
-      _isVerifying = true;
-    });
-    
-    // Simulate verification delay
-    await Future.delayed(const Duration(milliseconds: 1000));
-    
+  void _stopSmsListener() {
+    _smsSubscription?.cancel();
+    _smsSubscription = null;
+    _readOtp?.dispose();
+    _readOtp = null;
+  }
+
+  void _showUserNotFoundAndNavigateToSignup() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('User not registered', style: GoogleFonts.poppins()),
+        content: Text(
+          'This phone number is not registered. Please sign up to continue.',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const SignupPage()),
+              );
+            },
+            child: Text('Sign up', style: GoogleFonts.poppins(color: const Color(0xFFFF0000), fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Resend OTP: generate new OTP, call API, update _storedOtp.
+  Future<void> _resendOtp() async {
+    final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (phone.isEmpty || _loggedInUser == null) return;
+    setState(() => _isResendingOtp = true);
+    final otp = '${1000 + Random().nextInt(9000)}';
+    final result = await AuthService.instance.sendOtp(phone, otp);
     if (mounted) {
-      setState(() {
-        _isVerified = true;
-      });
-      
-      // Start the transformation animation
-      _successController?.forward();
-      
-      // Navigate to home after animation completes
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainShell()),
+      setState(() => _isResendingOtp = false);
+      if (result.success) {
+        _storedOtp = otp;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP resent successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message ?? 'Failed to resend OTP')),
         );
       }
     }
   }
 
+  /// Verify entered OTP with stored OTP; on match save user and navigate to main app.
+  Future<void> _verifyOtp() async {
+    final entered = _otpCode.length == 4 ? _otpCode : _otpControllers.map((c) => c.text).join();
+    if (entered.length != 4 || _storedOtp == null || _loggedInUser == null) return;
+    if (entered != _storedOtp) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid OTP. Please try again.')),
+      );
+      return;
+    }
+
+    setState(() => _isVerifying = true);
+    await AuthService.instance.saveLoginUser(_loggedInUser!);
+    if (!mounted) return;
+
+    setState(() => _isVerified = true);
+    _successController?.forward();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+      );
+    }
+  }
+
+  void _onPinCodeChanged(String? code) {
+    setState(() => _otpCode = code ?? '');
+    for (int i = 0; i < 4; i++) {
+      if (i < (code?.length ?? 0)) {
+        _otpControllers[i].text = code![i];
+        if (_otpSlideControllers[i].value == 0) _otpSlideControllers[i].forward();
+      } else {
+        _otpControllers[i].clear();
+      }
+    }
+    if ((code?.length ?? 0) == 4) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && !_isVerifying && !_isVerified) _verifyOtp();
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _stopSmsListener();
+    SmsAutoFill().unregisterListener();
     _phoneController.dispose();
     _phoneFocusNode.dispose();
     _pulseController?.dispose();
@@ -243,7 +364,7 @@ class _LoginPageState extends State<LoginPage>
             height: 200,
             fit: BoxFit.contain,
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 30),
           
           // Title
           Text(
@@ -264,7 +385,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 20),
           
           // Phone input with pulse animation
           AnimatedBuilder(
@@ -339,14 +460,14 @@ class _LoginPageState extends State<LoginPage>
               );
             },
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
           
           // Continue button
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: _isPhoneValid ? _sendOtp : null,
+              onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp) ? _sendOtp : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF0000),
                 disabledBackgroundColor: Colors.grey[300],
@@ -355,15 +476,68 @@ class _LoginPageState extends State<LoginPage>
                 ),
                 elevation: 0,
               ),
-              child: Text(
-                'Continue',
+              child: _isCheckingUser || _isSendingOtp
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                    )
+                  : Text(
+                      'Continue',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Don't have an account? ",
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  fontSize: 14,
+                  color: Colors.grey[600],
                 ),
               ),
-            ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SignupPage(),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Sign up',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFFF0000),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.data?.version ?? '';
+              final build = snapshot.data?.buildNumber ?? '';
+              final text = version.isEmpty ? '' : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
+              if (text.isEmpty) return const SizedBox.shrink();
+              return Text(
+                text,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -385,9 +559,14 @@ class _LoginPageState extends State<LoginPage>
               child: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black87),
                 onPressed: () {
+                  _stopSmsListener();
                   setState(() {
                     _currentStep = LoginStep.phoneNumber;
                     _isVerifying = false;
+                    _storedOtp = null;
+                    _loggedInUser = null;
+                    _otpCode = '';
+                    for (var c in _otpControllers) c.clear();
                   });
                 },
               ),
@@ -414,75 +593,22 @@ class _LoginPageState extends State<LoginPage>
             ),
             const SizedBox(height: 80),
           
-          // OTP input boxes with slide animation
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(4, (index) {
-              return SlideTransition(
-                position: _otpSlideAnimations[index],
-                child: Container(
-                  width: 60,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.grey[300]!,
-                      width: 2,
-                    ),
-                  ),
-                  child: SizedBox(
-                    height: 70,
-                    width: 60,
-                    child: TextField(
-                      controller: _otpControllers[index],
-                      focusNode: _otpFocusNodes[index],
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(1),
-                      ],
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 21),
-                        isDense: true,
-                        counterText: '',
-                      ),
-                      textAlignVertical: TextAlignVertical.center,
-                    onChanged: (value) {
-                      // Trigger slide animation when manually entering
-                      if (value.isNotEmpty && _otpSlideControllers[index].value == 0) {
-                        _otpSlideControllers[index].forward();
-                      }
-                      
-                      if (value.isNotEmpty && index < 3) {
-                        _otpFocusNodes[index + 1].requestFocus();
-                      } else if (value.isEmpty && index > 0) {
-                        _otpFocusNodes[index - 1].requestFocus();
-                      }
-                      
-                      // Check if all fields are filled
-                      final otp = _otpControllers.map((c) => c.text).join();
-                      if (otp.length == 4 && !_isVerifying) {
-                        // Auto-verify when all digits are entered
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          if (mounted && !_isVerifying) {
-                            _verifyOtp();
-                          }
-                        });
-                      }
-                    },
-                  ),
-                ),
-                ),
-              );
-            }),
+          // OTP input with SMS autofill (PinFieldAutoFill) + manual 4 boxes in sync
+          PinFieldAutoFill(
+            codeLength: 4,
+            currentCode: _otpCode,
+            onCodeChanged: _onPinCodeChanged,
+            decoration: BoxLooseDecoration(
+              gapSpace: 12,
+              bgColorBuilder: FixedColorBuilder(Colors.grey[50]!),
+              strokeColorBuilder: FixedColorBuilder(Colors.grey[300]!),
+              strokeWidth: 2,
+              radius: Radius.circular(16),
+              textStyle: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.black87),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            autoFocus: true,
           ),
           const SizedBox(height: 56),
           
@@ -508,10 +634,7 @@ class _LoginPageState extends State<LoginPage>
                     onPressed: _isVerifying || _isVerified
                         ? null
                         : () {
-                            final otp = _otpControllers.map((c) => c.text).join();
-                            if (otp.length == 4) {
-                              _verifyOtp();
-                            }
+                            if (_otpCode.length == 4) _verifyOtp();
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: buttonColor,
@@ -556,17 +679,21 @@ class _LoginPageState extends State<LoginPage>
           
           // Resend OTP
           TextButton(
-            onPressed: () {
-              _sendOtp();
-            },
-            child: Text(
-              'Resend OTP',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFFFF0000),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            onPressed: _isResendingOtp ? null : _resendOtp,
+            child: _isResendingOtp
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Resend OTP',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFFFF0000),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
           ),
           ],
         ),

@@ -1,10 +1,11 @@
+import 'package:GraBiTT/Classes/vendor_product.dart';
 import 'package:flutter/material.dart';
 class Product {
   final String id;
   final String name;
   final String categoryName;
-  final double originalPrice;
-  final double discountPrice;
+  final String originalPrice;
+  final String discountPrice;
   final String discountPercent;
 
   final String productImage;
@@ -26,7 +27,7 @@ class Product {
     required this.image2,
     required this.image3,
     required this.image4,
-    required this.image5,
+    required this.image5, required String productID,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -34,18 +35,37 @@ class Product {
       id: json['ProductID'] ?? '',
       name: json['ProductName'] ?? '',
       categoryName: json['CategoryName'] ?? '',
-      originalPrice: double.tryParse(json['OriginalPrice'] ?? '0') ?? 0,
-      discountPrice: double.tryParse(json['DiscountPrice'] ?? '0') ?? 0,
+      originalPrice: json['OriginalPrice'] ?? '0' ?? 0,
+      discountPrice: json['DiscountPrice'] ?? '0' ?? 0,
       discountPercent: json['DiscountPercent'] ?? '0',
-
       productImage: json['ProductImage'] ?? '',
       image1: json['Image1'] ?? '',
       image2: json['Image2'] ?? '',
       image3: json['Image3'] ?? '',
       image4: json['Image4'] ?? '',
       image5: json['Image5'] ?? '',
+      productID: json['ProductID'] ?? '',
     );
   }
+
+  factory Product.fromVendor(VendorProduct v) {
+    return Product(
+      productID: v.id,
+      name: v.name,
+      categoryName: v.categoryName,
+      originalPrice: v.originalPrice,
+      discountPrice: v.discountPrice,
+      discountPercent: v.discountPercent,
+      productImage: v.images.isNotEmpty ? v.images.first : "",
+      image1: v.images.length > 1 ? v.images[1] : "",
+      image2: v.images.length > 2 ? v.images[2] : "",
+      image3: v.images.length > 3 ? v.images[3] : "",
+      image4: v.images.length > 4 ? v.images[4] : "",
+      id: v.id,
+      image5: v.images.length >5 ? v.images[5] :"",
+    );
+  }
+
 
   /// 🔥 Helper to get all images safely
   List<String> get allImages => [
@@ -57,7 +77,10 @@ class Product {
     image5,
   ]
       .where((img) => img.isNotEmpty)
-      .map((img) => "https://grabitt.in/$img")
+      .map((img) => img.startsWith("http")
+      ? img
+      : "https://grabitt.in/$img")
       .toList();
+
 }
 

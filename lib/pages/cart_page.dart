@@ -91,7 +91,7 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "₹${item.product.discountPrice.toInt()}",
+                  "₹${item.product.discountPrice}",
                   style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

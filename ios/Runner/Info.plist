@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>GraBiTT needs your location to register your account and improve delivery experience.</string>
 </dict>
 </plist>

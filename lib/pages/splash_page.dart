@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:GraBiTT/pages/main_shell.dart';
 import 'package:GraBiTT/pages/onboard_page.dart';
+import 'package:GraBiTT/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class SplashPage extends StatefulWidget {
@@ -50,11 +52,16 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     _controller.forward();
 
-    // Navigate after splash
-    Timer(const Duration(seconds: 3), () {
+    // Navigate after splash: if already logged in go to main app, else onboarding
+    Timer(const Duration(seconds: 3), () async {
+      if (!context.mounted) return;
+      final loggedIn = await AuthService.instance.isLoggedIn();
+      if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        MaterialPageRoute(
+          builder: (_) => loggedIn ? const MainShell() : const OnboardingScreen(),
+        ),
       );
     });
   }
@@ -80,8 +87,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 position: _logoOffset,
                 child: Image.asset(
                   'assets/images/newlogo2.png',
-                  width: 200,
-                  height: 200,
+                  width: 300,
+                  height: 300,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(
