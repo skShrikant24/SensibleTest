@@ -1,5 +1,4 @@
-import 'package:GraBiTT/Classes/vendor_product.dart';
-import 'package:flutter/material.dart';
+import 'package:GraBiTT/models/vendor_product.dart';
 class Product {
   final String id;
   final String name;

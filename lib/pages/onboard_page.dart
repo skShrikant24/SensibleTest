@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/pages/main_shell.dart';
 import 'package:GraBiTT/pages/login_page.dart';
+import 'package:GraBiTT/utils/constants.dart';
 import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -98,7 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: StoreProfileTheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -174,13 +175,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             data.title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.black87, height: 1.3),
+            style: GoogleFonts.poppins(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: StoreProfileTheme.accentPink,
+              height: 1.3,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
             data.description,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 15, color: Colors.grey[700], height: 1.6),
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: StoreProfileTheme.accentPink.withValues(alpha: 0.7),
+              height: 1.6,
+            ),
           ),
           const SizedBox(height: 60),
         ],
@@ -220,7 +230,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       height: 8,
       width: isActive ? 24 : 8,
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFF0000) : Colors.grey[300],
+        color: isActive ? StoreProfileTheme.accentPink : StoreProfileTheme.border.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -249,14 +259,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: isFilled ? const Color(0xFFFF0000) : Colors.white,
-          border: Border.all(color: const Color(0xFFFF0000), width: 2),
+          color: isFilled ? StoreProfileTheme.accentPink : StoreProfileTheme.surface,
+          border: Border.all(color: StoreProfileTheme.accentPink, width: 2),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: isFilled
+              ? [
+                  BoxShadow(
+                    color: StoreProfileTheme.border.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: isFilled ? Colors.white : const Color(0xFFFF0000)),
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isFilled ? Colors.white : StoreProfileTheme.accentPink,
+          ),
         ),
       ),
     );

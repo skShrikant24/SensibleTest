@@ -1,9 +1,6 @@
-import 'package:GraBiTT/pages/cart_page.dart';
+import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GraBiTT/pages/course_page.dart';
-import 'package:GraBiTT/pages/feed_page.dart';
-import 'package:GraBiTT/pages/home_page.dart';
 import 'package:GraBiTT/pages/profile_page.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 
@@ -110,7 +107,7 @@ class _BottomBar extends StatelessWidget {
     /*  _BarItem(icon: Icons.home_filled, inactive: Icons.home_outlined, label: 'Home'),
       _BarItem(icon: Icons.menu_book_rounded, inactive: Icons.menu_book_outlined, label: 'Courses'),
       _BarItem(icon: Icons.storefront_rounded, inactive: Icons.storefront_outlined, label: 'Store'),*/
-      _BarItem(icon: Icons.rss_feed_rounded, inactive: Icons.rss_feed_outlined, label: 'Feed'),
+      _BarItem(icon: Icons.home_filled, inactive: Icons.home_outlined, label: 'Store'),
       _BarItem(icon: Icons.person_rounded, inactive: Icons.person_outline_rounded, label: 'Profile'),
     ];
 
@@ -159,7 +156,7 @@ class _BottomBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFFFF0000) : Colors.grey[600]!;
+    final color = selected ? StoreProfileTheme.accentPink : Colors.grey[600]!;
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -201,24 +198,3 @@ class _BottomBarButton extends StatelessWidget {
   }
 }
 
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: false,
-      ),
-      body: Center(
-        child: Text(
-          '$title page',
-          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
-  }
-}

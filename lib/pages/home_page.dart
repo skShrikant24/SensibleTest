@@ -5,6 +5,7 @@ import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:GraBiTT/app_State/Cart.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
 import 'package:GraBiTT/pages/notification_page.dart';
+import 'package:GraBiTT/utils/constants.dart';
 
 /// Yellow/grocery-style home screen matching the reference design:
 /// Header (delivery, location, search, category tabs), category grid,
@@ -383,7 +384,7 @@ class _HomePageState extends State<HomePage> {
     return Row(
         children: [
           Text(
-            '₹0 delivery fee • ₹0 handling fee',
+            '${AppConstants.currencySymbol}0 delivery fee • ${AppConstants.currencySymbol}0 handling fee',
             style: GoogleFonts.poppins(
               fontSize: 13,
               color: Colors.black54,

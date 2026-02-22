@@ -1,5 +1,5 @@
-import 'package:GraBiTT/Classes/Vender.dart';
-import 'package:GraBiTT/Classes/vendor_product.dart';
+import 'package:GraBiTT/models/Vender.dart';
+import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/category_vendors_page.dart';
 import 'package:GraBiTT/pages/vendor_products_page.dar.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -13,8 +13,8 @@ import 'package:GraBiTT/pages/cart_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../Classes/Category.dart';
-import '../Classes/product.dart';
+import '../models/Category.dart';
+import '../models/product.dart';
 import '../app_State/Cart.dart';
 import '../utils/constants.dart';
 
@@ -881,14 +881,14 @@ class _CategoryGridTile extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
                   maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -956,118 +956,118 @@ class _ActionButton extends StatelessWidget {
 }
 
 // 🛒 Product Card
-class _ProductCard extends StatelessWidget {
-  final Product product;
-
-  const _ProductCard({
-    required this.product,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProductDetailsPage(product: product),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: StoreProfileTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: StoreProfileTheme.border.withValues(alpha: 0.12),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 🖼 Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                product.productImage.isNotEmpty
-                    ? "https://grabitt.in/${product.productImage}"
-                    : "https://picsum.photos/400/400",
-                height: 150,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.network(
-                    "https://picsum.photos/400/400",
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 150,
-                        width: double.infinity,
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey,
-                          size: 40,
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        "₹${product.discountPrice}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "₹${product.originalPrice}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          decoration: TextDecoration.lineThrough,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// class _ProductCard extends StatelessWidget {
+//   final Product product;
+//
+//   const _ProductCard({
+//     required this.product,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return InkWell(
+//       borderRadius: BorderRadius.circular(16),
+//       onTap: () {
+//         Navigator.push(
+//           context,
+//           MaterialPageRoute(
+//             builder: (_) => ProductDetailsPage(product: product),
+//           ),
+//         );
+//       },
+//       child: Container(
+//         decoration: BoxDecoration(
+//           color: StoreProfileTheme.surface,
+//           borderRadius: BorderRadius.circular(16),
+//           boxShadow: [
+//             BoxShadow(
+//               color: StoreProfileTheme.border.withValues(alpha: 0.12),
+//               blurRadius: 12,
+//               offset: const Offset(0, 6),
+//             ),
+//           ],
+//         ),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             // 🖼 Image
+//             ClipRRect(
+//               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+//               child: Image.network(
+//                 product.productImage.isNotEmpty
+//                     ? "https://grabitt.in/${product.productImage}"
+//                     : "https://picsum.photos/400/400",
+//                 height: 150,
+//                 width: double.infinity,
+//                 fit: BoxFit.cover,
+//                 errorBuilder: (context, error, stackTrace) {
+//                   return Image.network(
+//                     "https://picsum.photos/400/400",
+//                     height: 150,
+//                     width: double.infinity,
+//                     fit: BoxFit.cover,
+//                     errorBuilder: (context, error, stackTrace) {
+//                       return Container(
+//                         height: 150,
+//                         width: double.infinity,
+//                         color: Colors.grey[300],
+//                         child: const Icon(
+//                           Icons.image_not_supported,
+//                           color: Colors.grey,
+//                           size: 40,
+//                         ),
+//                       );
+//                     },
+//                   );
+//                 },
+//               ),
+//             ),
+//
+//             Padding(
+//               padding: const EdgeInsets.all(10),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Text(
+//                     product.name,
+//                     maxLines: 2,
+//                     overflow: TextOverflow.ellipsis,
+//                     style: GoogleFonts.poppins(
+//                       fontSize: 14,
+//                       fontWeight: FontWeight.w600,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 2),
+//                   Row(
+//                     children: [
+//                       Text(
+//                         "₹${product.discountPrice}",
+//                         style: GoogleFonts.poppins(
+//                           fontSize: 15,
+//                           fontWeight: FontWeight.bold,
+//                           color: Colors.green[700],
+//                         ),
+//                       ),
+//                       const SizedBox(width: 6),
+//                       Text(
+//                         "₹${product.originalPrice}",
+//                         style: GoogleFonts.poppins(
+//                           fontSize: 12,
+//                           decoration: TextDecoration.lineThrough,
+//                           color: Colors.grey,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // 🌐 API Functions
 Future<List<Category>> fetchCategories() async {

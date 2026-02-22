@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app_State/Cart.dart';
+import '../utils/constants.dart';
 class CartPage extends StatefulWidget {
   const CartPage({super.key });
 
@@ -20,12 +21,24 @@ class _CartPageState extends State<CartPage> {
       animation: cart,
       builder: (context, _) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF4F5F7),
+          backgroundColor: StoreProfileTheme.background,
           appBar: AppBar(
-            title: Text("My Cart",
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-            backgroundColor: Colors.white,
+            title: Text(
+              "My Cart",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                fontSize: 18,
+              ),
+            ),
+            backgroundColor: StoreProfileTheme.background,
+            foregroundColor: Colors.black,
             elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
           body: cart.items.isEmpty
               ? _emptyCart()
@@ -55,11 +68,12 @@ class _CartPageState extends State<CartPage> {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: StoreProfileTheme.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: StoreProfileTheme.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: StoreProfileTheme.border.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 4),
           )
@@ -91,11 +105,11 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "₹${item.product.discountPrice}",
+                  "${AppConstants.currencySymbol}${item.product.discountPrice}",
                   style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green),
+                      color: StoreProfileTheme.accentPink),
                 ),
               ],
             ),
@@ -121,7 +135,7 @@ class _CartPageState extends State<CartPage> {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: Icon(Icons.delete_outline, color: StoreProfileTheme.accentPink),
                 onPressed: () {
                   setState(() => cart.remove(item));
                 },
@@ -139,10 +153,10 @@ class _CartPageState extends State<CartPage> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: StoreProfileTheme.border),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 16),
+        child: Icon(icon, size: 16, color: StoreProfileTheme.accentPink),
       ),
     );
   }
@@ -151,11 +165,12 @@ class _CartPageState extends State<CartPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: StoreProfileTheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: StoreProfileTheme.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: StoreProfileTheme.border.withValues(alpha: 0.15),
             blurRadius: 10,
           )
         ],
@@ -166,22 +181,28 @@ class _CartPageState extends State<CartPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Subtotal"),
+              Text("Subtotal",
+                  style: GoogleFonts.poppins(
+                      fontSize: 13, color: Colors.grey.shade600)),
               Text(
-                "₹${cart.subtotal.toInt()}",
+                "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
                 style: GoogleFonts.poppins(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: StoreProfileTheme.accentPink),
               ),
             ],
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: StoreProfileTheme.accentPink,
+              foregroundColor: Colors.white,
               padding:
               const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
+              elevation: 0,
             ),
             onPressed: cart.items.isEmpty
                 ? null
@@ -210,12 +231,12 @@ class _CartPageState extends State<CartPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.shopping_cart_outlined,
-              size: 90, color: Colors.grey.shade400),
+              size: 90, color: StoreProfileTheme.border),
           const SizedBox(height: 12),
           Text(
             "Your cart is empty",
             style: GoogleFonts.poppins(
-                fontSize: 16, color: Colors.grey.shade600),
+                fontSize: 16, color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
           ),
         ],
       ),

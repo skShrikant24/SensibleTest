@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app_State/Cart.dart';
+import '../utils/constants.dart';
 import 'waiting_page.dart';
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -16,44 +17,52 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      appBar: AppBar(
-        title: Text(
-          'Checkout',
-          style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600, fontSize: 18),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon:
-          const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: cart,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: StoreProfileTheme.background,
+          appBar: AppBar(
+            title: Text(
+              'Checkout',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: Colors.black,
+              ),
+            ),
+            backgroundColor: StoreProfileTheme.background,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
 
-      // 🟢 Place Order Button
-      bottomNavigationBar: _placeOrderBar(),
+          bottomNavigationBar: _placeOrderBar(),
 
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _sectionTitle("Shipping Address"),
-          _addressCard(),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _sectionTitle("Shipping Address"),
+              _addressCard(),
 
-          const SizedBox(height: 20),
-          _sectionTitle("Payment Method"),
-          _paymentCard(),
+              const SizedBox(height: 20),
+              _sectionTitle("Payment Method"),
+              _paymentCard(),
 
-          const SizedBox(height: 20),
-          _sectionTitle("Order Summary"),
-          ...cart.items.map(_orderItem).toList(),
+              const SizedBox(height: 20),
+              _sectionTitle("Order Summary"),
+              ...cart.items.map(_orderItem).toList(),
 
-          const SizedBox(height: 16),
-          _totalCard(),
-        ],
-      ),
+              const SizedBox(height: 16),
+              _totalCard(),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -63,7 +72,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return Text(
       title,
       style: GoogleFonts.poppins(
-          fontSize: 15, fontWeight: FontWeight.w600),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: StoreProfileTheme.accentPink),
     );
   }
 
@@ -74,8 +85,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: _cardStyle(),
       child: Row(
         children: [
-          const Icon(Icons.location_on_outlined,
-              color: Colors.redAccent),
+          Icon(Icons.location_on_outlined,
+              color: StoreProfileTheme.accentPink),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -85,7 +96,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
           TextButton(
             onPressed: () {},
-            child: const Text("Change"),
+            child: Text(
+              "Change",
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: StoreProfileTheme.accentPink),
+            ),
           )
         ],
       ),
@@ -113,10 +129,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       value: value,
       groupValue: paymentMethod,
       onChanged: (v) => setState(() => paymentMethod = v!),
-      activeColor: Colors.redAccent,
+      activeColor: StoreProfileTheme.accentPink,
       title: Row(
         children: [
-          Icon(icon, color: Colors.grey.shade700),
+          Icon(icon, color: StoreProfileTheme.accentPink),
           const SizedBox(width: 8),
           Text(title,
               style: GoogleFonts.poppins(fontSize: 14)),
@@ -157,15 +173,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Text(
                   "Qty: ${item.quantity}",
                   style: GoogleFonts.poppins(
-                      fontSize: 12, color: Colors.grey),
+                      fontSize: 12,
+                      color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
                 ),
               ],
             ),
           ),
           Text(
-            "₹${(item.product.discountPrice * item.quantity)}",
+            "${AppConstants.currencySymbol}${item.total.toStringAsFixed(0)}",
             style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600),
+                fontWeight: FontWeight.w600,
+                color: StoreProfileTheme.accentPink),
           ),
         ],
       ),
@@ -180,11 +198,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text("Subtotal",
-              style: GoogleFonts.poppins(fontSize: 14)),
+              style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black87)),
           Text(
-            "₹${cart.subtotal.toInt()}",
+            "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
             style: GoogleFonts.poppins(
-                fontSize: 18, fontWeight: FontWeight.bold),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: StoreProfileTheme.accentPink),
           ),
         ],
       ),
@@ -198,7 +220,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         height: 54,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
+            backgroundColor: StoreProfileTheme.accentPink,
+            foregroundColor: Colors.white,
+            elevation: 0,
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -225,15 +249,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Divider _divider() => Divider(height: 1, color: Colors.grey.shade200);
+  Divider _divider() =>
+      Divider(height: 1, color: StoreProfileTheme.border.withValues(alpha: 0.6));
 
   BoxDecoration _cardStyle() {
     return BoxDecoration(
-      color: Colors.white,
+      color: StoreProfileTheme.surface,
       borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: StoreProfileTheme.border, width: 0.5),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: StoreProfileTheme.border.withValues(alpha: 0.12),
           blurRadius: 10,
           offset: const Offset(0, 5),
         )

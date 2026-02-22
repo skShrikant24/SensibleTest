@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:GraBiTT/utils/constants.dart';
+// import 'package:GraBiTT/utils/constants.dart';
 import 'package:GraBiTT/services/auth_service.dart';
+import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/pages/main_shell.dart';
 import 'package:GraBiTT/pages/signup_page.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:readotp/readotp.dart';
+// import 'package:permission_handler/permission_handler.dart';
+// import 'package:readotp/readotp.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:sms_autofill/sms_autofill.dart';
+// import 'package:sms_autofill/sms_autofill.dart';
 
 enum LoginStep { phoneNumber, otp, success }
 
@@ -54,9 +55,9 @@ class _LoginPageState extends State<LoginPage>
   bool _isVerifying = false;
   bool _isVerified = false;
 
-  // SMS read (readotp) for OTP autofill when user grants READ_SMS
-  ReadOtp? _readOtp;
-  StreamSubscription? _smsSubscription;
+  // SMS read (readotp) for OTP autofill – commented out for now; manual OTP input only
+  // ReadOtp? _readOtp;
+  // StreamSubscription? _smsSubscription;
 
   @override
   void initState() {
@@ -179,40 +180,40 @@ class _LoginPageState extends State<LoginPage>
     setState(() => _currentStep = LoginStep.otp);
 
     try {
-      await SmsAutoFill().listenForCode();
+      // await SmsAutoFill().listenForCode();
     } catch (_) {}
-    _startSmsListener();
+    // _startSmsListener();
   }
 
   /// Request SMS permission and start listening for incoming SMS to auto-fill OTP.
-  void _startSmsListener() async {
-    try {
-      final status = await Permission.sms.request();
-      if (!mounted || status != PermissionStatus.granted) return;
-      _readOtp?.dispose();
-      _readOtp = ReadOtp();
-      _readOtp!.start();
-      if (!mounted) return;
-      _smsSubscription?.cancel();
-      _smsSubscription = _readOtp!.smsStream.listen((sms) {
-        final body = sms.body;
-        final match = RegExp(r'\d{4}').firstMatch(body);
-        if (match != null && mounted && _currentStep == LoginStep.otp && !_isVerified) {
-          final code = match.group(0)!;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _currentStep == LoginStep.otp) _onPinCodeChanged(code);
-          });
-        }
-      });
-    } catch (_) {}
-  }
-
-  void _stopSmsListener() {
-    _smsSubscription?.cancel();
-    _smsSubscription = null;
-    _readOtp?.dispose();
-    _readOtp = null;
-  }
+  // void _startSmsListener() async {
+  //   try {
+  //     final status = await Permission.sms.request();
+  //     if (!mounted || status != PermissionStatus.granted) return;
+  //     _readOtp?.dispose();
+  //     _readOtp = ReadOtp();
+  //     _readOtp!.start();
+  //     if (!mounted) return;
+  //     _smsSubscription?.cancel();
+  //     _smsSubscription = _readOtp!.smsStream.listen((sms) {
+  //       final body = sms.body;
+  //       final match = RegExp(r'\d{4}').firstMatch(body);
+  //       if (match != null && mounted && _currentStep == LoginStep.otp && !_isVerified) {
+  //         final code = match.group(0)!;
+  //         WidgetsBinding.instance.addPostFrameCallback((_) {
+  //           if (mounted && _currentStep == LoginStep.otp) _onPinCodeChanged(code);
+  //         });
+  //       }
+  //     });
+  //   } catch (_) {}
+  // }
+  //
+  // void _stopSmsListener() {
+  //   _smsSubscription?.cancel();
+  //   _smsSubscription = null;
+  //   _readOtp?.dispose();
+  //   _readOtp = null;
+  // }
 
   void _showUserNotFoundAndNavigateToSignup() {
     showDialog<void>(
@@ -308,8 +309,8 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   void dispose() {
-    _stopSmsListener();
-    SmsAutoFill().unregisterListener();
+    // _stopSmsListener();
+    // SmsAutoFill().unregisterListener();
     _phoneController.dispose();
     _phoneFocusNode.dispose();
     _pulseController?.dispose();
@@ -469,7 +470,7 @@ class _LoginPageState extends State<LoginPage>
             child: ElevatedButton(
               onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp) ? _sendOtp : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF0000),
+                backgroundColor: StoreProfileTheme.accentPink,
                 disabledBackgroundColor: Colors.grey[300],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -516,7 +517,7 @@ class _LoginPageState extends State<LoginPage>
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFFFF0000),
+                    color: StoreProfileTheme.accentPink,
                   ),
                 ),
               ),
@@ -559,7 +560,7 @@ class _LoginPageState extends State<LoginPage>
               child: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black87),
                 onPressed: () {
-                  _stopSmsListener();
+                  // _stopSmsListener();
                   setState(() {
                     _currentStep = LoginStep.phoneNumber;
                     _isVerifying = false;
@@ -593,22 +594,62 @@ class _LoginPageState extends State<LoginPage>
             ),
             const SizedBox(height: 80),
           
-          // OTP input with SMS autofill (PinFieldAutoFill) + manual 4 boxes in sync
-          PinFieldAutoFill(
-            codeLength: 4,
-            currentCode: _otpCode,
-            onCodeChanged: _onPinCodeChanged,
-            decoration: BoxLooseDecoration(
-              gapSpace: 12,
-              bgColorBuilder: FixedColorBuilder(Colors.grey[50]!),
-              strokeColorBuilder: FixedColorBuilder(Colors.grey[300]!),
-              strokeWidth: 2,
-              radius: Radius.circular(16),
-              textStyle: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.black87),
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            autoFocus: true,
+          // Manual OTP input (SMS autofill / readotp commented out for now)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(4, (index) {
+              return SizedBox(
+                width: 60,
+                height: 60,
+                child: TextField(
+                  controller: _otpControllers[index],
+                  focusNode: _otpFocusNodes[index],
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  maxLength: 1,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: StoreProfileTheme.accentPink, width: 2),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    if (value.isNotEmpty && index < 3) {
+                      _otpFocusNodes[index + 1].requestFocus();
+                    } else if (value.isEmpty && index > 0) {
+                      _otpFocusNodes[index - 1].requestFocus();
+                    }
+                    setState(() {
+                      _otpCode = _otpControllers.map((c) => c.text).join();
+                    });
+                    if (_otpCode.length == 4 && !_isVerifying && !_isVerified) {
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) _verifyOtp();
+                      });
+                    }
+                  },
+                ),
+              );
+            }),
           ),
           const SizedBox(height: 56),
           
@@ -622,11 +663,11 @@ class _LoginPageState extends State<LoginPage>
                 final isTransforming = _isVerified && _successController!.value > 0;
                 final buttonColor = isTransforming
                     ? Color.lerp(
-                        const Color(0xFFFF0000),
+                      StoreProfileTheme.accentPink,
                         Colors.green,
                         _successController!.value,
                       )!
-                    : const Color(0xFFFF0000);
+                    : StoreProfileTheme.accentPink;
                 
                 return Transform.rotate(
                   angle: _rotationAnimation!.value * 2 * 3.14159,
@@ -690,7 +731,7 @@ class _LoginPageState extends State<LoginPage>
                     'Resend OTP',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: const Color(0xFFFF0000),
+                      color: StoreProfileTheme.accentPink,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

@@ -20,10 +20,25 @@ class VendorProduct {
   factory VendorProduct.fromJson(Map<String, dynamic> json) {
     List<String> imgs = [];
 
+    // for (int i = 1; i <= 5; i++) {
+    //   final key = i == 1 ? 'ProductImage' : 'Image$i';
+    //   if (json[key] != null && json[key].toString().isNotEmpty) {
+    //     imgs.add("https://grabitt.in/${json[key]}");
+    //   }
+    // }
+
     for (int i = 1; i <= 5; i++) {
       final key = i == 1 ? 'ProductImage' : 'Image$i';
+
       if (json[key] != null && json[key].toString().isNotEmpty) {
-        imgs.add("https://grabitt.in/${json[key]}");
+        String imagePath = json[key].toString();
+
+        // Remove "~/" if present
+        if (imagePath.startsWith("~/")) {
+          imagePath = imagePath.replaceFirst("~/", "");
+        }
+
+        imgs.add("https://grabitt.in/$imagePath");
       }
     }
 

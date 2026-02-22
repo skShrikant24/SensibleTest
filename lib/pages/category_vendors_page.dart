@@ -1,4 +1,4 @@
-import 'package:GraBiTT/Classes/Vender.dart';
+import 'package:GraBiTT/models/Vender.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 import 'package:GraBiTT/pages/vendor_products_page.dar.dart';
 import 'package:GraBiTT/utils/constants.dart';

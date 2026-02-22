@@ -1,6 +1,6 @@
+import 'package:GraBiTT/models/product.dart';
 import 'package:flutter/cupertino.dart';
 
-import '../Classes/product.dart';
 
 class CartItem {
   final Product product;
@@ -11,9 +11,10 @@ class CartItem {
     this.quantity = 1,
   });
 
-  // double get total => double.tryParse(product.discountPrice) * double(quantity);
-  double get total => 0.0;
+  double get total =>
+      (double.tryParse(product.discountPrice.toString()) ?? 0.0) * quantity;
 }
+
 class CartService extends ChangeNotifier {
   static final CartService instance = CartService._();
   CartService._();
@@ -21,8 +22,9 @@ class CartService extends ChangeNotifier {
   final List<CartItem> items = [];
   bool _shouldAnimateCart = false;
 
-  double get subtotal => items.fold(
-      0, (sum, item) => sum +0.0);
+  /// Subtotal from all cart items (price × quantity). Accessible from any page via CartService.instance.subtotal.
+  double get subtotal =>
+      items.fold(0.0, (sum, item) => sum + item.total);
 
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
 

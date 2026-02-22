@@ -3,7 +3,7 @@ import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../Classes/product.dart';
+import '../models/product.dart';
 import '../app_State/Cart.dart';
 import '../services/sound_service.dart';
 import 'cart_page.dart';
@@ -330,7 +330,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                   Row(
                     children: [
                       Text(
-                        "₹${widget.product.discountPrice}",
+                        "${AppConstants.currencySymbol}${widget.product.discountPrice}",
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -339,7 +339,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "₹${widget.product.originalPrice}",
+                        "${AppConstants.currencySymbol}${widget.product.originalPrice}",
                         style: const TextStyle(
                           fontSize: 15,
                           decoration: TextDecoration.lineThrough,
