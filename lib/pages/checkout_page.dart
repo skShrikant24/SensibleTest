@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:GraBiTT/app_State/Cart.dart';
 import 'package:GraBiTT/models/address_model.dart';
@@ -24,6 +25,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   String paymentMethod = 'razorpay';
   final cart = CartService.instance;
   final PaymentService _paymentService = PaymentService.instance;
+  String? _activeRazorpayOrderId;
 
   List<AddressModel> _addresses = [];
   AddressModel? _selectedAddress;
@@ -228,7 +230,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             Row(
               children: [
-                Icon(Icons.add_location_alt, color: StoreProfileTheme.accentPink),
+                Icon(Icons.add_location_alt,
+                    color: StoreProfileTheme.accentPink),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -314,8 +317,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         children: [
           Icon(icon, color: StoreProfileTheme.accentPink),
           const SizedBox(width: 8),
-          Text(title,
-              style: GoogleFonts.poppins(fontSize: 14)),
+          Text(title, style: GoogleFonts.poppins(fontSize: 14)),
         ],
       ),
     );
@@ -354,7 +356,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   "Qty: ${item.quantity}",
                   style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
+                      color:
+                          StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -378,9 +381,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text("Subtotal",
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.black87)),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87)),
           Text(
             "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
             style: GoogleFonts.poppins(
@@ -401,6 +402,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  void _handlePaymentFailed() {
+    _activeRazorpayOrderId = null;
+    if (!mounted) return;
+    ToastMessage.warning(
+      context: context,
+      msg: 'Payment failed. Please try again.',
+    );
+  }
+
+  void _handlePaymentSuccessData(PaymentSuccessResponse response) {
+    final createdOrderId = _activeRazorpayOrderId;
+    debugPrint(
+      '[Razorpay] App callback success: createdOrderId=$createdOrderId, returnedOrderId=${response.orderId}, paymentId=${response.paymentId}',
+    );
+    if (createdOrderId != null &&
+        createdOrderId.isNotEmpty &&
+        response.orderId != null &&
+        response.orderId != createdOrderId) {
+      _handlePaymentFailed();
+      return;
+    }
+    _activeRazorpayOrderId = null;
+    _navigateToWaitingPage();
+  }
+
   Future<void> _onPlaceOrder() async {
     if (cart.items.isEmpty) return;
     if (_loadingAddresses) {
@@ -410,7 +436,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     }
-    if (_selectedAddress == null || _addresses.isEmpty || !_addresses.any((a) => a.id == _selectedAddress!.id)) {
+    if (_selectedAddress == null ||
+        _addresses.isEmpty ||
+        !_addresses.any((a) => a.id == _selectedAddress!.id)) {
       ToastMessage.warning(
         context: context,
         msg: 'Please select address',
@@ -422,17 +450,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (paymentMethod == 'razorpay') {
       final amountPaise = (amount * 100).round();
       final orderId = await createRazorpayOrder(amountPaise);
-      // if (orderId == null || orderId.isEmpty) {
-      //   if (mounted) {
-      //     ToastMessage.warning(
-      //       context: context,
-      //       msg: 'Unable to create order. Please try again.',
-      //     );
-      //   }
-      //   return;
-      // }
-      _paymentService.onPaymentSuccess = _navigateToWaitingPage;
-      _paymentService.onPaymentError = _navigateToWaitingPage;
+      if (orderId == null || orderId.isEmpty) {
+        debugPrint(
+          '[Razorpay] Backend order API failed. Falling back to amount-based checkout for testing.',
+        );
+        _activeRazorpayOrderId = null;
+        _paymentService.onPaymentSuccess = _navigateToWaitingPage;
+        _paymentService.onPaymentError = _handlePaymentFailed;
+        _paymentService.onPaymentSuccessData = null;
+        _paymentService.onPaymentErrorData = null;
+        String? contact;
+        String? email;
+        final user = await AuthService.instance.getSavedUser();
+        if (user != null) {
+          contact = user['phone']?.toString();
+          email = user['Email']?.toString();
+        }
+        if (mounted) {
+          ToastMessage.warning(
+            context: context,
+            msg: 'Order API unavailable. Opening fallback checkout.',
+          );
+        }
+        _paymentService.openCheckout(
+          amount: amount,
+          contact: contact,
+          email: email,
+        );
+        return;
+      }
+      _activeRazorpayOrderId = orderId;
+      debugPrint('[Razorpay] Backend order_id sent to checkout: $orderId');
+      _paymentService.onPaymentSuccess = null;
+      _paymentService.onPaymentError = _handlePaymentFailed;
+      _paymentService.onPaymentSuccessData = _handlePaymentSuccessData;
       String? contact;
       String? email;
       final user = await AuthService.instance.getSavedUser();
@@ -442,7 +493,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
       _paymentService.openCheckout(
         orderId: orderId,
-        amount: amount,
         contact: contact,
         email: email,
       );
@@ -462,7 +512,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
             backgroundColor: StoreProfileTheme.accentPink,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: cart.items.isEmpty ? null : _onPlaceOrder,
           child: Text(
@@ -478,8 +529,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Divider _divider() =>
-      Divider(height: 1, color: StoreProfileTheme.border.withValues(alpha: 0.6));
+  Divider _divider() => Divider(
+      height: 1, color: StoreProfileTheme.border.withValues(alpha: 0.6));
 
   BoxDecoration _cardStyle() {
     return BoxDecoration(
@@ -574,7 +625,8 @@ class _AddressSelectorSheet extends StatelessWidget {
                       )),
                   const SizedBox(height: 8),
                   ListTile(
-                    leading: Icon(Icons.add, color: StoreProfileTheme.accentPink),
+                    leading:
+                        Icon(Icons.add, color: StoreProfileTheme.accentPink),
                     title: Text(
                       'Add new address',
                       style: GoogleFonts.poppins(

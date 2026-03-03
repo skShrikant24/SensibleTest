@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -14,6 +16,8 @@ class PaymentService {
 
   VoidCallback? onPaymentSuccess;
   VoidCallback? onPaymentError;
+  ValueChanged<PaymentSuccessResponse>? onPaymentSuccessData;
+  ValueChanged<PaymentFailureResponse>? onPaymentErrorData;
 
   /// Lazy init: only when opening checkout. Catches MissingPluginException
   /// so app doesn't crash if plugin isn't registered (e.g. hot reload).
@@ -27,7 +31,8 @@ class PaymentService {
       _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
       _initialized = true;
     } on PlatformException catch (e) {
-      if (e.code == 'MissingPluginException' || e.message?.contains('resync') == true) {
+      if (e.code == 'MissingPluginException' ||
+          e.message?.contains('resync') == true) {
         _pluginFailed = true;
         onPaymentError?.call();
       }
@@ -46,7 +51,7 @@ class PaymentService {
   /// Create Order API (usually via your backend). Pass the order_id returned by that API.
   ///
   /// [orderId] – required; from Create Order API (e.g. "order_RB58MiP5SPFYyM").
-  /// [amount] – used only when [orderId] is null (fallback); in INR, converted to paise.
+  /// [amount] – optional fallback when [orderId] is unavailable; in INR, converted to paise.
   /// [contact] and [email] optional for prefill.
   void openCheckout({
     String? orderId,
@@ -54,6 +59,14 @@ class PaymentService {
     String? contact,
     String? email,
   }) {
+    // razorpay_flutter is mobile-only.
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      onPaymentError?.call();
+      return;
+    }
+
     if (_pluginFailed) {
       onPaymentError?.call();
       return;
@@ -80,31 +93,57 @@ class PaymentService {
       options['order_id'] = orderId.trim();
     } else if (amount != null && amount > 0) {
       options['amount'] = (amount * 100).round();
-      options['order_id'] = 'order_${DateTime.now().millisecondsSinceEpoch}';
     } else {
       onPaymentError?.call();
       return;
     }
 
-    if (contact != null && contact.isNotEmpty || email != null && email.isNotEmpty) {
+    if (contact != null && contact.isNotEmpty ||
+        email != null && email.isNotEmpty) {
       options['prefill'] = <String, String>{};
-      if (contact != null && contact.isNotEmpty) options['prefill']['contact'] = contact;
-      if (email != null && email.isNotEmpty) options['prefill']['email'] = email;
+      if (contact != null && contact.isNotEmpty) {
+        options['prefill']['contact'] = contact;
+      }
+      if (email != null && email.isNotEmpty) {
+        options['prefill']['email'] = email;
+      }
     }
 
-    try {
-      _razorpay!.open(options);
-    } catch (e) {
-      onPaymentError?.call();
-    }
+    debugPrint(
+      '[Razorpay] Opening checkout with order_id=${options['order_id']}, amount=${options['amount']}, prefill=${options['prefill']}',
+    );
+
+    // Plugin open() is async-void; catch uncaught async errors in this zone.
+    runZonedGuarded(
+      () {
+        _razorpay!.open(options);
+      },
+      (error, _) {
+        if (error is MissingPluginException) {
+          _pluginFailed = true;
+        } else if (error is PlatformException &&
+            (error.code == 'MissingPluginException' ||
+                error.message?.contains('MissingPluginException') == true)) {
+          _pluginFailed = true;
+        }
+        onPaymentError?.call();
+      },
+    );
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    // In production: verify payment with your backend using response.paymentId
+    debugPrint(
+      '[Razorpay] Success callback: paymentId=${response.paymentId}, orderId=${response.orderId}, signature=${response.signature}',
+    );
+    onPaymentSuccessData?.call(response);
     onPaymentSuccess?.call();
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
+    debugPrint(
+      '[Razorpay] Error callback: code=${response.code}, message=${response.message}',
+    );
+    onPaymentErrorData?.call(response);
     onPaymentError?.call();
   }
 
@@ -122,5 +161,7 @@ class PaymentService {
     _pluginFailed = false;
     onPaymentSuccess = null;
     onPaymentError = null;
+    onPaymentSuccessData = null;
+    onPaymentErrorData = null;
   }
 }
