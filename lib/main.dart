@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'app.dart';  // Make sure this file exists in lib/app.dart
+import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/app_State/locale_provider.dart';
+import 'app.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await CartService.instance.loadFromStorage();
+  await LocaleProvider.instance.load();
   runApp(const MyApp());
 }
   

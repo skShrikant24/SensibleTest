@@ -372,7 +372,7 @@ class _LoginPageState extends State<LoginPage>
             "Welcome to GraB iTT!",
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),

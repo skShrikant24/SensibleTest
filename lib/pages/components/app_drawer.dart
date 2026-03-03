@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:GraBiTT/pages/my_courses_page.dart';
 import 'package:GraBiTT/pages/simple_page.dart';
 import 'package:GraBiTT/pages/splash_page.dart';
@@ -40,10 +39,10 @@ class AppDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Main navigation items
+            // Main navigation (matches MainShell: 0 = Store, 1 = Profile)
             DrawerItem(
-              icon: Icons.home_filled,
-              label: 'Home',
+              icon: Icons.storefront_rounded,
+              label: 'Store',
               selected: currentTabIndex == 0,
               onTap: () {
                 Navigator.pop(context);
@@ -52,42 +51,12 @@ class AppDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             DrawerItem(
-              icon: Icons.menu_book_rounded,
-              label: 'All Courses',
+              icon: Icons.person_rounded,
+              label: 'Profile',
               selected: currentTabIndex == 1,
               onTap: () {
                 Navigator.pop(context);
                 onSelectTab(1);
-              },
-            ),
-            const SizedBox(height: 8),
-            DrawerItem(
-              icon: Icons.storefront_rounded,
-              label: 'Store',
-              selected: currentTabIndex == 2,
-              onTap: () {
-                Navigator.pop(context);
-                onSelectTab(2);
-              },
-            ),
-            const SizedBox(height: 8),
-            DrawerItem(
-              icon: Icons.rss_feed_rounded,
-              label: 'Feed',
-              selected: currentTabIndex == 3,
-              onTap: () {
-                Navigator.pop(context);
-                onSelectTab(3);
-              },
-            ),
-            const SizedBox(height: 8),
-            DrawerItem(
-              icon: Icons.person_rounded,
-              label: 'Profile',
-              selected: currentTabIndex == 4,
-              onTap: () {
-                Navigator.pop(context);
-                onSelectTab(4);
               },
             ),
 
@@ -126,17 +95,6 @@ class AppDrawer extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 8),
-         /*   DrawerItem(
-              icon: Icons.shopping_bag_outlined,
-              label: 'My Cart',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CartPage()),
-                );
-              },
-            ),*/
             const SizedBox(height: 8),
             DrawerItem(
               icon: Icons.group_add_outlined,

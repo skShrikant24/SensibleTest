@@ -1,6 +1,6 @@
 import 'package:GraBiTT/models/Vender.dart';
 import 'package:GraBiTT/pages/store_page.dart';
-import 'package:GraBiTT/pages/vendor_products_page.dar.dart';
+import 'package:GraBiTT/pages/vendor_products_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

@@ -6,7 +6,7 @@ class Product {
   final String originalPrice;
   final String discountPrice;
   final String discountPercent;
-
+  final String? description;
   final String productImage;
   final String image1;
   final String image2;
@@ -21,22 +21,41 @@ class Product {
     required this.originalPrice,
     required this.discountPrice,
     required this.discountPercent,
+    this.description,
     required this.productImage,
     required this.image1,
     required this.image2,
     required this.image3,
     required this.image4,
-    required this.image5, required String productID,
+    required this.image5,
+    required String productID,
   });
+
+  Map<String, dynamic> toJson() => {
+        'ProductID': id,
+        'ProductName': name,
+        'CategoryName': categoryName,
+        'OriginalPrice': originalPrice,
+        'DiscountPrice': discountPrice,
+        'DiscountPercent': discountPercent,
+        'ProductImage': productImage,
+        'description': description ?? "description",
+        'Image1': image1,
+        'Image2': image2,
+        'Image3': image3,
+        'Image4': image4,
+        'Image5': image5,
+      };
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['ProductID'] ?? '',
       name: json['ProductName'] ?? '',
       categoryName: json['CategoryName'] ?? '',
-      originalPrice: json['OriginalPrice'] ?? '0' ?? 0,
-      discountPrice: json['DiscountPrice'] ?? '0' ?? 0,
-      discountPercent: json['DiscountPercent'] ?? '0',
+      description: json['description'] ?? '',
+      originalPrice: json['OriginalPrice']?.toString() ?? '0',
+      discountPrice: json['DiscountPrice']?.toString() ?? '0',
+      discountPercent: json['DiscountPercent']?.toString() ?? '0',
       productImage: json['ProductImage'] ?? '',
       image1: json['Image1'] ?? '',
       image2: json['Image2'] ?? '',
@@ -52,6 +71,7 @@ class Product {
       productID: v.id,
       name: v.name,
       categoryName: v.categoryName,
+      description: v.description,
       originalPrice: v.originalPrice,
       discountPrice: v.discountPrice,
       discountPercent: v.discountPercent,

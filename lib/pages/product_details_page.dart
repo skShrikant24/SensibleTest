@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/product.dart';
 import '../app_State/Cart.dart';
 import '../services/sound_service.dart';
@@ -93,16 +91,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   Offset _getCartIconPosition() {
     final RenderBox? renderBox =
         _cartIconKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) {
-      // Fallback position if cart icon is not yet rendered
-      final Size screenSize = MediaQuery.of(context).size;
-      final double statusBarHeight = MediaQuery.of(context).padding.top;
-      return Offset(screenSize.width - 40, statusBarHeight + 50);
-    }
-
+    if (renderBox == null) return Offset.zero;
     final Offset position = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    // Return center of the cart icon
     return Offset(
       position.dx + size.width / 2,
       position.dy + size.height / 2,
@@ -123,27 +114,26 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   }
 
   void _startPaperPlaneAnimation() async {
-    // Wait a frame to ensure cart icon is rendered
-    await Future.delayed(const Duration(milliseconds: 50));
-    
+    // Wait for layout so both image and cart icon positions are available
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+
     final Offset startPos = _getImagePosition();
     final Offset endPos = _getCartIconPosition();
 
-    // Reset animations
     _flyController.reset();
     _quoteController.reset();
 
     if (startPos == Offset.zero) {
-      // Fallback: just add to cart without animation
       CartService.instance.addItem(widget.product);
       CartService.instance.triggerCartAnimation();
       return;
     }
-    
-    // Use fallback position if cart icon position is not available
-    final Offset finalEndPos = endPos.dx == 0 && endPos.dy == 0 
-        ? Offset(MediaQuery.of(context).size.width - 40, MediaQuery.of(context).padding.top + 50)
-        : endPos;
+
+    final Size screenSize = MediaQuery.of(context).size;
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final Offset fallbackEnd = Offset(screenSize.width - 36, statusBarHeight + 28);
+    final Offset finalEndPos = (endPos.dx <= 0 || endPos.dy <= 0) ? fallbackEnd : endPos;
 
     setState(() {
       _showQuote = true;
@@ -163,17 +153,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-    
-    // Play whoosh sound for paper plane
     SoundService.instance.playWhoosh();
-    
-    // Start quote animation
     _quoteController.forward();
-    
-    // Start fly animation
     _flyController.forward().then((_) {
-      CartService.instance.addItem(widget.product);
-      CartService.instance.triggerCartAnimation();
+      if (mounted) {
+        CartService.instance.addItem(widget.product);
+        CartService.instance.triggerCartAnimation();
+      }
     });
   }
 
@@ -181,7 +167,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: StoreProfileTheme.background,
-
       // 🛒 Bottom Add to Cart
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
@@ -206,7 +191,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
           ),
         ),
       ),
-
       body: CustomScrollView(
         slivers: [
           // 🔙 AppBar
@@ -226,14 +210,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
               ),
             ),
             actions: [
-              // 🛒 Cart Icon with Badge
+              // 🛒 Cart Icon with Badge (key on IconButton so fly-to-cart ends at icon)
               AnimatedBuilder(
                 animation: CartService.instance,
                 builder: (context, _) {
                   return Stack(
-                    key: _cartIconKey,
                     children: [
                       IconButton(
+                        key: _cartIconKey,
                         icon: const Icon(Icons.shopping_cart_outlined, color: Colors.pinkAccent),
                         onPressed: () {
                           Navigator.push(
@@ -367,7 +351,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                   ),
 
                   const SizedBox(height: 24),
-
                   const Text(
                     "Product Details",
                     style: TextStyle(
@@ -376,9 +359,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "Fresh and high-quality product. Best price guaranteed. Fast delivery available.",
-                    style: TextStyle(fontSize: 14),
+                  Text(
+                    "${widget.product.description}",
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ],
               ),
@@ -429,80 +412,90 @@ class _PaperPlaneOverlay extends StatelessWidget {
       builder: (context, child) {
         final double t = flyAnimation.value.dx;
         final Offset currentPos = _getCurvedPosition(t);
-        final double scale = scaleAnimation.value;
+        double scale = scaleAnimation.value;
         final double rotation = rotationAnimation.value;
+
+        // Fade out and shrink into cart in last 25% so no small image stays visible
+        final double endOpacity = t <= 0.75 ? 1.0 : ((1.0 - (t - 0.75) / 0.25).clamp(0.0, 1.0));
+        if (t > 0.8) {
+          scale = scale * ((1.0 - (t - 0.8) / 0.2).clamp(0.0, 1.0));
+        }
 
         return IgnorePointer(
           child: Stack(
             children: [
-              // Flying product image
-              Positioned(
-                left: currentPos.dx - 50 * scale,
-                top: currentPos.dy - 50 * scale,
-                child: Transform.rotate(
-                  angle: rotation * 0.5, // Gentle rotation
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 2,
+              // Flying product image (hidden by opacity/scale at end so it ends at cart cleanly)
+              if (endOpacity > 0.01 && scale > 0.01)
+                Positioned(
+                  left: currentPos.dx - 50 * scale,
+                  top: currentPos.dy - 50 * scale,
+                  child: Opacity(
+                    opacity: endOpacity,
+                    child: Transform.rotate(
+                      angle: rotation * 0.5,
+                      child: Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          productImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.image),
-                            );
-                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              productImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.image),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
               // Quote: "Fast as a flight."
-              if (showQuote && t < 0.8)
-                Positioned(
-                  left: currentPos.dx - 60,
-                  top: currentPos.dy - 80,
-                  child: FadeTransition(
-                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-                      CurvedAnimation(
-                        parent: quoteController,
-                        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '"Fast as a flight."',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              // if (showQuote && t < 0.8)
+              //   Positioned(
+              //     left: currentPos.dx - 60,
+              //     top: currentPos.dy - 80,
+              //     child: FadeTransition(
+              //       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              //         CurvedAnimation(
+              //           parent: quoteController,
+              //           curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+              //         ),
+              //       ),
+              //       child: Container(
+              //         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              //         decoration: BoxDecoration(
+              //           color: Colors.black87,
+              //           borderRadius: BorderRadius.circular(8),
+              //         ),
+              //         child: Text(
+              //           '"Fast as a flight."',
+              //           style: GoogleFonts.poppins(
+              //             color: Colors.white,
+              //             fontSize: 12,
+              //             fontWeight: FontWeight.w500,
+              //           ),
+              //         ),
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         );

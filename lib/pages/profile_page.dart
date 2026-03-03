@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:GraBiTT/app_State/locale_provider.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
+import 'package:GraBiTT/pages/address_management_page.dart';
 import 'package:GraBiTT/pages/components/app_drawer.dart';
 import 'package:GraBiTT/pages/login_page.dart';
 import 'package:GraBiTT/services/auth_service.dart';
 import 'package:GraBiTT/utils/constants.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 const String _geoapifyApiKey = 'd23ffd31df254fe59912a07a909c69e4';
@@ -41,6 +46,53 @@ class ProfilePage extends StatelessWidget {
     } catch (_) {
       return null;
     }
+  }
+
+  static void _showLanguageSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeProvider = context.read<LocaleProvider>();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: StoreProfileTheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.selectLanguage,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                title: Text(l10n.english),
+                trailing: localeProvider.isEnglish ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                onTap: () async {
+                  await localeProvider.setEnglish();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                title: Text(l10n.kannada),
+                trailing: localeProvider.isKannada ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                onTap: () async {
+                  await localeProvider.setKannada();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Loads saved user and resolves formatted address when lan/lon present.
@@ -89,9 +141,9 @@ class ProfilePage extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                 ),
                 centerTitle: true,
-                title: const Text(
-                  'Profile',
-                  style: TextStyle(
+                title: Text(
+                  AppLocalizations.of(context)!.profile,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                     fontSize: 18,
@@ -172,7 +224,7 @@ class ProfilePage extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      name == '—' ? 'Guest' : name,
+                      name == '—' ? AppLocalizations.of(context)!.guest : name,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -181,7 +233,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      user != null ? 'Member' : 'Not logged in',
+                      user != null ? AppLocalizations.of(context)!.member : AppLocalizations.of(context)!.notLoggedIn,
                       style: const TextStyle(
                         fontSize: 15,
                         color: Colors.grey,
@@ -193,27 +245,36 @@ class ProfilePage extends StatelessWidget {
               ),
 
               // 🔹 Personal Details Section (from login data)
-              _buildSectionHeader('Personal Details'),
-              _buildInfoRow('Email', email),
-              _buildInfoRow('Phone', phone == '—' ? phone : '+91 $phone'),
-              _buildInfoRow('Gender', sex),
-              _buildInfoRow('Date of birth', dob),
-              _buildInfoRow('Address', address),
+              _buildSectionHeader(AppLocalizations.of(context)!.personalDetails),
+              _buildInfoRow(AppLocalizations.of(context)!.email, email),
+              _buildInfoRow(AppLocalizations.of(context)!.phone, phone == '—' ? phone : '+91 $phone'),
+              _buildInfoRow(AppLocalizations.of(context)!.gender, sex),
+              _buildInfoRow(AppLocalizations.of(context)!.dateOfBirth, dob),
+              _buildInfoRow(AppLocalizations.of(context)!.address, address),
+              _buildListItem(
+                AppLocalizations.of(context)!.manageAddress,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AddressManagementPage(),
+                    ),
+                  );
+                },
+              ),
 
-          // 🔹 My Courses Section
-          // _buildSectionHeader('My Courses'),
-          // _buildListItem('View Courses'),
+          // 🔹 Language
+          _buildListItem(
+            AppLocalizations.of(context)!.language,
+            onTap: () => _showLanguageSheet(context),
+          ),
 
           // 🔹 Orders Section
-          _buildSectionHeader('Orders'),
-          _buildListItem('View Orders'),
+          _buildSectionHeader(AppLocalizations.of(context)!.orders),
+          _buildListItem(AppLocalizations.of(context)!.viewOrders),
 
           // 🔹 Settings Section
-          // _buildSectionHeader('Settings'),
-          // _buildListItem('Notifications'),
-          // _buildListItem('Privacy'),
           _buildListItem(
-            'Logout',
+            AppLocalizations.of(context)!.logout,
             onTap: () async {
               await AuthService.instance.logout();
               if (context.mounted) {
@@ -221,7 +282,12 @@ class ProfilePage extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const LoginPage()),
                   (route) => false,
                 );
-                SnackBar(content: Text("Logout Successfully",style: TextStyle(color: Colors.white),),backgroundColor:Colors.green,);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context)!.logoutSuccessfully, style: const TextStyle(color: Colors.white)),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               }
             },
           ),

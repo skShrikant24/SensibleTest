@@ -1,6 +1,7 @@
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/profile_page.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 
@@ -68,34 +69,6 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// class _MainShellState extends State<MainShell> {
-//   int _index = 0;
-//
-//   final _pages = const [
-//     HomePage(),
-//     _PlaceholderPage(title: 'Courses'),
-//     _PlaceholderPage(title: 'Store'),
-//     _PlaceholderPage(title: 'Feed'),
-//     _PlaceholderPage(title: 'Profile'),
-//   ];
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       extendBody: true,
-//       backgroundColor: const Color(0xFFF4F5F7),
-//       body: _pages[_index],
-//       bottomNavigationBar: Padding(
-//         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-//         child: _BottomBar(
-//           index: _index,
-//           onChanged: (i) => setState(() => _index = i),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 class _BottomBar extends StatelessWidget {
   const _BottomBar({required this.index, required this.onChanged});
   final int index;
@@ -103,12 +76,10 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final items = [
-    /*  _BarItem(icon: Icons.home_filled, inactive: Icons.home_outlined, label: 'Home'),
-      _BarItem(icon: Icons.menu_book_rounded, inactive: Icons.menu_book_outlined, label: 'Courses'),
-      _BarItem(icon: Icons.storefront_rounded, inactive: Icons.storefront_outlined, label: 'Store'),*/
-      _BarItem(icon: Icons.home_filled, inactive: Icons.home_outlined, label: 'Store'),
-      _BarItem(icon: Icons.person_rounded, inactive: Icons.person_outline_rounded, label: 'Profile'),
+      _BarItem(icon: Icons.home_filled, inactive: Icons.home_outlined, label: l10n.store),
+      _BarItem(icon: Icons.person_rounded, inactive: Icons.person_outline_rounded, label: l10n.profile),
     ];
 
     return DecoratedBox(

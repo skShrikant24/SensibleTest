@@ -1,10 +1,13 @@
 import 'package:GraBiTT/models/Vender.dart';
 import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/category_vendors_page.dart';
-import 'package:GraBiTT/pages/vendor_products_page.dar.dart';
+import 'package:GraBiTT/pages/vendor_products_page.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:GraBiTT/app_State/locale_provider.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/components/app_drawer.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
@@ -36,7 +39,6 @@ class StorePage extends StatefulWidget {
 class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String selectedCategory = 'all';
-  String selectedLanguage = 'EN';
   bool _isVendorLoading = false;
   late Future<List<Category>> _categoriesFuture;
   late Future<List<Vendor>> _vendorsFuture;
@@ -88,6 +90,53 @@ class _StorePageState extends State<StorePage> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _showLanguageSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeProvider = context.read<LocaleProvider>();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: StoreProfileTheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.selectLanguage,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                title: Text(l10n.english),
+                trailing: localeProvider.isEnglish ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                onTap: () async {
+                  await localeProvider.setEnglish();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                title: Text(l10n.kannada),
+                trailing: localeProvider.isKannada ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                onTap: () async {
+                  await localeProvider.setKannada();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -226,55 +275,47 @@ class _StorePageState extends State<StorePage> {
       child: Column(
         children: [
           // First Row: Delivery & Language
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Delivery Time
-              Text(
-                'Delivery in 15 mins',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green[700],
-                ),
-              ),
-
-              // Language Selection
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedLanguage = selectedLanguage == 'EN' ? 'HI' : 'EN';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: StoreProfileTheme.lightPink.withValues(alpha: 0.5),
-                    border: Border.all(color: StoreProfileTheme.border),
-                    borderRadius: BorderRadius.circular(4),
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              final l10n = AppLocalizations.of(context)!;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.deliveryInMins,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green[700],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        selectedLanguage,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  GestureDetector(
+                    onTap: () => _showLanguageSheet(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: StoreProfileTheme.lightPink.withValues(alpha: 0.5),
+                        border: Border.all(color: StoreProfileTheme.border),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        selectedLanguage == 'EN' ? 'हिन्दी' : 'EN',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                      child: Row(
+                        children: [
+                          Text(
+                            localeProvider.isKannada ? l10n.kannada : l10n.english,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_drop_down, size: 18, color: Colors.grey[600]),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 12),
@@ -283,7 +324,6 @@ class _StorePageState extends State<StorePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Location
               GestureDetector(
                 onTap: () {
                   // TODO: Open location selector
@@ -291,7 +331,7 @@ class _StorePageState extends State<StorePage> {
                 child: Row(
                   children: [
                     Text(
-                      'Location',
+                      AppLocalizations.of(context)!.location,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: Colors.grey[700],
