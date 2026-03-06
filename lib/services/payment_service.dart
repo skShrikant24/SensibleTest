@@ -83,7 +83,7 @@ class PaymentService {
     }
 
     final options = <String, dynamic>{
-      'key': 'zp_live_SNt5ztsMS7EECJ',
+      'key': 'rzp_live_SNt5ztsMS7EECJ',
       // 'key': 'rzp_test_xxxxxxxxx',
       'name': 'SattvikPlate',
       'description': 'Order Payment',

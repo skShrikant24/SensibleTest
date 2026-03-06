@@ -76,4 +76,84 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get orders => 'ಆರ್ಡರ್ಗಳು';
+
+  @override
+  String get addToCart => 'ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ';
+
+  @override
+  String get pickAndDeliver => 'ಎತ್ತಿಕೊಂಡು ವಿತರಿಸಿ';
+
+  @override
+  String get quickOrder => 'ತ್ವರಿತ ಆರ್ಡರ್';
+
+  @override
+  String get addAddress => 'ವಿಳಾಸ ಸೇರಿಸಿ';
+
+  @override
+  String get editAddress => 'ವಿಳಾಸ ಸಂಪಾದಿಸಿ';
+
+  @override
+  String get checkout => 'ಚೆಕ್‌ಔಟ್';
+
+  @override
+  String get subtotal => 'ಉಪಮೊತ್ತ';
+
+  @override
+  String get placeOrder => 'ಆರ್ಡರ್ ಇಡಿ';
+
+  @override
+  String get shippingAddress => 'ಶಿಪ್ಪಿಂಗ್ ವಿಳಾಸ';
+
+  @override
+  String get paymentMethod => 'ಪಾವತಿ ವಿಧಾನ';
+
+  @override
+  String get orderSummary => 'ಆರ್ಡರ್ ಸಾರಾಂಶ';
+
+  @override
+  String get logInToAddOrSelectAddress =>
+      'ವಿಳಾಸ ಸೇರಿಸಲು ಅಥವಾ ಆಯ್ಕೆಮಾಡಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ';
+
+  @override
+  String get noAddressAddedYet => 'ಇನ್ನೂ ವಿಳಾಸ ಸೇರಿಸಲಾಗಿಲ್ಲ';
+
+  @override
+  String get change => 'ಬದಲಾಯಿಸಿ';
+
+  @override
+  String get select => 'ಆಯ್ಕೆಮಾಡಿ';
+
+  @override
+  String get selectDeliveryAddress => 'ವಿತರಣಾ ವಿಳಾಸ ಆಯ್ಕೆಮಾಡಿ';
+
+  @override
+  String get pleaseLogInToManageAddresses =>
+      'ವಿಳಾಸಗಳನ್ನು ನಿರ್ವಹಿಸಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ';
+
+  @override
+  String get browseAllProducts => 'ಎಲ್ಲಾ ಉತ್ಪನ್ನಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ';
+
+  @override
+  String get searchForAnything => 'ಏನನ್ನಾದರೂ ಹುಡುಕಿ';
+
+  @override
+  String get searchStore => 'ಅಂಗಡಿ ಹುಡುಕಿ...';
+
+  @override
+  String get searchProducts => 'ಉತ್ಪನ್ನಗಳನ್ನು ಹುಡುಕಿ...';
+
+  @override
+  String get productDetails => 'ಉತ್ಪನ್ನ ವಿವರಗಳು';
+
+  @override
+  String get myCart => 'ನನ್ನ ಕಾರ್ಟ್';
+
+  @override
+  String get searchForRestaurants => 'ರೆಸ್ಟೋರೆಂಟ್‌ಗಳನ್ನು ಹುಡುಕಿ';
+
+  @override
+  String get searchForGroceryStores => 'ಕಿರಾಣಿ ಅಂಗಡಿಗಳನ್ನು ಹುಡುಕಿ';
+
+  @override
+  String get searchForMedicalStores => 'ಮೆಡಿಕಲ್ ಅಂಗಡಿಗಳನ್ನು ಹುಡುಕಿ';
 }

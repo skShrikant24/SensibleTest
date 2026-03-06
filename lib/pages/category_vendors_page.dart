@@ -1,3 +1,5 @@
+import 'package:GraBiTT/app_State/locale_provider.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/Vender.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 import 'package:GraBiTT/pages/vendor_products_page.dart';
@@ -36,8 +38,8 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
 
   Future<void> _loadVendors() async {
     try {
-      final vendors = await fetchVendorsByCategory(widget.categoryName);
-
+      final lang = LocaleProvider.instance.languageCode;
+      final vendors = await fetchVendorsByCategory(widget.categoryId, lang);
       _allVendors = vendors;
       _filteredVendors = vendors;
     } catch (_) {
@@ -85,7 +87,7 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
           controller: _searchController,
           onChanged: _onSearchChanged,
           decoration: InputDecoration(
-            hintText: "Search store...",
+            hintText: AppLocalizations.of(context)!.searchStore,
             prefixIcon: Icon(Icons.search, color: StoreProfileTheme.accentPink),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
@@ -308,7 +310,7 @@ class _VendorCard extends StatelessWidget {
                         // const SizedBox(height: 2),
 
                         Text(
-                          "Browse all products",
+                          AppLocalizations.of(context)!.browseAllProducts,
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

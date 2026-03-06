@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/address_management_page.dart';
-import 'package:GraBiTT/pages/components/app_drawer.dart';
 import 'package:GraBiTT/pages/login_page.dart';
 import 'package:GraBiTT/services/auth_service.dart';
 import 'package:GraBiTT/utils/constants.dart';
@@ -15,7 +14,6 @@ const String _geoapifyApiKey = 'd23ffd31df254fe59912a07a909c69e4';
 
 class ProfilePage extends StatelessWidget {
   final ValueChanged<int> onSelectTab;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   ProfilePage({super.key, required this.onSelectTab});
 
   /// Safe string from saved user map (API keys: Name, Email, phone, Sex, DateOfBirth, lan, lon).
@@ -110,9 +108,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: StoreProfileTheme.background,
-      drawer: AppDrawer(onSelectTab: onSelectTab, currentTabIndex: 4),
       body: FutureBuilder<({Map<String, dynamic>? user, String address})>(
         future: _getUserWithAddress(),
         builder: (context, snapshot) {
@@ -138,7 +134,7 @@ class ProfilePage extends StatelessWidget {
                 elevation: 0,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => onSelectTab(0),
                 ),
                 centerTitle: true,
                 title: Text(

@@ -76,4 +76,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orders => 'Orders';
+
+  @override
+  String get addToCart => 'Add to Cart';
+
+  @override
+  String get pickAndDeliver => 'Pick & Deliver';
+
+  @override
+  String get quickOrder => 'Quick order';
+
+  @override
+  String get addAddress => 'Add address';
+
+  @override
+  String get editAddress => 'Edit Address';
+
+  @override
+  String get checkout => 'Checkout';
+
+  @override
+  String get subtotal => 'Subtotal';
+
+  @override
+  String get placeOrder => 'Place Order';
+
+  @override
+  String get shippingAddress => 'Shipping Address';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get orderSummary => 'Order Summary';
+
+  @override
+  String get logInToAddOrSelectAddress => 'Log in to add or select address';
+
+  @override
+  String get noAddressAddedYet => 'No address added yet';
+
+  @override
+  String get change => 'Change';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get selectDeliveryAddress => 'Select delivery address';
+
+  @override
+  String get pleaseLogInToManageAddresses =>
+      'Please log in to manage addresses';
+
+  @override
+  String get browseAllProducts => 'Browse all products';
+
+  @override
+  String get searchForAnything => 'Search for anything';
+
+  @override
+  String get searchStore => 'Search store...';
+
+  @override
+  String get searchProducts => 'Search products...';
+
+  @override
+  String get productDetails => 'Product Details';
+
+  @override
+  String get myCart => 'My Cart';
+
+  @override
+  String get searchForRestaurants => 'Search for Restaurants';
+
+  @override
+  String get searchForGroceryStores => 'Search for Grocery Stores';
+
+  @override
+  String get searchForMedicalStores => 'Search for Medical Stores';
 }

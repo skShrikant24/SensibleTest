@@ -1,3 +1,4 @@
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/checkout_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,7 +25,7 @@ class _CartPageState extends State<CartPage> {
           backgroundColor: StoreProfileTheme.background,
           appBar: AppBar(
             title: Text(
-              "My Cart",
+              AppLocalizations.of(context)!.myCart,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 color: Colors.black,
@@ -181,7 +182,7 @@ class _CartPageState extends State<CartPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Subtotal",
+              Text(AppLocalizations.of(context)!.subtotal,
                   style: GoogleFonts.poppins(
                       fontSize: 13, color: Colors.grey.shade600)),
               Text(
@@ -214,9 +215,9 @@ class _CartPageState extends State<CartPage> {
                 ),
               );
             },
-            child: const Text(
-              "Checkout",
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              AppLocalizations.of(context)!.checkout,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],

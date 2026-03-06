@@ -1,21 +1,15 @@
 import 'package:GraBiTT/models/Vender.dart';
-import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/category_vendors_page.dart';
-import 'package:GraBiTT/pages/vendor_products_page.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/pages/components/app_drawer.dart';
-import 'package:GraBiTT/pages/product_details_page.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
 import 'package:GraBiTT/pages/notification_page.dart';
 import 'package:GraBiTT/pages/cart_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
 import '../models/Category.dart';
 import '../models/product.dart';
 import '../app_State/Cart.dart';
@@ -64,10 +58,17 @@ class _StorePageState extends State<StorePage> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _categoriesFuture = fetchCategories();
-    // _vendorsFuture = fetchVendorsByCategory("all");
-    // _productsFuture = fetchProducts(category: selectedCategory);
-    // _sliderFuture = fetchSliderImages(selectedCategory);
+    final lang = LocaleProvider.instance.languageCode;
+    _categoriesFuture = fetchCategories(lang);
+    LocaleProvider.instance.addListener(_onLocaleChanged);
+  }
+
+  void _onLocaleChanged() {
+    if (!mounted) return;
+    final lang = LocaleProvider.instance.languageCode;
+    setState(() {
+      _categoriesFuture = fetchCategories(lang);
+    });
   }
 
 
@@ -87,6 +88,7 @@ class _StorePageState extends State<StorePage> {
 
   @override
   void dispose() {
+    LocaleProvider.instance.removeListener(_onLocaleChanged);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -144,7 +146,6 @@ class _StorePageState extends State<StorePage> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: StoreProfileTheme.background,
-      drawer: AppDrawer(onSelectTab: widget.onSelectTab, currentTabIndex: 2),
       body: SafeArea(
         child: Column(
           children: [
@@ -345,13 +346,11 @@ class _StorePageState extends State<StorePage> {
               // Icons: Profile, Cart, Notification
               Row(
                 children: [
-                  // Profile/Points Icon
+                  // Profile tab
                   HeaderPill(
                     icon: Icons.person_outline,
                     text: '25',
-                    onTap: () {
-                      _scaffoldKey.currentState?.openDrawer();
-                    },
+                    onTap: () => widget.onSelectTab(1),
                   ),
                   const SizedBox(width: 10),
 
@@ -412,7 +411,7 @@ class _StorePageState extends State<StorePage> {
         child: TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: 'Search for anything',
+            hintText: AppLocalizations.of(context)!.searchForAnything,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey[600],
@@ -547,7 +546,8 @@ class _StorePageState extends State<StorePage> {
       _isVendorLoading = true;
     });
 
-    final vendorsFuture = fetchVendorsByCategory(name);
+    final lang = LocaleProvider.instance.languageCode;
+    final vendorsFuture = fetchVendorsByCategory(name, lang);
     // final productsFuture = fetchProducts(category: name);
     // final sliderFuture = fetchSliderImages(name);
 
@@ -664,7 +664,7 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: _ActionButton(
-              title: 'Pick & Deliver',
+              title: AppLocalizations.of(context)!.pickAndDeliver,
               icon: Icons.local_shipping_outlined,
               onTap: () {
                 // TODO: Navigate to Pick & Deliver page
@@ -675,7 +675,7 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: _ActionButton(
-              title: 'Quick order',
+              title: AppLocalizations.of(context)!.quickOrder,
               icon: Icons.flash_on,
               onTap: () {
                 // TODO: Navigate to Quick Order page
@@ -710,7 +710,7 @@ class _StorePageState extends State<StorePage> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: _getSearchPlaceholder(),
+                hintText: _getSearchPlaceholder(context),
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -798,18 +798,19 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  String _getSearchPlaceholder() {
+  String _getSearchPlaceholder(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     switch (selectedCategory.toLowerCase()) {
       case 'restaurant':
-        return 'Search for Restaurants';
+        return l10n.searchForRestaurants;
       case 'grocery stores':
       case 'grocery':
-        return 'Search for Grocery Stores';
+        return l10n.searchForGroceryStores;
       case 'medical':
       case 'pharmacy':
-        return 'Search for Medical Stores';
+        return l10n.searchForMedicalStores;
       default:
-        return 'Search for anything';
+        return l10n.searchForAnything;
     }
   }
 }
@@ -1109,10 +1110,12 @@ class _ActionButton extends StatelessWidget {
 //   }
 // }
 
-// 🌐 API Functions
-Future<List<Category>> fetchCategories() async {
+// 🌐 API Functions — lang: "en" (English) or "kn" (Kannada), default "en"
+Future<List<Category>> fetchCategories([String lang = 'en']) async {
   final response = await http.get(
-    Uri.parse('https://grabitt.in/webservice.asmx/GetCategory'),
+    Uri.parse('https://grabitt.in/webservice.asmx/GetCategory').replace(
+      queryParameters: {'lang': lang},
+    ),
   );
 
   if (response.statusCode == 200) {
@@ -1124,32 +1127,34 @@ Future<List<Category>> fetchCategories() async {
   }
 }
 
-Future<List<Vendor>> fetchVendors() async {
-  final response = await http.get(
-    Uri.parse('https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=all'),
-  );
+// Future<List<Vendor>> fetchVendors() async {
+//   final response = await http.get(
+//     Uri.parse('https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=all'),
+//   );
+//
+//   if (response.statusCode == 200) {
+//
+//     final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+//     final List data = json.decode(jsonString);
+//
+//     final vendors = data.map((e) => Vendor.fromJson(e)).toList();
+//
+//     print("__________________");
+//     print(vendors);
+//
+//     return vendors;
+//   } else {
+//     throw Exception('Failed to load vendors');
+//   }
+// }
 
-  if (response.statusCode == 200) {
-
-    final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
-    final List data = json.decode(jsonString);
-
-    final vendors = data.map((e) => Vendor.fromJson(e)).toList();
-
-    print("__________________");
-    print(vendors);
-
-    return vendors;
-  } else {
-    throw Exception('Failed to load vendors');
-  }
-}
-
-Future<List<Vendor>> fetchVendorsByCategory(String category) async {
+Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en']) async {
   try {
     final url =
-        'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=${Uri.encodeComponent(category)}';
-
+        'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?categoryid=${Uri.encodeComponent(category)}&lang=${Uri.encodeComponent(lang)}';
+    print("_________________________________");
+    print("URL=> $url");
+    print("_________________________________");
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) return [];
@@ -1158,8 +1163,9 @@ Future<List<Vendor>> fetchVendorsByCategory(String category) async {
     final cleaned = response.body
         .replaceAll(RegExp(r'<[^>]*>'), '')
         .trim();
-
+    print("______________-------------------___________________");
     print("VENDOR API RAW => $cleaned");
+    print("______________-------------------___________________");
 
     /// 🚨 HANDLE NON JSON RESPONSES
     if (cleaned.isEmpty ||
@@ -1189,73 +1195,73 @@ Future<List<Vendor>> fetchVendorsByCategory(String category) async {
   }
 }
 
-Future<List<Product>> fetchProducts({String? category}) async {
-  final url = category == null || category == 'All'
-      ? 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=ALL'
-      : 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=${Uri.encodeComponent(category)}';
-
-  final response = await http.get(Uri.parse(url));
-
-  if (response.statusCode == 200) {
-    final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-
-    if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) {
-      return [];
-    }
-
-    try {
-      final List data = json.decode(cleaned);
-      return data.map((e) => Product.fromJson(e)).toList();
-    } catch (e) {
-      return [];
-    }
-  } else {
-    return [];
-  }
-}
+// Future<List<Product>> fetchProducts({String? category}) async {
+//   final url = category == null || category == 'All'
+//       ? 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=ALL&lang=$lang'
+//       : 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=${Uri.encodeComponent(category)}&lang=$lang';
+//
+//   final response = await http.get(Uri.parse(url));
+//
+//   if (response.statusCode == 200) {
+//     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+//
+//     if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) {
+//       return [];
+//     }
+//
+//     try {
+//       final List data = json.decode(cleaned);
+//       return data.map((e) => Product.fromJson(e)).toList();
+//     } catch (e) {
+//       return [];
+//     }
+//   } else {
+//     return [];
+//   }
+// }
 
 /// Fetches slider image URLs for the given category.
 /// API: GET https://grabitt.in/webservice.asmx/getsilder?category=string
-Future<List<String>> fetchSliderImages(String category) async {
-  final url = category == 'All' || category.isEmpty
-      ? 'https://grabitt.in/webservice.asmx/getsilder?category=ALL'
-      : 'https://grabitt.in/webservice.asmx/getsilder?category=${Uri.encodeComponent(category)}';
-
-  try {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode != 200) return [];
-
-    final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-    if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) return [];
-
-    final decoded = json.decode(cleaned);
-
-    if (decoded is! List) return [];
-
-    const String uploadsBase = 'https://grabitt.in/uploads/';
-    final List<String> urls = [];
-    for (final item in decoded) {
-      if (item is String) {
-        if (item.trim().isNotEmpty) {
-          final name = item.trim();
-          urls.add(name.startsWith('http') ? name : '$uploadsBase${Uri.encodeComponent(name)}');
-        }
-      } else if (item is Map) {
-        // API returns: {"Id":"1","Category":"Restaurants","Images":"1.jpg",...}
-        final raw = item['Images'] ?? item['image'] ?? item['Image'] ?? item['SliderImage'] ?? item['url'] ?? item['path'] ?? item['sliderimage'];
-        if (raw != null && raw.toString().trim().isNotEmpty) {
-          final imageName = raw.toString().trim();
-          final fullUrl = imageName.startsWith('http') ? imageName : '$uploadsBase${Uri.encodeComponent(imageName)}';
-          urls.add(fullUrl);
-        }
-      }
-    }
-    return urls;
-  } catch (e) {
-    return [];
-  }
-}
+// Future<List<String>> fetchSliderImages(String category) async {
+//   final url = category == 'All' || category.isEmpty
+//       ? 'https://grabitt.in/webservice.asmx/getsilder?category=ALL'
+//       : 'https://grabitt.in/webservice.asmx/getsilder?category=${Uri.encodeComponent(category)}';
+//
+//   try {
+//     final response = await http.get(Uri.parse(url));
+//
+//     if (response.statusCode != 200) return [];
+//
+//     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+//     if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) return [];
+//
+//     final decoded = json.decode(cleaned);
+//
+//     if (decoded is! List) return [];
+//
+//     const String uploadsBase = 'https://grabitt.in/uploads/';
+//     final List<String> urls = [];
+//     for (final item in decoded) {
+//       if (item is String) {
+//         if (item.trim().isNotEmpty) {
+//           final name = item.trim();
+//           urls.add(name.startsWith('http') ? name : '$uploadsBase${Uri.encodeComponent(name)}');
+//         }
+//       } else if (item is Map) {
+//         // API returns: {"Id":"1","Category":"Restaurants","Images":"1.jpg",...}
+//         final raw = item['Images'] ?? item['image'] ?? item['Image'] ?? item['SliderImage'] ?? item['url'] ?? item['path'] ?? item['sliderimage'];
+//         if (raw != null && raw.toString().trim().isNotEmpty) {
+//           final imageName = raw.toString().trim();
+//           final fullUrl = imageName.startsWith('http') ? imageName : '$uploadsBase${Uri.encodeComponent(imageName)}';
+//           urls.add(fullUrl);
+//         }
+//       }
+//     }
+//     return urls;
+//   } catch (e) {
+//     return [];
+//   }
+// }
 
 // 🏪 Restaurant Model
 class Restaurant {

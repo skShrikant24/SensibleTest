@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
@@ -180,9 +181,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
               ),
             ),
             onPressed: _startPaperPlaneAnimation,
-            child: const Text(
-              "Add to Cart",
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.addToCart,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -202,9 +203,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
               icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
               onPressed: () => Navigator.pop(context),
             ),
-            title: const Text(
-              "Product Details",
-              style: TextStyle(
+            title: Text(
+              AppLocalizations.of(context)!.productDetails,
+              style: const TextStyle(
                 color: StoreProfileTheme.accentPink,
                 fontWeight: FontWeight.w600,
               ),
@@ -351,9 +352,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                   ),
 
                   const SizedBox(height: 24),
-                  const Text(
-                    "Product Details",
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.productDetails,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

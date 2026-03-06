@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/app_State/locale_provider.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/product.dart';
 import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
@@ -39,10 +41,10 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
     _loadVendorsProducts();
   }
 
-  Future<List<VendorProduct>> fetchVendorProducts(String vendorId, String catergoryId) async {
+  Future<List<VendorProduct>> fetchVendorProducts(String vendorId, String catergoryId, [String lang = 'en']) async {
     try {
       final url =
-          "https://grabitt.in/webservice.asmx/GetProductsByVendor?vendorid=$vendorId&categoryid=$catergoryId";
+          "https://grabitt.in/webservice.asmx/GetProductsByVendor?vendorid=$vendorId&categoryid=$catergoryId&lang=${Uri.encodeComponent(lang)}";
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) return [];
       final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
@@ -66,7 +68,8 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
 
   Future<void> _loadVendorsProducts() async {
     try {
-      final vendors = await fetchVendorProducts(widget.vendorId, widget.catergoryId);
+      final lang = LocaleProvider.instance.languageCode;
+      final vendors = await fetchVendorProducts(widget.vendorId, widget.catergoryId, lang);
       _allVendorsProduct = vendors;
       _filteredVendorsProduct = vendors;
     } catch (_) {
@@ -109,7 +112,7 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
           controller: _searchController,
           onChanged: _onSearchChanged,
           decoration: InputDecoration(
-            hintText: "Search products...",
+            hintText: AppLocalizations.of(context)!.searchProducts,
             prefixIcon: Icon(Icons.search, color: StoreProfileTheme.accentPink),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
@@ -311,16 +314,16 @@ class _AddButton extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(10),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add, color: Colors.white, size: 20),
-              SizedBox(width: 6),
+              const Icon(Icons.add, color: Colors.white, size: 20),
+              const SizedBox(width: 6),
               Text(
-                "Add to cart",
-                style: TextStyle(
+                AppLocalizations.of(context)!.addToCart,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,

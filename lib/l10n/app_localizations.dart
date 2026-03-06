@@ -235,6 +235,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Orders'**
   String get orders;
+
+  /// No description provided for @addToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Cart'**
+  String get addToCart;
+
+  /// No description provided for @pickAndDeliver.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick & Deliver'**
+  String get pickAndDeliver;
+
+  /// No description provided for @quickOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick order'**
+  String get quickOrder;
+
+  /// No description provided for @addAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Add address'**
+  String get addAddress;
+
+  /// No description provided for @editAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Address'**
+  String get editAddress;
+
+  /// No description provided for @checkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkout'**
+  String get checkout;
+
+  /// No description provided for @subtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotal;
+
+  /// No description provided for @placeOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Place Order'**
+  String get placeOrder;
+
+  /// No description provided for @shippingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping Address'**
+  String get shippingAddress;
+
+  /// No description provided for @paymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethod;
+
+  /// No description provided for @orderSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Summary'**
+  String get orderSummary;
+
+  /// No description provided for @logInToAddOrSelectAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in to add or select address'**
+  String get logInToAddOrSelectAddress;
+
+  /// No description provided for @noAddressAddedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No address added yet'**
+  String get noAddressAddedYet;
+
+  /// No description provided for @change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get change;
+
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
+  /// No description provided for @selectDeliveryAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Select delivery address'**
+  String get selectDeliveryAddress;
+
+  /// No description provided for @pleaseLogInToManageAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to manage addresses'**
+  String get pleaseLogInToManageAddresses;
+
+  /// No description provided for @browseAllProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all products'**
+  String get browseAllProducts;
+
+  /// No description provided for @searchForAnything.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for anything'**
+  String get searchForAnything;
+
+  /// No description provided for @searchStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Search store...'**
+  String get searchStore;
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products...'**
+  String get searchProducts;
+
+  /// No description provided for @productDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Details'**
+  String get productDetails;
+
+  /// No description provided for @myCart.
+  ///
+  /// In en, this message translates to:
+  /// **'My Cart'**
+  String get myCart;
+
+  /// No description provided for @searchForRestaurants.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for Restaurants'**
+  String get searchForRestaurants;
+
+  /// No description provided for @searchForGroceryStores.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for Grocery Stores'**
+  String get searchForGroceryStores;
+
+  /// No description provided for @searchForMedicalStores.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for Medical Stores'**
+  String get searchForMedicalStores;
 }
 
 class _AppLocalizationsDelegate

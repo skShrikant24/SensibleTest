@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/address_model.dart';
 import 'package:GraBiTT/pages/address_management_page.dart';
 import 'package:GraBiTT/pages/waiting_page.dart';
@@ -135,7 +136,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           backgroundColor: StoreProfileTheme.background,
           appBar: AppBar(
             title: Text(
-              'Checkout',
+              AppLocalizations.of(context)!.checkout,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
@@ -155,13 +156,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _sectionTitle("Shipping Address"),
+              _sectionTitle(AppLocalizations.of(context)!.shippingAddress),
               _addressCard(),
               const SizedBox(height: 20),
-              _sectionTitle("Payment Method"),
+              _sectionTitle(AppLocalizations.of(context)!.paymentMethod),
               _paymentCard(),
               const SizedBox(height: 20),
-              _sectionTitle("Order Summary"),
+              _sectionTitle(AppLocalizations.of(context)!.orderSummary),
               ...cart.items.map(_orderItem).toList(),
               const SizedBox(height: 16),
               _totalCard(),
@@ -212,7 +213,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                "Log in to add or select address",
+                AppLocalizations.of(context)!.logInToAddOrSelectAddress,
                 style: GoogleFonts.poppins(fontSize: 13),
               ),
             ),
@@ -235,7 +236,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "No address added yet",
+                    AppLocalizations.of(context)!.noAddressAddedYet,
                     style: GoogleFonts.poppins(fontSize: 13),
                   ),
                 ),
@@ -247,7 +248,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               child: OutlinedButton.icon(
                 onPressed: _openAddressSelector,
                 icon: const Icon(Icons.add, size: 20),
-                label: const Text("Add address"),
+                label: Text(AppLocalizations.of(context)!.addAddress),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: StoreProfileTheme.accentPink,
                   side: BorderSide(color: StoreProfileTheme.accentPink),
@@ -270,14 +271,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Text(
               _selectedAddress != null
                   ? '${_selectedAddress!.addressType.isNotEmpty ? "${_selectedAddress!.addressType}\n" : ""}${_selectedAddress!.displaySummary}'
-                  : "Select delivery address",
+                  : AppLocalizations.of(context)!.selectDeliveryAddress,
               style: GoogleFonts.poppins(fontSize: 13),
             ),
           ),
           TextButton(
             onPressed: _openAddressSelector,
             child: Text(
-              _selectedAddress != null ? "Change" : "Select",
+              _selectedAddress != null ? AppLocalizations.of(context)!.change : AppLocalizations.of(context)!.select,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 color: StoreProfileTheme.accentPink,
@@ -380,7 +381,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Subtotal",
+          Text(AppLocalizations.of(context)!.subtotal,
               style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87)),
           Text(
             "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
@@ -517,7 +518,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
           onPressed: cart.items.isEmpty ? null : _onPlaceOrder,
           child: Text(
-            "Place Order",
+            AppLocalizations.of(context)!.placeOrder,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/address_model.dart';
 import 'package:GraBiTT/services/address_api_service.dart';
 import 'package:GraBiTT/services/auth_service.dart';
@@ -121,7 +122,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
         backgroundColor: StoreProfileTheme.background,
         elevation: 0,
         title: Text(
-          'Manage Address',
+          AppLocalizations.of(context)!.manageAddress,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: StoreProfileTheme.accentPink,
@@ -146,7 +147,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                         Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          'Please log in to manage addresses',
+                          AppLocalizations.of(context)!.pleaseLogInToManageAddresses,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
@@ -255,7 +256,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
               backgroundColor: StoreProfileTheme.accentPink,
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
-                'Add Address',
+                AppLocalizations.of(context)!.addAddress,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -463,7 +464,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
         backgroundColor: StoreProfileTheme.background,
         elevation: 0,
         title: Text(
-          isEdit ? 'Edit Address' : 'Add Address',
+          isEdit ? AppLocalizations.of(context)!.editAddress : AppLocalizations.of(context)!.addAddress,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: StoreProfileTheme.accentPink,
