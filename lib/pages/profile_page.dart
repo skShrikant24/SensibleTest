@@ -265,8 +265,8 @@ class ProfilePage extends StatelessWidget {
           ),
 
           // 🔹 Orders Section
-          _buildSectionHeader(AppLocalizations.of(context)!.orders),
-          _buildListItem(AppLocalizations.of(context)!.viewOrders),
+       /*   _buildSectionHeader(AppLocalizations.of(context)!.orders),
+          _buildListItem(AppLocalizations.of(context)!.viewOrders),*/
 
           // 🔹 Settings Section
           _buildListItem(

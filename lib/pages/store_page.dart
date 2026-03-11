@@ -262,7 +262,7 @@ class _StorePageState extends State<StorePage> {
               ),
             ),
             // 🚀 Fixed bottom: Pick & Deliver + Quick Order (sticky; when bottom bar hides, sits at bottom)
-            _buildFixedActionButtons(),
+            //_buildFixedActionButtons(),
           ],
         ),
       ),
@@ -374,7 +374,7 @@ class _StorePageState extends State<StorePage> {
                   const SizedBox(width: 10),
 
                   // Notification Icon
-                  HeaderPill(
+                /*  HeaderPill(
                     icon: Icons.notifications_none_rounded,
                     onTap: () {
                       Navigator.push(
@@ -382,7 +382,7 @@ class _StorePageState extends State<StorePage> {
                         MaterialPageRoute(builder: (_) => const NotificationsPage()),
                       );
                     },
-                  ),
+                  ),*/
                 ],
               ),
             ],
@@ -638,7 +638,7 @@ class _StorePageState extends State<StorePage> {
   }
 
   // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
-  Widget _buildFixedActionButtons() {
+  /*Widget _buildFixedActionButtons() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -685,7 +685,7 @@ class _StorePageState extends State<StorePage> {
         ],
       ),
     );
-  }
+  }*/
 
   // 🔍 Bottom Search Section with Restaurant List
   Widget _buildBottomSearchSection() {
