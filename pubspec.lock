@@ -533,14 +533,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
-  readotp:
-    dependency: "direct main"
-    description:
-      name: readotp
-      sha256: f13100547e7543bbea96fdefd0aaf8fa609f7b7c0e65ac790c11be86dc1d2195
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2+11"
   shared_preferences:
     dependency: "direct main"
     description:
