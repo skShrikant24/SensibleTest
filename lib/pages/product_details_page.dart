@@ -264,23 +264,28 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
           SliverToBoxAdapter(
             child: SizedBox(
               height: 300,
-              child: PageView(
+              child: (widget.product.allImages.isNotEmpty)
+                  ? PageView(
                 children: widget.product.allImages
                     .asMap()
                     .entries
                     .map(
                       (entry) => Image.network(
-                        entry.value,
-                        key: entry.key == 0 ? _imageKey : null,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return const Center(child: CircularProgressIndicator());
-                        },
-                      ),
+                    entry.value,
+                    key: entry.key == 0 ? _imageKey : null,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => _placeholder(),
+                  ),
                 )
                     .toList(),
-              ),
+              )
+                  : _placeholder(),
             ),
           ),
 
@@ -369,6 +374,19 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
             ),
           ),
         ],
+      ),
+    );
+  }
+  Widget _placeholder() {
+    return Container(
+      width: double.infinity,
+      color: StoreProfileTheme.lightPink.withValues(alpha: .25),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          size: 60,
+          color: StoreProfileTheme.accentPink,
+        ),
       ),
     );
   }

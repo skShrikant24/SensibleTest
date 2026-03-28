@@ -45,6 +45,9 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
     try {
       final url =
           "https://grabitt.in/webservice.asmx/GetProductsByVendor?vendorid=$vendorId&categoryid=$catergoryId&lang=${Uri.encodeComponent(lang)}";
+     print("+++++++++++++++++++++");
+      print(url);
+      print("__________________________");
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) return [];
       final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
@@ -54,6 +57,9 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
         return [];
       }
       final decoded = json.decode(cleaned);
+      print("+++++++++decoded++++++++++++");
+      print(decoded);
+      print("__________________________");
       if (decoded is List) {
         return decoded
             .map<VendorProduct>(
@@ -232,21 +238,15 @@ class _ProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Image.network(
+              child: (vendorProduct.images.isNotEmpty &&
+                  vendorProduct.images.first.isNotEmpty)
+                  ? Image.network(
                 vendorProduct.images.first,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorBuilder: (_, __, ___) => Container(
-                  color: StoreProfileTheme.lightPink.withValues(alpha: .25),
-                  child: Center(
-                    child: Icon(
-                      Icons.store,
-                      size: 48,
-                      color: StoreProfileTheme.accentPink,
-                    ),
-                  ),
-                ),
-              ),
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+                  : _placeholder(),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
@@ -295,6 +295,18 @@ class _ProductCard extends StatelessWidget {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  Widget _placeholder() {
+    return Container(
+      color: StoreProfileTheme.lightPink.withValues(alpha: .25),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          size: 48,
+          color: StoreProfileTheme.accentPink,
         ),
       ),
     );
