@@ -15,6 +15,8 @@ import 'package:GraBiTT/services/selected_address_storage.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:GraBiTT/utils/sharedClasses.dart';
 
+import '../services/cart_api_service.dart';
+
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
 
@@ -296,13 +298,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: _cardStyle(),
       child: Column(
         children: [
-          _paymentTile("razorpay", Icons.qr_code_rounded, "Razorpay"),
+          // _paymentTile("razorpay", Icons.qr_code_rounded, "Razorpay"),
           // _divider(),
           // _paymentTile("card", Icons.credit_card, "Credit Card"),
           // _divider(),
           // _paymentTile("paypal", Icons.paypal, "PayPal"),
           _divider(),
-          _paymentTile("coins", Icons.workspace_premium, "Coins (1000)"),
+          _paymentTile("cod", Icons.home, "Cash On Delivery"),
         ],
       ),
     );
@@ -429,6 +431,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _onPlaceOrder() async {
+    final ctx = await CartService.instance.getUserContext();
+
     if (cart.items.isEmpty) return;
     if (_loadingAddresses) {
       ToastMessage.warning(
@@ -498,6 +502,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
         email: email,
       );
       return;
+    }else{
+      await CartApiService.placeOrder(
+        userId: ctx['userId']!,
+        macId: ctx['macId']!,
+        paymentMode: paymentMethod,
+        addressId: _selectedAddress!.id.toString(),
+      );
+// Clear cart after order
+      CartService.instance.clearCart();
+      _navigateToWaitingPage();
+      return ;
     }
 
     _navigateToWaitingPage();

@@ -4,15 +4,20 @@ import 'package:GraBiTT/models/product.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/auth_service.dart';
+import '../services/cart_api_service.dart';
+
 const String _cartStorageKey = 'grabbit_cart';
 
 class CartItem {
   final Product product;
   int quantity;
+  String? cartId;
 
   CartItem({
     required this.product,
     this.quantity = 1,
+    this.cartId,
   });
 
   double get total =>
@@ -52,6 +57,15 @@ class CartService extends ChangeNotifier {
 
   bool get shouldAnimateCart => _shouldAnimateCart;
 
+  Future<Map<String, String>> getUserContext() async {
+    final user = await AuthService.instance.getSavedUser();
+
+    return {
+      "userId": user?['ID']?.toString() ?? '',
+      "macId": "DEVICE123", // TODO: replace with real device ID
+    };
+  }
+
   /// Call once at app start to restore cart from storage.
   Future<void> loadFromStorage() async {
     try {
@@ -90,7 +104,13 @@ class CartService extends ChangeNotifier {
     });
   }
 
-  void addItem(Product product) {
+  void addItem(Product product) async {
+    final ctx = await getUserContext();
+    await CartApiService.addToCart(
+      userId: ctx['userId']!,
+      macId: ctx['macId']!,
+      productId: product.id.toString(),
+    );
     final index = items.indexWhere((e) => e.product.id == product.id);
     if (index >= 0) {
       items[index].quantity++;
@@ -101,13 +121,19 @@ class CartService extends ChangeNotifier {
     _saveToStorage();
   }
 
-  void increase(CartItem item) {
+  void increase(CartItem item) async{
+    if (item.product != null) {
+      await CartApiService.increaseQty(item.product.id!);
+    }
     item.quantity++;
     notifyListeners();
     _saveToStorage();
   }
 
-  void decrease(CartItem item) {
+  void decrease(CartItem item) async{
+    if (item.product != null) {
+      await CartApiService.decreaseQty(item.product.id!);
+    }
     if (item.quantity > 1) {
       item.quantity--;
     } else {
@@ -117,8 +143,40 @@ class CartService extends ChangeNotifier {
     _saveToStorage();
   }
 
-  void remove(CartItem item) {
+  void remove(CartItem item) async{
+    if (item.product != null) {
+      await CartApiService.removeItem(item.product.id!);
+    }
     items.remove(item);
+    notifyListeners();
+    _saveToStorage();
+  }
+
+  Future<void> syncCartFromServer() async {
+    final ctx = await getUserContext();
+
+    final response = await CartApiService.getCart(
+      userId: ctx['userId']!,
+      macId: ctx['macId']!,
+      lang: "en",
+    );
+
+    if (response == null) return;
+
+    items.clear();
+
+    for (var item in response) {
+      final product = Product.fromJson(item);
+
+      items.add(
+        CartItem(
+          product: product,
+          quantity: int.tryParse(item['Qty'].toString()) ?? 1,
+          cartId: item['ID'].toString(), // 🔥 CRITICAL
+        ),
+      );
+    }
+
     notifyListeners();
     _saveToStorage();
   }
