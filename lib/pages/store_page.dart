@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
-import 'package:GraBiTT/pages/notification_page.dart';
 import 'package:GraBiTT/pages/cart_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -262,7 +261,7 @@ class _StorePageState extends State<StorePage> {
               ),
             ),
             // 🚀 Fixed bottom: Pick & Deliver + Quick Order (sticky; when bottom bar hides, sits at bottom)
-            //_buildFixedActionButtons(),
+            _buildFixedActionButtons(),
           ],
         ),
       ),
@@ -638,7 +637,7 @@ class _StorePageState extends State<StorePage> {
   }
 
   // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
-  /*Widget _buildFixedActionButtons() {
+  Widget _buildFixedActionButtons() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -667,6 +666,7 @@ class _StorePageState extends State<StorePage> {
               title: AppLocalizations.of(context)!.pickAndDeliver,
               icon: Icons.local_shipping_outlined,
               onTap: () {
+                _showWorkInProgressDialog(context);
                 // TODO: Navigate to Pick & Deliver page
               },
             ),
@@ -678,6 +678,7 @@ class _StorePageState extends State<StorePage> {
               title: AppLocalizations.of(context)!.quickOrder,
               icon: Icons.flash_on,
               onTap: () {
+                _showWorkInProgressDialog(context);
                 // TODO: Navigate to Quick Order page
               },
             ),
@@ -685,7 +686,85 @@ class _StorePageState extends State<StorePage> {
         ],
       ),
     );
-  }*/
+  }
+
+  void _showWorkInProgressDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🚧 Icon / Illustration
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.construction,
+                    size: 40,
+                    color: Colors.orange,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Title
+                Text(
+                  "Coming Soon 🚀",
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Subtitle
+                Text(
+                  "We're working hard to bring this feature to you.\nStay tuned!",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: StoreProfileTheme.accentPink,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      "Got it",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   // 🔍 Bottom Search Section with Restaurant List
   Widget _buildBottomSearchSection() {

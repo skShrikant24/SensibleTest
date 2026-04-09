@@ -272,27 +272,25 @@ class _ProductCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: cartItem == null
+              child: vendorProduct.IsActive == 1
+                  ? (cartItem == null
                   ? _AddButton(
-                      onPressed: () {
-                        cart.addItem(product);
-                        ToastMessage.success(
-                          context: context,
-                          msg: "Added to cart",
-                        );
-                      },
-                    )
+                onPressed: () {
+                  cart.addItem(product);
+                  ToastMessage.success(
+                    context: context,
+                    msg: "Added to cart",
+                  );
+                },
+              )
                   : _QtyControls(
-                      cartItem: cartItem,
-                      onIncrease: () {
-                        cart.increase(cartItem!);
-                        // ToastMessage.successToastMessage(
-                        //   context: context,
-                        //   msg: "Quantity updated",
-                        // );
-                      },
-                      onDecrease: () => cart.decrease(cartItem!),
-                    ),
+                cartItem: cartItem,
+                onIncrease: () {
+                  cart.increase(cartItem!);
+                },
+                onDecrease: () => cart.decrease(cartItem!),
+              ))
+                  : _OutOfStock(),
             ),
           ],
         ),
@@ -307,6 +305,24 @@ class _ProductCard extends StatelessWidget {
           Icons.image_not_supported,
           size: 48,
           color: StoreProfileTheme.accentPink,
+        ),
+      ),
+    );
+  }
+  Widget _OutOfStock() {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        "Out of Stock",
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.red,
         ),
       ),
     );

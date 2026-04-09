@@ -6,6 +6,7 @@ class VendorProduct {
   final String discountPrice;
   final String discountPercent;
   final String? description;
+  final int IsActive;
   final List<String> images;
 
   VendorProduct({
@@ -14,6 +15,7 @@ class VendorProduct {
     required this.categoryName,
     required this.originalPrice,
     required this.discountPrice,
+    required this.IsActive,
      this.description,
     required this.discountPercent,
     required this.images,
@@ -52,6 +54,7 @@ class VendorProduct {
       originalPrice: json['OriginalPrice']?? 0,
       discountPrice: json['DiscountPrice'] ?? 0,
       discountPercent: json['DiscountPercent'] ?? 0,
+      IsActive: json['IsActive'] ?? 0,
       images: imgs,
     );
   }

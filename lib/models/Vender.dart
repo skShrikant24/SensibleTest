@@ -4,8 +4,8 @@ class Vendor {
   final String categoryName;
   final String city;
   final String mobileNo;
-
-  /// Multiple images — API gives 5 image fields
+  final String OpeningTime;
+  final String ClosingTime;
   final List<String> images;
 
   Vendor({
@@ -14,6 +14,8 @@ class Vendor {
     required this.categoryName,
     required this.city,
     required this.mobileNo,
+    required this.OpeningTime,
+    required this.ClosingTime,
     required this.images,
   });
 
@@ -40,6 +42,8 @@ class Vendor {
       categoryName: json['CategoryName']?.toString() ?? '',
       city: json['City']?.toString() ?? '',
       mobileNo: json['MobileNo']?.toString() ?? '',
+      OpeningTime: json['OpeningTime']?.toString() ?? 'NA',
+      ClosingTime: json['ClosingTime']?.toString() ?? 'NA',
       images: imageList,
     );
   }
@@ -53,7 +57,9 @@ Vendor(
   category: $categoryName,
   city: $city,
   mobile: $mobileNo,
-  images: $images
+  images: $images,
+  OpeningTime: $OpeningTime,
+  ClosingTime: $ClosingTime,
 )
 ''';
   }

@@ -298,13 +298,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: _cardStyle(),
       child: Column(
         children: [
-          // _paymentTile("razorpay", Icons.qr_code_rounded, "Razorpay"),
-          // _divider(),
-          // _paymentTile("card", Icons.credit_card, "Credit Card"),
-          // _divider(),
-          // _paymentTile("paypal", Icons.paypal, "PayPal"),
-          _divider(),
           _paymentTile("cod", Icons.home, "Cash On Delivery"),
+          _divider(),
+
+          // 🚧 UPI (Coming Soon)
+          _disabledPaymentTile("upi", Icons.qr_code, "UPI"),
+          _divider(),
+
+          // 🚧 GrabPoints (Coming Soon)
+          _disabledPaymentTile("grabpoints", Icons.wallet, "Grab Points"),
         ],
       ),
     );
@@ -323,6 +325,64 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Text(title, style: GoogleFonts.poppins(fontSize: 14)),
         ],
       ),
+    );
+  }
+  Widget _disabledPaymentTile(String value, IconData icon, String title) {
+    return ListTile(
+      onTap: () {
+        _showWorkInProgressDialog(context);
+        setState(() => paymentMethod = value); // still track selection
+      },
+      leading: Icon(icon, color: Colors.grey),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          color: Colors.grey,
+        ),
+      ),
+      trailing: const Icon(Icons.lock, color: Colors.grey, size: 18),
+    );
+  }
+
+  void _showWorkInProgressDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.construction, size: 40, color: Colors.orange),
+                const SizedBox(height: 16),
+                Text(
+                  "Coming Soon 🚀",
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "This payment option is under development.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"),
+                )
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -519,21 +579,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _placeOrderBar() {
+    final isDisabled = paymentMethod != "cod";
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
         height: 54,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: StoreProfileTheme.accentPink,
+            backgroundColor: isDisabled
+                ? Colors.grey
+                : StoreProfileTheme.accentPink,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-          onPressed: cart.items.isEmpty ? null : _onPlaceOrder,
+          onPressed: (cart.items.isEmpty || isDisabled)
+              ? () {
+            if (isDisabled) {
+              _showWorkInProgressDialog(context);
+            }
+          }
+              : _onPlaceOrder,
           child: Text(
-            AppLocalizations.of(context)!.placeOrder,
+            isDisabled
+                ? "Coming Soon 🚧"
+                : AppLocalizations.of(context)!.placeOrder,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -544,6 +617,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
+
 
   Divider _divider() => Divider(
       height: 1, color: StoreProfileTheme.border.withValues(alpha: 0.6));

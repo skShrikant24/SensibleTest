@@ -298,16 +298,14 @@ class _VendorCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
-                        // Text(
-                        //   "Open Store",
-                        //   style: GoogleFonts.poppins(
-                        //     fontSize: 12,
-                        //     color: Colors.grey[600],
-                        //   ),
-                        // ),
-
-                        // const SizedBox(height: 2),
+                        Text(
+                          "Open Store Time: ${vendor?.OpeningTime ?? 'N/A'} to ${vendor?.ClosingTime ?? 'N/A'}",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
 
                         Text(
                           AppLocalizations.of(context)!.browseAllProducts,
