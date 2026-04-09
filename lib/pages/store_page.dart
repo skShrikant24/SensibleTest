@@ -164,99 +164,11 @@ class _StorePageState extends State<StorePage> {
 
                   // 🏷️ Categories Section
                   SliverToBoxAdapter(
-                    child: _buildCategoriesSection(),
+                    child: _buildVendorGrid(),
                   ),
-
-                  // 🎯 Recommended/Offers Section
-                  // SliverToBoxAdapter(
-                  //   child: _buildRecommendedSection(),
-                  // ),
-
-                  // 🛍️ Products Grid
-                  // SliverPadding(
-                  //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  //   sliver: FutureBuilder<List<Product>>(
-                  //     future: _productsFuture,
-                  //     builder: (context, snapshot) {
-                  //       if (snapshot.connectionState == ConnectionState.waiting) {
-                  //         return const SliverToBoxAdapter(
-                  //           child: Padding(
-                  //             padding: EdgeInsets.only(top: 60),
-                  //             child: Center(child: CircularProgressIndicator()),
-                  //           ),
-                  //         );
-                  //       }
-                  //
-                  //       if (snapshot.hasError) {
-                  //         return SliverToBoxAdapter(
-                  //           child: Padding(
-                  //             padding: const EdgeInsets.only(top: 80),
-                  //             child: Center(
-                  //               child: Text(
-                  //                 "Something went wrong",
-                  //                 style: GoogleFonts.poppins(color: Colors.grey),
-                  //               ),
-                  //             ),
-                  //           ),
-                  //         );
-                  //       }
-                  //
-                  //       final products = snapshot.data ?? [];
-                  //       if (products.isEmpty) {
-                  //         return SliverToBoxAdapter(
-                  //           child: Padding(
-                  //             padding: const EdgeInsets.only(top: 80),
-                  //             child: Column(
-                  //               children: [
-                  //                 Icon(
-                  //                   Icons.inventory_2_outlined,
-                  //                   size: 80,
-                  //                   color: Colors.grey.shade400,
-                  //                 ),
-                  //                 const SizedBox(height: 12),
-                  //                 Text(
-                  //                   "No products found",
-                  //                   style: GoogleFonts.poppins(
-                  //                     fontSize: 16,
-                  //                     color: Colors.grey.shade600,
-                  //                   ),
-                  //                 ),
-                  //               ],
-                  //             ),
-                  //           ),
-                  //         );
-                  //       }
-                  //
-                  //       return SliverGrid(
-                  //         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  //           crossAxisCount: 2,
-                  //           crossAxisSpacing: 12,
-                  //           mainAxisSpacing: 12,
-                  //           childAspectRatio: 0.80,
-                  //         ),
-                  //         delegate: SliverChildBuilderDelegate(
-                  //           (context, index) {
-                  //             final product = products[index];
-                  //             return _ProductCard(product: product);
-                  //           },
-                  //           childCount: products.length,
-                  //         ),
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
-
                   SliverToBoxAdapter(
                     child:SizedBox(height: 50,),
                   ),
-
-
-                  // 🔍 Bottom Search Section with Restaurant List
-                  // SliverToBoxAdapter(
-                  //   child: _buildBottomSearchSection(),
-                  // ),
-                  //
-                  // const SliverToBoxAdapter(child: SizedBox(height: 20)),
                 ],
               ),
             ),
@@ -425,216 +337,66 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  // 🏷️ Categories Section: horizontal chips + grid of categories (image + name)
-  Widget _buildCategoriesSection() {
-    return FutureBuilder<List<Category>>(
-      future: _categoriesFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final categories = snapshot.data!;
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              /// CATEGORY CHIPS
-              // SingleChildScrollView(
-              //   scrollDirection: Axis.horizontal,
-              //   child: Row(
-              //     children: [
-              //       _CategoryChip(
-              //         title: 'All',
-              //         isActive: selectedCategory == 'all',
-              //         onTap: () => _selectCategory('all'),
-              //       ),
-              //       const SizedBox(width: 8),
-              //
-              //       ...categories.map((cat) => Padding(
-              //         padding: const EdgeInsets.only(right: 8),
-              //         child: _CategoryChip(
-              //           title: cat.name,
-              //           isActive: selectedCategory == cat.name,
-              //           onTap: () => _selectCategory(cat.name),
-              //         ),
-              //       )),
-              //     ],
-              //   ),
-              // ),
-              //
-              // const SizedBox(height: 16),
-
-              /// VENDOR GRID (dynamic)
-              _buildVendorGrid()
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildVendorGrid() {
 
-    return FutureBuilder<List<Category>>(
-      future: _categoriesFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final categories = snapshot.data!;
-
-        if (categories.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(child: Text("No vendors found")),
-          );
-        }
-
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: categories.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.82,
-          ),
-          itemBuilder: (context, index) {
-            final vendor = categories[index];
-
-            return _CategoryGridTile(
-              label: vendor.name,
-              imageUrl: vendor.imageUrl,
-              isSelected: false,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CategoryVendorsPage(
-                      categoryName: vendor.name,
-                      categoryId: vendor.id,
-                    ),
-                  ),
-                );
-              },
-
-            );
-          },
-        );
-      },
-    );
-  }
-
-
-  void _selectCategory(String name) async {
-    setState(() {
-      selectedCategory = name;
-      _isVendorLoading = true;
-    });
-
-    final lang = LocaleProvider.instance.languageCode;
-    final vendorsFuture = fetchVendorsByCategory(name, lang);
-    // final productsFuture = fetchProducts(category: name);
-    // final sliderFuture = fetchSliderImages(name);
-
-    final vendors = await vendorsFuture;
-
-    setState(() {
-      _vendorsFuture = Future.value(vendors);
-      // _productsFuture = productsFuture;
-      // _sliderFuture = sliderFuture;
-      _isVendorLoading = false;
-    });
-  }
-
-
-
-  // 🎯 Recommended/Offers Section (slider from getsilder API by category)
-  Widget _buildRecommendedSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Container(
-        height: 180,
-        decoration: BoxDecoration(
-          color: StoreProfileTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: StoreProfileTheme.border.withValues(alpha: 0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+      padding: const EdgeInsets.all(16.0),
+      child: FutureBuilder<List<Category>>(
+        future: _categoriesFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final categories = snapshot.data!;
+
+          if (categories.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: Text("No vendors found")),
+            );
+          }
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: categories.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.82,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: FutureBuilder<List<String>>(
-            future: _sliderFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Container(
-                  color: StoreProfileTheme.lightPink.withValues(alpha: 0.3),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                return Container(
-                  color: Colors.grey[300],
-                  child: Center(
-                    child: Text(
-                      snapshot.hasData && snapshot.data!.isEmpty
-                          ? 'No slides for this category'
-                          : 'Recommended / Offers',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+            itemBuilder: (context, index) {
+              final vendor = categories[index];
+
+              return _CategoryGridTile(
+                label: vendor.name,
+                imageUrl: vendor.imageUrl,
+                isSelected: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CategoryVendorsPage(
+                        categoryName: vendor.name,
+                        categoryId: vendor.id,
                       ),
                     ),
-                  ),
-                );
-              }
-              final urls = snapshot.data!;
-              return PageView.builder(
-                itemCount: urls.length,
-                itemBuilder: (context, index) {
-                  final fullUrl = urls[index];
-                  return Image.network(
-                    fullUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: Center(
-                          child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey[600]),
-                        ),
-                      );
-                    },
                   );
                 },
+
               );
             },
-          ),
-        ),
+          );
+        },
       ),
     );
   }
+
 
   // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
   Widget _buildFixedActionButtons() {
@@ -765,181 +527,6 @@ class _StorePageState extends State<StorePage> {
       },
     );
   }
-
-  // 🔍 Bottom Search Section with Restaurant List
-  Widget _buildBottomSearchSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search Bar
-          Container(
-            decoration: BoxDecoration(
-              color: StoreProfileTheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: StoreProfileTheme.border.withValues(alpha: 0.2),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: _getSearchPlaceholder(context),
-                hintStyle: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-              style: GoogleFonts.poppins(fontSize: 14),
-              onChanged: (value) {
-                setState(() {
-                  // Trigger search/filter
-                });
-              },
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Restaurant List
-          FutureBuilder<List<Restaurant>>(
-            future: fetchRestaurantsByCategory(selectedCategory),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-
-              if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      "Failed to load restaurants",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final restaurants = snapshot.data ?? [];
-              if (restaurants.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      "No restaurants found",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: restaurants.map((restaurant) {
-                  return _RestaurantListItem(
-                    restaurant: restaurant,
-                    onViewAllItems: () {
-                      // TODO: Navigate to restaurant items page
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (_) => RestaurantItemsPage(restaurantId: restaurant.id),
-                      //   ),
-                      // );
-                    },
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getSearchPlaceholder(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (selectedCategory.toLowerCase()) {
-      case 'restaurant':
-        return l10n.searchForRestaurants;
-      case 'grocery stores':
-      case 'grocery':
-        return l10n.searchForGroceryStores;
-      case 'medical':
-      case 'pharmacy':
-        return l10n.searchForMedicalStores;
-      default:
-        return l10n.searchForAnything;
-    }
-  }
-}
-
-// 🏷️ Category Chip Widget
-class _CategoryChip extends StatelessWidget {
-  final String title;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.title,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? StoreProfileTheme.lightPink : StoreProfileTheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? StoreProfileTheme.accentPink : StoreProfileTheme.border,
-            width: 1,
-          ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: StoreProfileTheme.border.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: isActive ? StoreProfileTheme.accentPink : Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // 🏷️ Category grid tile: image + name (like reference layout)
@@ -990,7 +577,7 @@ class _CategoryGridTile extends StatelessWidget {
                 // borderRadius: BorderRadius.circular(8),
                 child: Image.network(
                   url,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   width: double.infinity,
                   errorBuilder: (_, __, ___) => Image.network(
                     _placeholder,
@@ -1075,121 +662,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// 🛒 Product Card
-// class _ProductCard extends StatelessWidget {
-//   final Product product;
-//
-//   const _ProductCard({
-//     required this.product,
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return InkWell(
-//       borderRadius: BorderRadius.circular(16),
-//       onTap: () {
-//         Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//             builder: (_) => ProductDetailsPage(product: product),
-//           ),
-//         );
-//       },
-//       child: Container(
-//         decoration: BoxDecoration(
-//           color: StoreProfileTheme.surface,
-//           borderRadius: BorderRadius.circular(16),
-//           boxShadow: [
-//             BoxShadow(
-//               color: StoreProfileTheme.border.withValues(alpha: 0.12),
-//               blurRadius: 12,
-//               offset: const Offset(0, 6),
-//             ),
-//           ],
-//         ),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // 🖼 Image
-//             ClipRRect(
-//               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-//               child: Image.network(
-//                 product.productImage.isNotEmpty
-//                     ? "https://grabitt.in/${product.productImage}"
-//                     : "https://picsum.photos/400/400",
-//                 height: 150,
-//                 width: double.infinity,
-//                 fit: BoxFit.cover,
-//                 errorBuilder: (context, error, stackTrace) {
-//                   return Image.network(
-//                     "https://picsum.photos/400/400",
-//                     height: 150,
-//                     width: double.infinity,
-//                     fit: BoxFit.cover,
-//                     errorBuilder: (context, error, stackTrace) {
-//                       return Container(
-//                         height: 150,
-//                         width: double.infinity,
-//                         color: Colors.grey[300],
-//                         child: const Icon(
-//                           Icons.image_not_supported,
-//                           color: Colors.grey,
-//                           size: 40,
-//                         ),
-//                       );
-//                     },
-//                   );
-//                 },
-//               ),
-//             ),
-//
-//             Padding(
-//               padding: const EdgeInsets.all(10),
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Text(
-//                     product.name,
-//                     maxLines: 2,
-//                     overflow: TextOverflow.ellipsis,
-//                     style: GoogleFonts.poppins(
-//                       fontSize: 14,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                   const SizedBox(height: 2),
-//                   Row(
-//                     children: [
-//                       Text(
-//                         "₹${product.discountPrice}",
-//                         style: GoogleFonts.poppins(
-//                           fontSize: 15,
-//                           fontWeight: FontWeight.bold,
-//                           color: Colors.green[700],
-//                         ),
-//                       ),
-//                       const SizedBox(width: 6),
-//                       Text(
-//                         "₹${product.originalPrice}",
-//                         style: GoogleFonts.poppins(
-//                           fontSize: 12,
-//                           decoration: TextDecoration.lineThrough,
-//                           color: Colors.grey,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// 🌐 API Functions — lang: "en" (English) or "kn" (Kannada), default "en"
 Future<List<Category>> fetchCategories([String lang = 'en']) async {
   final response = await http.get(
     Uri.parse('https://grabitt.in/webservice.asmx/GetCategory').replace(
@@ -1206,26 +678,6 @@ Future<List<Category>> fetchCategories([String lang = 'en']) async {
   }
 }
 
-// Future<List<Vendor>> fetchVendors() async {
-//   final response = await http.get(
-//     Uri.parse('https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?CategoryName=all'),
-//   );
-//
-//   if (response.statusCode == 200) {
-//
-//     final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
-//     final List data = json.decode(jsonString);
-//
-//     final vendors = data.map((e) => Vendor.fromJson(e)).toList();
-//
-//     print("__________________");
-//     print(vendors);
-//
-//     return vendors;
-//   } else {
-//     throw Exception('Failed to load vendors');
-//   }
-// }
 
 Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en']) async {
   try {
@@ -1274,75 +726,6 @@ Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en'
   }
 }
 
-// Future<List<Product>> fetchProducts({String? category}) async {
-//   final url = category == null || category == 'All'
-//       ? 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=ALL&lang=$lang'
-//       : 'https://grabitt.in/webservice.asmx/GetProductsByCategory?category=${Uri.encodeComponent(category)}&lang=$lang';
-//
-//   final response = await http.get(Uri.parse(url));
-//
-//   if (response.statusCode == 200) {
-//     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-//
-//     if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) {
-//       return [];
-//     }
-//
-//     try {
-//       final List data = json.decode(cleaned);
-//       return data.map((e) => Product.fromJson(e)).toList();
-//     } catch (e) {
-//       return [];
-//     }
-//   } else {
-//     return [];
-//   }
-// }
-
-/// Fetches slider image URLs for the given category.
-/// API: GET https://grabitt.in/webservice.asmx/getsilder?category=string
-// Future<List<String>> fetchSliderImages(String category) async {
-//   final url = category == 'All' || category.isEmpty
-//       ? 'https://grabitt.in/webservice.asmx/getsilder?category=ALL'
-//       : 'https://grabitt.in/webservice.asmx/getsilder?category=${Uri.encodeComponent(category)}';
-//
-//   try {
-//     final response = await http.get(Uri.parse(url));
-//
-//     if (response.statusCode != 200) return [];
-//
-//     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-//     if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) return [];
-//
-//     final decoded = json.decode(cleaned);
-//
-//     if (decoded is! List) return [];
-//
-//     const String uploadsBase = 'https://grabitt.in/uploads/';
-//     final List<String> urls = [];
-//     for (final item in decoded) {
-//       if (item is String) {
-//         if (item.trim().isNotEmpty) {
-//           final name = item.trim();
-//           urls.add(name.startsWith('http') ? name : '$uploadsBase${Uri.encodeComponent(name)}');
-//         }
-//       } else if (item is Map) {
-//         // API returns: {"Id":"1","Category":"Restaurants","Images":"1.jpg",...}
-//         final raw = item['Images'] ?? item['image'] ?? item['Image'] ?? item['SliderImage'] ?? item['url'] ?? item['path'] ?? item['sliderimage'];
-//         if (raw != null && raw.toString().trim().isNotEmpty) {
-//           final imageName = raw.toString().trim();
-//           final fullUrl = imageName.startsWith('http') ? imageName : '$uploadsBase${Uri.encodeComponent(imageName)}';
-//           urls.add(fullUrl);
-//         }
-//       }
-//     }
-//     return urls;
-//   } catch (e) {
-//     return [];
-//   }
-// }
-
-// 🏪 Restaurant Model
 class Restaurant {
   final String id;
   final String name;
