@@ -768,58 +768,6 @@ class Restaurant {
   }
 }
 
-// 🏪 Restaurant List Item Widget
-class _RestaurantListItem extends StatelessWidget {
-  final Restaurant restaurant;
-  final VoidCallback onViewAllItems;
-
-  const _RestaurantListItem({
-    required this.restaurant,
-    required this.onViewAllItems,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Restaurant Name
-          Expanded(
-            child: Text(
-              restaurant.name,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          // View All Items Link
-          GestureDetector(
-            onTap: onViewAllItems,
-            child: Text(
-              'View all items',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: StoreProfileTheme.accentPink,
-                decoration: TextDecoration.underline,
-                decorationColor: StoreProfileTheme.accentPink,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // 🌐 API Function for Restaurants (Production Ready)
 Future<List<Restaurant>> fetchRestaurantsByCategory(String category) async {
   // TODO: Replace with actual API call when backend is ready
