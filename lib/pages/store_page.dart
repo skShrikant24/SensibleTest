@@ -7,6 +7,7 @@ import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
 import 'package:GraBiTT/pages/cart_page.dart';
+import 'package:GraBiTT/pages/pick_deliver_order_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/Category.dart';
@@ -31,8 +32,6 @@ class StorePage extends StatefulWidget {
 
 class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String selectedCategory = 'all';
-  bool _isVendorLoading = false;
   late Future<List<Category>> _categoriesFuture;
   late Future<List<Vendor>> _vendorsFuture;
   final TextEditingController _searchController = TextEditingController();
@@ -43,13 +42,6 @@ class _StorePageState extends State<StorePage> {
 
   /// When true, bottom nav is hidden (scrolled down) → buttons sit at very bottom.
   bool _bottomBarHidden = false;
-
-  /// Cached so scrolling (rebuilds) doesn't create a new Future and refetch.
-  late Future<List<Product>> _productsFuture;
-
-  /// Slider images for the current category (getsilder API).
-  late Future<List<String>> _sliderFuture;
-
   /// Approximate height of main_shell bottom bar (with padding) so buttons sit above it when visible.
   static const double _bottomBarHeight = 72;
 
@@ -259,7 +251,7 @@ class _StorePageState extends State<StorePage> {
                 children: [
                   // Profile tab
                   HeaderPill(
-                    icon: Icons.person_outline,
+                    icon: Icons.monetization_on,
                     text: '25',
                     onTap: () => widget.onSelectTab(1),
                   ),
@@ -428,8 +420,12 @@ class _StorePageState extends State<StorePage> {
               title: AppLocalizations.of(context)!.pickAndDeliver,
               icon: Icons.local_shipping_outlined,
               onTap: () {
-                _showWorkInProgressDialog(context);
-                // TODO: Navigate to Pick & Deliver page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PickDeliverOrderPage(),
+                  ),
+                );
               },
             ),
           ),

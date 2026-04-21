@@ -21,12 +21,15 @@ Future<List<AddressModel>> getAddressByUser(String userID) async {
     final response = await http.get(uri);
     if (response.statusCode != 200) return [];
     final cleaned = _cleanResponse(response.body);
+    print("--------adress----GetAddressByUser--");
+    print(cleaned);
     if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
     final decoded = json.decode(cleaned);
     if (decoded is! List) return [];
     return decoded
         .map((e) => AddressModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+
   } catch (_) {
     return [];
   }
@@ -134,5 +137,79 @@ Future<bool> deleteAddress(String id) async {
         cleaned.toLowerCase() != 'fail';
   } catch (_) {
     return false;
+  }
+}
+
+class OrderRadiusCheckResult {
+  final bool allowed;
+  final String rawResponse;
+  final double? minDistanceKm;
+  final double? currentDistanceMeters;
+
+  const OrderRadiusCheckResult({
+    required this.allowed,
+    required this.rawResponse,
+    this.minDistanceKm,
+    this.currentDistanceMeters,
+  });
+
+  String get userMessage {
+    if (allowed) return 'Address is serviceable';
+    if (minDistanceKm == null || currentDistanceMeters == null) {
+      return 'Delivery is not available for this address right now.';
+    }
+    final currentKm = currentDistanceMeters!;
+    return 'Delivery not available: minimum distance is ${minDistanceKm!.toStringAsFixed(1)} km, your address is ${currentKm.toStringAsFixed(2)} km away.';
+  }
+}
+
+/// GET CheckOrderRadius?AddressID=string
+/// Success => "Success"
+/// Failure => "RadiusIssue|minDistanceKm|currentDistanceMeters"
+Future<OrderRadiusCheckResult> checkOrderRadius(String addressId) async {
+  if (addressId.trim().isEmpty) {
+    return const OrderRadiusCheckResult(
+      allowed: false,
+      rawResponse: 'Address id missing',
+    );
+  }
+  try {
+    final uri =
+        Uri.parse('$_baseUrl/WebService.asmx/CheckOrderRadius').replace(
+      queryParameters: {'AddressID': addressId},
+    );
+    final response = await http.get(uri);
+    if (response.statusCode != 200) {
+      return const OrderRadiusCheckResult(
+        allowed: false,
+        rawResponse: 'HTTP error',
+      );
+    }
+    final cleaned = _cleanResponse(response.body);
+    print("----WebService.asmx/CheckOrderRadius--AddressID----$addressId");
+    print(cleaned);
+    if (cleaned.toLowerCase() == 'success') {
+      return OrderRadiusCheckResult(allowed: true, rawResponse: cleaned);
+    }
+    if (cleaned.startsWith('RadiusIssue|')) {
+      final parts = cleaned.split('|');
+      final minDistanceKm =
+          parts.length > 1 ? double.tryParse(parts[1].trim()) : null;
+      final currentDistanceMeters =
+          parts.length > 2 ? double.tryParse(parts[2].trim()) : null;
+      print(currentDistanceMeters);
+      return OrderRadiusCheckResult(
+        allowed: false,
+        rawResponse: cleaned,
+        minDistanceKm: minDistanceKm,
+        currentDistanceMeters: currentDistanceMeters,
+      );
+    }
+    return OrderRadiusCheckResult(allowed: false, rawResponse: cleaned);
+  } catch (_) {
+    return const OrderRadiusCheckResult(
+      allowed: false,
+      rawResponse: 'Network error',
+    );
   }
 }

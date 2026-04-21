@@ -6,6 +6,7 @@ import 'package:GraBiTT/pages/vendor_products_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CategoryVendorsPage extends StatefulWidget {
   final String categoryName;
@@ -188,6 +189,13 @@ class _VendorCard extends StatelessWidget {
     required this.onTap,
   });
 
+  Future<void> _callVendor(String mobile) async {
+    final Uri url = Uri(scheme: 'tel', path: mobile);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final image = vendor.images.isNotEmpty
@@ -292,36 +300,95 @@ class _VendorCard extends StatelessWidget {
 
                   const SizedBox(width: 12),
 
-
-                  /// text info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Open Store Time: ${vendor?.OpeningTime ?? 'N/A'} to ${vendor?.ClosingTime ?? 'N/A'}",
+                          "Open Store Time: ${vendor.OpeningTime ?? 'N/A'} to ${vendor.ClosingTime ?? 'N/A'}",
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(height: 2),
 
-                        Text(
-                          AppLocalizations.of(context)!.browseAllProducts,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        const SizedBox(height: 4),
+
+                        /// 📞 MOBILE + CALL BUTTON
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "Mobile No: ${vendor.mobileNo.isNotEmpty
+                                    ? vendor.mobileNo
+                                    : "No contact"}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+
+                            // if (vendor.mobileNo.isNotEmpty)
+                            //   InkWell(
+                            //     onTap: () => _callVendor(vendor.mobileNo),
+                            //     child: Container(
+                            //       padding: const EdgeInsets.all(6),
+                            //       decoration: BoxDecoration(
+                            //         color: Colors.green,
+                            //         borderRadius: BorderRadius.circular(6),
+                            //       ),
+                            //       child: const Icon(
+                            //         Icons.call,
+                            //         color: Colors.white,
+                            //         size: 16,
+                            //       ),
+                            //     ),
+                            //   ),
+                          ],
                         ),
+
+                        // const SizedBox(height: 4),
+                        //
+                        // Text(
+                        //   AppLocalizations.of(context)!.browseAllProducts,
+                        //   style: GoogleFonts.poppins(
+                        //     fontSize: 14,
+                        //     fontWeight: FontWeight.w500,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
+                  /// text info
+                  // Expanded(
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Text(
+                  //         "Open Store Time: ${vendor?.OpeningTime ?? 'N/A'} to ${vendor?.ClosingTime ?? 'N/A'}",
+                  //         style: GoogleFonts.poppins(
+                  //           fontSize: 12,
+                  //           color: Colors.grey[600],
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 2),
+                  //
+                  //       Text(
+                  //         AppLocalizations.of(context)!.browseAllProducts,
+                  //         style: GoogleFonts.poppins(
+                  //           fontSize: 14,
+                  //           fontWeight: FontWeight.w500,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
 
                   /// arrow icon
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      size: 18,
-                      color: StoreProfileTheme.accentPink),
+                  // Icon(Icons.arrow_forward_ios_rounded,
+                  //     size: 18,
+                  //     color: StoreProfileTheme.accentPink),
                 ],
               ),
             ),

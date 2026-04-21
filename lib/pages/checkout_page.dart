@@ -25,7 +25,7 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  String paymentMethod = 'razorpay';
+  String paymentMethod = 'cod';
   final cart = CartService.instance;
   final PaymentService _paymentService = PaymentService.instance;
   String? _activeRazorpayOrderId;
@@ -34,6 +34,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   AddressModel? _selectedAddress;
   bool _loadingAddresses = true;
   String? _userId;
+  bool _checkingOrderRadius = false;
+  OrderRadiusCheckResult? _orderRadiusStatus;
 
   @override
   void initState() {
@@ -81,12 +83,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
           _loadingAddresses = false;
         });
       }
+      if (selected != null && mounted) {
+        await _validateSelectedAddressRadius(selected);
+      } else if (mounted) {
+        setState(() => _orderRadiusStatus = null);
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
           _addresses = [];
           _selectedAddress = null;
           _loadingAddresses = false;
+          _orderRadiusStatus = null;
         });
       }
     }
@@ -126,6 +134,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
       setState(() => _selectedAddress = picked);
       await SelectedAddressStorage.instance.save(picked);
       ToastMessage.success(context: context, msg: 'Address saved for checkout');
+      await _validateSelectedAddressRadius(picked);
+    }
+  }
+
+  Future<void> _validateSelectedAddressRadius(AddressModel address) async {
+    if (!mounted) return;
+    setState(() => _checkingOrderRadius = true);
+    final result = await checkOrderRadius(address.id);
+    if (!mounted) return;
+    setState(() {
+      _orderRadiusStatus = result;
+      _checkingOrderRadius = false;
+    });
+    if (!result.allowed) {
+      ToastMessage.warning(
+        context: context,
+        msg: result.userMessage,
+      );
     }
   }
 
@@ -265,28 +291,60 @@ class _CheckoutPageState extends State<CheckoutPage> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(14),
       decoration: _cardStyle(),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.location_on_outlined, color: StoreProfileTheme.accentPink),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _selectedAddress != null
-                  ? '${_selectedAddress!.addressType.isNotEmpty ? "${_selectedAddress!.addressType}\n" : ""}${_selectedAddress!.displaySummary}'
-                  : AppLocalizations.of(context)!.selectDeliveryAddress,
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: StoreProfileTheme.accentPink),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _selectedAddress != null
+                      ? '${_selectedAddress!.addressType.isNotEmpty ? "${_selectedAddress!.addressType}\n" : ""}${_selectedAddress!.displaySummary}'
+                      : AppLocalizations.of(context)!.selectDeliveryAddress,
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+              ),
+              TextButton(
+                onPressed: _openAddressSelector,
+                child: Text(
+                  _selectedAddress != null ? AppLocalizations.of(context)!.change : AppLocalizations.of(context)!.select,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    color: StoreProfileTheme.accentPink,
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: _openAddressSelector,
-            child: Text(
-              _selectedAddress != null ? AppLocalizations.of(context)!.change : AppLocalizations.of(context)!.select,
+          if (_checkingOrderRadius) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Checking delivery availability...',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+          ] else if (_orderRadiusStatus != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _orderRadiusStatus!.userMessage,
               style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: StoreProfileTheme.accentPink,
+                fontSize: 12,
+                color: _orderRadiusStatus!.allowed ? Colors.green[700] : Colors.red[700],
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -487,7 +545,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
     _activeRazorpayOrderId = null;
-    _navigateToWaitingPage();
   }
 
   Future<void> _onPlaceOrder() async {
@@ -507,6 +564,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ToastMessage.warning(
         context: context,
         msg: 'Please select address',
+      );
+      return;
+    }
+    if (_checkingOrderRadius) {
+      ToastMessage.warning(
+        context: context,
+        msg: 'Please wait, checking delivery availability...',
+      );
+      return;
+    }
+    if (_orderRadiusStatus == null || !_orderRadiusStatus!.allowed) {
+      ToastMessage.warning(
+        context: context,
+        msg: _orderRadiusStatus?.userMessage ??
+            'Delivery is not available for this address.',
       );
       return;
     }
@@ -580,6 +652,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _placeOrderBar() {
     final isDisabled = paymentMethod != "cod";
+    final radiusBlocked =
+        _selectedAddress != null &&
+        !_checkingOrderRadius &&
+        _orderRadiusStatus != null &&
+        !_orderRadiusStatus!.allowed;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -587,7 +664,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         height: 54,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: isDisabled
+            backgroundColor: (isDisabled || radiusBlocked)
                 ? Colors.grey
                 : StoreProfileTheme.accentPink,
             foregroundColor: Colors.white,
@@ -596,16 +673,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: (cart.items.isEmpty || isDisabled)
+          onPressed: (cart.items.isEmpty || isDisabled || radiusBlocked)
               ? () {
             if (isDisabled) {
               _showWorkInProgressDialog(context);
+            } else if (radiusBlocked) {
+              ToastMessage.warning(
+                context: context,
+                msg: _orderRadiusStatus?.userMessage ??
+                    'Delivery is not available for this address.',
+              );
             }
           }
               : _onPlaceOrder,
           child: Text(
             isDisabled
                 ? "Coming Soon 🚧"
+                : radiusBlocked
+                    ? 'Address not serviceable'
                 : AppLocalizations.of(context)!.placeOrder,
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -617,7 +702,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
-
 
   Divider _divider() => Divider(
       height: 1, color: StoreProfileTheme.border.withValues(alpha: 0.6));

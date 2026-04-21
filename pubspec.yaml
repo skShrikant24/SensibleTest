@@ -51,6 +51,7 @@ dependencies:
   #readotp: ^1.0.2
   package_info_plus: ^8.0.0
   razorpay_flutter: ^1.4.0
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
