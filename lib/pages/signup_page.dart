@@ -1,3 +1,4 @@
+import 'package:GraBiTT/utils/sharedClasses.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -100,12 +101,7 @@ class _SignupPageState extends State<SignupPage> {
     await _requestLocationAndGetPosition();
     if (!mounted) return;
     if (!_locationGranted || _latitude == null || _longitude == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_locationError ?? 'Please allow location to continue.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastMessage.warning(context: context, msg: _locationError ?? 'Please allow location to continue.');
       return;
     }
 
@@ -126,22 +122,12 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => _isLoading = false);
 
     if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created. Please log in.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+        ToastMessage.success(context: context, msg: 'Account created. Please log in.');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message ?? 'Sign up failed.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastMessage.error(context: context, msg: result.message ?? 'Sign up failed.');
     }
   }
 

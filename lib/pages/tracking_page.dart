@@ -1,3 +1,4 @@
+import 'package:GraBiTT/utils/sharedClasses.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -71,12 +72,7 @@ class _TrackingPageState extends State<TrackingPage> {
             });
             SoundService.instance.playDing();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text("Incorrect OTP. Please try again."),
-                backgroundColor: StoreProfileTheme.ctaAction,
-              ),
-            );
+            ToastMessage.error(context: context, msg: "Incorrect OTP. Please try again.");
           }
         },
       ),

@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:GraBiTT/utils/sharedClasses.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/address_management_page.dart';
 import 'package:GraBiTT/pages/login_page.dart';
+import 'package:GraBiTT/pages/order_history_page.dart';
 import 'package:GraBiTT/services/auth_service.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -265,8 +267,17 @@ class ProfilePage extends StatelessWidget {
           ),
 
           // 🔹 Orders Section
-       /*   _buildSectionHeader(AppLocalizations.of(context)!.orders),
-          _buildListItem(AppLocalizations.of(context)!.viewOrders),*/
+          _buildSectionHeader(AppLocalizations.of(context)!.orders),
+          _buildListItem(
+            AppLocalizations.of(context)!.viewOrders,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const OrderHistoryPage(),
+                ),
+              );
+            },
+          ),
 
           // 🔹 Settings Section
           _buildListItem(
@@ -278,12 +289,7 @@ class ProfilePage extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const LoginPage()),
                   (route) => false,
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)!.logoutSuccessfully, style: const TextStyle(color: Colors.white)),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                ToastMessage.error(context: context, msg: "Logout Successfully..!");
               }
             },
           ),

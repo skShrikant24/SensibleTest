@@ -11,6 +11,8 @@ import 'package:GraBiTT/pages/signup_page.dart';
 // import 'package:permission_handler/permission_handler.dart';
 // import 'package:readotp/readotp.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+import '../utils/sharedClasses.dart';
 // import 'package:sms_autofill/sms_autofill.dart';
 
 enum LoginStep { phoneNumber, otp, success }
@@ -174,9 +176,7 @@ class _LoginPageState extends State<LoginPage>
     });
 
     if (!sendResult.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(sendResult.message ?? 'Failed to send OTP')),
-      );
+      ToastMessage.error(context: context, msg: 'Failed to send OTP');
       return;
     }
 
@@ -261,13 +261,9 @@ class _LoginPageState extends State<LoginPage>
       setState(() => _isResendingOtp = false);
       if (result.success) {
         _storedOtp = otp;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP resent successfully')),
-        );
+        ToastMessage.success(context: context, msg: 'OTP resent successfully');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message ?? 'Failed to resend OTP')),
-        );
+        ToastMessage.error(context: context, msg: result.message ?? 'Failed to resend OTP');
       }
     }
   }
@@ -277,9 +273,7 @@ class _LoginPageState extends State<LoginPage>
     final entered = _otpCode.length == 4 ? _otpCode : _otpControllers.map((c) => c.text).join();
     if (entered.length != 4 || _storedOtp == null || _loggedInUser == null) return;
     if (entered != _storedOtp) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid OTP. Please try again.')),
-      );
+      ToastMessage.error(context: context, msg: 'Invalid OTP. Please try again.');
       return;
     }
 
