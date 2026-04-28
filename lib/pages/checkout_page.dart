@@ -41,6 +41,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _paymentService.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      cart.syncCartFromServer();
+    });
     _loadAddressesAndSelection();
   }
 
@@ -498,17 +501,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardStyle(),
+      child: Column(
+        children: [
+          _priceRow(AppLocalizations.of(context)!.subtotal, cart.subtotal),
+          _priceRow("Delivery Charge", cart.deliveryCharge),
+          _priceRow("Extra Charge", cart.extraCharge),
+          _priceRow("GST", cart.gst),
+          const Divider(height: 20),
+          _priceRow("Final Total", cart.finalTotal, isFinal: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, double amount, {bool isFinal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(AppLocalizations.of(context)!.subtotal,
-              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87)),
           Text(
-            "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
+            label,
             style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: StoreProfileTheme.accentPink),
+              fontSize: isFinal ? 15 : 13,
+              fontWeight: isFinal ? FontWeight.w600 : FontWeight.w400,
+              color: isFinal ? Colors.black : Colors.black87,
+            ),
+          ),
+          Text(
+            "${AppConstants.currencySymbol}${amount.toStringAsFixed(0)}",
+            style: GoogleFonts.poppins(
+              fontSize: isFinal ? 18 : 14,
+              fontWeight: isFinal ? FontWeight.bold : FontWeight.w500,
+              color: StoreProfileTheme.accentPink,
+            ),
           ),
         ],
       ),
@@ -582,7 +608,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     }
-    final amount = cart.subtotal;
+    final amount = cart.finalTotal;
 
     if (paymentMethod == 'razorpay') {
       final amountPaise = (amount * 100).round();

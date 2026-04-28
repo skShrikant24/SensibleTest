@@ -17,6 +17,14 @@ class _CartPageState extends State<CartPage> {
   final cart = CartService.instance;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      cart.syncCartFromServer();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: cart,
@@ -41,7 +49,9 @@ class _CartPageState extends State<CartPage> {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          body: cart.items.isEmpty
+          body: (cart.isSyncingCart && cart.items.isEmpty)
+              ? const Center(child: CircularProgressIndicator())
+              : cart.items.isEmpty
               ? _emptyCart()
               : Column(
             children: [
@@ -186,11 +196,18 @@ class _CartPageState extends State<CartPage> {
                   style: GoogleFonts.poppins(
                       fontSize: 13, color: Colors.grey.shade600)),
               Text(
-                "${AppConstants.currencySymbol}${cart.subtotal.toInt()}",
+                "${AppConstants.currencySymbol}${cart.finalTotal.toStringAsFixed(0)}",
                 style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: StoreProfileTheme.accentPink),
+              ),
+              Text(
+                "Items: ${AppConstants.currencySymbol}${cart.subtotal.toStringAsFixed(0)}",
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),

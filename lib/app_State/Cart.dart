@@ -49,9 +49,20 @@ class CartService extends ChangeNotifier {
 
   final List<CartItem> items = [];
   bool _shouldAnimateCart = false;
+  double _cartTotal = 0.0;
+  double _deliveryCharge = 0.0;
+  double _extraCharge = 0.0;
+  double _gst = 0.0;
+  double _finalTotal = 0.0;
+  bool _isSyncingCart = false;
 
   double get subtotal =>
-      items.fold(0.0, (sum, item) => sum + item.total);
+      _cartTotal > 0 ? _cartTotal : items.fold(0.0, (sum, item) => sum + item.total);
+  double get deliveryCharge => _deliveryCharge;
+  double get extraCharge => _extraCharge;
+  double get gst => _gst;
+  double get finalTotal => _finalTotal > 0 ? _finalTotal : subtotal;
+  bool get isSyncingCart => _isSyncingCart;
 
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
 
@@ -122,18 +133,17 @@ class CartService extends ChangeNotifier {
   }
 
   void increase(CartItem item) async{
-    if (item.product != null) {
-      await CartApiService.increaseQty(item.product.id!);
-    }
+    final apiId = item.cartId ?? item.product.id;
+    await CartApiService.increaseQty(apiId);
     item.quantity++;
     notifyListeners();
     _saveToStorage();
+    await syncCartFromServer();
   }
 
   void decrease(CartItem item) async{
-    if (item.product != null) {
-      await CartApiService.decreaseQty(item.product.id!);
-    }
+    final apiId = item.cartId ?? item.product.id;
+    await CartApiService.decreaseQty(apiId);
     if (item.quantity > 1) {
       item.quantity--;
     } else {
@@ -141,50 +151,92 @@ class CartService extends ChangeNotifier {
     }
     notifyListeners();
     _saveToStorage();
+    await syncCartFromServer();
   }
 
   void remove(CartItem item) async{
-    if (item.product != null) {
-      await CartApiService.removeItem(item.product.id!);
-    }
+    final apiId = item.cartId ?? item.product.id;
+    await CartApiService.removeItem(apiId);
     items.remove(item);
     notifyListeners();
     _saveToStorage();
+    await syncCartFromServer();
   }
 
   Future<void> syncCartFromServer() async {
-    final ctx = await getUserContext();
-
-    final response = await CartApiService.getCart(
-      userId: ctx['userId']!,
-      macId: ctx['macId']!,
-      lang: "en",
-    );
-
-    if (response == null) return;
-
-    items.clear();
-
-    for (var item in response) {
-      final product = Product.fromJson(item);
-
-      items.add(
-        CartItem(
-          product: product,
-          quantity: int.tryParse(item['Qty'].toString()) ?? 1,
-          cartId: item['ID'].toString(), // 🔥 CRITICAL
-        ),
-      );
-    }
-
+    _isSyncingCart = true;
     notifyListeners();
+    try {
+      final ctx = await getUserContext();
+
+      final response = await CartApiService.getCart(
+        userId: ctx['userId']!,
+        macId: ctx['macId']!,
+        lang: "en",
+      );
+
+      if (response == null) {
+        return;
+      }
+
+      items.clear();
+      _cartTotal = _toDouble(response['CartTotal']);
+      _deliveryCharge = _toDouble(response['DeliveryCharge']);
+      _extraCharge = _toDouble(response['ExtraCharge']);
+      _gst = _toDouble(response['GST']);
+      _finalTotal = _toDouble(response['FinalTotal']);
+
+      final rawItems = response['CartItems'];
+      if (rawItems is List) {
+        for (final rawItem in rawItems) {
+          if (rawItem is! Map) continue;
+          final item = Map<String, dynamic>.from(rawItem);
+          final product = Product.fromJson({
+            'ProductID': item['ProductID']?.toString() ?? '',
+            'ProductName': item['ProductName']?.toString() ?? '',
+            'CategoryName': item['CategoryName']?.toString() ?? '',
+            'OriginalPrice': item['OriginalPrice']?.toString() ?? '0',
+            'DiscountPrice': item['DiscountPrice']?.toString() ?? '0',
+            'DiscountPercent': item['DiscountPercent']?.toString() ?? '0',
+            'ProductImage': CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
+            'Image1': '',
+            'Image2': '',
+            'Image3': '',
+            'Image4': '',
+            'Image5': '',
+            'description': item['Description']?.toString() ?? '',
+          });
+
+          items.add(
+            CartItem(
+              product: product,
+              quantity: int.tryParse(item['Quantity']?.toString() ?? '1') ?? 1,
+              cartId: item['ID']?.toString(),
+            ),
+          );
+        }
+      }
+    } finally {
+      _isSyncingCart = false;
+      notifyListeners();
+    }
     _saveToStorage();
   }
 
   /// Clears cart and persists (e.g. after order placed).
   void clearCart() {
     items.clear();
+    _cartTotal = 0.0;
+    _deliveryCharge = 0.0;
+    _extraCharge = 0.0;
+    _gst = 0.0;
+    _finalTotal = 0.0;
     notifyListeners();
     _saveToStorage();
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '0') ?? 0.0;
   }
 }

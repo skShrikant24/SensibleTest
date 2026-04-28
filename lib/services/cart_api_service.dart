@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 class CartApiService {
   static const String baseUrl = "https://grabitt.in/webservice.asmx";
+  static const String _imageBaseUrl = "https://grabitt.in";
 
   static Future<dynamic> _get(String endpoint) async {
     try {
@@ -46,13 +47,34 @@ class CartApiService {
   }
 
   /// Get cart
-  static Future getCart({
+  static Future<Map<String, dynamic>?> getCart({
     required String userId,
     required String macId,
     required String lang,
-  }) {
-    return _get(
-        "GetCart?UserID=$userId&MacID=$macId&lang=$lang");
+  }) async {
+    final response = await _get(
+      "GetCart?UserID=$userId&MacID=$macId&lang=$lang",
+    );
+    if (response == null) return null;
+
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+
+    if (response is String) {
+      final trimmed = response.trim();
+      if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+      if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is Map<String, dynamic>) return decoded;
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Increase qty
@@ -87,5 +109,16 @@ class CartApiService {
   }) {
     return _get(
         "PlaceOrder?UserID=$userId&MacID=$macId&PaymentMode=$paymentMode&AddressID=$addressId");
+  }
+
+  static String resolveImageUrl(String rawImagePath) {
+    final path = rawImagePath.trim();
+    if (path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    final normalizedPath = path
+        .replaceFirst('~/', '')
+        .replaceFirst('~', '')
+        .replaceFirst(RegExp(r'^/+'), '');
+    return "$_imageBaseUrl/$normalizedPath";
   }
 }

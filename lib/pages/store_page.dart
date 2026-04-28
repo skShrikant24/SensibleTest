@@ -3,6 +3,7 @@ import 'package:GraBiTT/pages/category_vendors_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
@@ -433,11 +434,10 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: _ActionButton(
-              title: AppLocalizations.of(context)!.quickOrder,
+              title: "Medicine, Grocery or\nPesticides prescription",
               icon: Icons.flash_on,
               onTap: () {
-                _showWorkInProgressDialog(context);
-                // TODO: Navigate to Quick Order page
+                _showQuickOrderDisclaimer(context);
               },
             ),
           ),
@@ -446,8 +446,8 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  void _showWorkInProgressDialog(BuildContext context) {
-    showDialog(
+  void _showQuickOrderDisclaimer(BuildContext context) {
+    showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (context) {
@@ -460,46 +460,36 @@ class _StorePageState extends State<StorePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 🚧 Icon / Illustration
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: StoreProfileTheme.accentPink.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.construction,
+                    Icons.warning_amber_rounded,
                     size: 40,
-                    color: Colors.orange,
+                    color: StoreProfileTheme.accentPink,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // Title
                 Text(
-                  "Coming Soon 🚀",
+                  "Disclaimer",
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Subtitle
                 Text(
-                  "We're working hard to bring this feature to you.\nStay tuned!",
+                  "GraB iTT! is a medicine delivery service platform. We do not provide medical advice, diagnosis, or treatment. All medicines are delivered based on valid prescriptions from licensed medical practitioners. Please consult with a qualified healthcare professional before using any medication. We are not responsible for any adverse effects or complications arising from the use of medicines ordered through our platform. Also, Pesticides for lawful use only. Follow label instructions. Keep away from children. GraB iTT! is not responsible for any misuse.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     color: Colors.grey[600],
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -509,10 +499,13 @@ class _StorePageState extends State<StorePage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _openQuickOrderWhatsApp(context);
+                    },
                     child: Text(
-                      "Got it",
-                      style: TextStyle(color: Colors.white),
+                      "OKAY",
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -521,6 +514,25 @@ class _StorePageState extends State<StorePage> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openQuickOrderWhatsApp(BuildContext context) async {
+    const message =
+        "Hi GraB iTT!, I want to place a Quick Order. I will share my prescription or grocery list.";
+    final whatsappUri = Uri.parse(
+      "https://wa.me/916360974868?text=${Uri.encodeComponent(message)}",
+      // "https://wa.me/919764658896?text=${Uri.encodeComponent(message)}",
+    );
+
+    if (await canLaunchUrl(whatsappUri)) {
+      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Unable to open WhatsApp right now.")),
     );
   }
 }
