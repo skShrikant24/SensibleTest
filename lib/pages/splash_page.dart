@@ -11,7 +11,8 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _logoOffset;
   late Animation<Offset> _textOffset;
@@ -49,21 +50,40 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       begin: 0,
       end: 1,
     ).animate(_controller);
-
+   
     _controller.forward();
 
     // Navigate after splash: if already logged in go to main app, else onboarding
-    Timer(const Duration(seconds: 3), () async {
-      if (!context.mounted) return;
-      final loggedIn = await AuthService.instance.isLoggedIn();
-      if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => loggedIn ? const MainShell() : const OnboardingScreen(),
-        ),
-      );
-    });
+     _navigateAfterSplash();
+    // Timer(const Duration(seconds: 3), () async {
+    //   if (!context.mounted) return;
+    //   final loggedIn = await AuthService.instance.isLoggedIn();
+    //   if (!context.mounted) return;
+    //   Navigator.pushReplacement(
+    //     context,
+    //     MaterialPageRoute(
+    //       builder: (_) =>
+    //           loggedIn ? const MainShell() : const OnboardingScreen(),
+    //     ),
+    //   );
+    // });
+  }
+   Future<void> _navigateAfterSplash() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    final loggedIn = await AuthService.instance.isLoggedIn();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            loggedIn ? const MainShell() : const OnboardingScreen(),
+      ),
+    );
   }
 
   @override
@@ -91,11 +111,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   height: 300,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.error,
-                      size: 100,
-                      color: Colors.red
-                    );
+                    return const Icon(Icons.error,
+                        size: 100, color: Colors.red);
                   },
                 ),
               ),
