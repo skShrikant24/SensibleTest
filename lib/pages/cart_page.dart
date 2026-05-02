@@ -5,9 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../app_State/cart.dart';
 import '../utils/constants.dart';
-class CartPage extends StatefulWidget {
-  const CartPage({super.key });
 
+class CartPage extends StatefulWidget {
+  const CartPage({super.key});
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -52,27 +52,26 @@ class _CartPageState extends State<CartPage> {
           body: (cart.isSyncingCart && cart.items.isEmpty)
               ? const Center(child: CircularProgressIndicator())
               : cart.items.isEmpty
-              ? _emptyCart()
-              : Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cart.items.length,
-                  itemBuilder: (context, index) {
-                    final item = cart.items[index];
-                    return _cartItem(item);
-                  },
-                ),
-              ),
-              _checkoutBar(),
-            ],
-          ),
+                  ? _emptyCart()
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: cart.items.length,
+                            itemBuilder: (context, index) {
+                              final item = cart.items[index];
+                              return _cartItem(item);
+                            },
+                          ),
+                        ),
+                        _checkoutBar(),
+                      ],
+                    ),
         );
       },
     );
   }
-
 
   Widget _cartItem(CartItem item) {
     return Container(
@@ -94,15 +93,27 @@ class _CartPageState extends State<CartPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              item.product.allImages.first,
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-            ),
+            child: (item.product.allImages.isNotEmpty)
+                ? Image.network(
+                    item.product.allImages.first,
+                    width: 70,
+                    height: 70,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 70,
+                    height: 70,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image),
+                  ),
           ),
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,13 +136,13 @@ class _CartPageState extends State<CartPage> {
               ],
             ),
           ),
-
           Column(
             children: [
               Row(
                 children: [
                   _qtyButton(Icons.remove, () {
-                    setState(() => cart.decrease(item));
+                    // setState(() => cart.decrease(item));
+                    cart.decrease(item);
                   }),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -141,14 +152,17 @@ class _CartPageState extends State<CartPage> {
                     ),
                   ),
                   _qtyButton(Icons.add, () {
-                    setState(() => cart.increase(item));
+                    // setState(() => cart.increase(item));
+                    cart.increase(item);
                   }),
                 ],
               ),
               IconButton(
-                icon: Icon(Icons.delete_outline, color: StoreProfileTheme.accentPink),
+                icon: Icon(Icons.delete_outline,
+                    color: StoreProfileTheme.accentPink),
                 onPressed: () {
-                  setState(() => cart.remove(item));
+                  // setState(() => cart.remove(item));
+                   cart.remove(item);
                 },
               ),
             ],
@@ -215,8 +229,7 @@ class _CartPageState extends State<CartPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: StoreProfileTheme.accentPink,
               foregroundColor: Colors.white,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -225,13 +238,13 @@ class _CartPageState extends State<CartPage> {
             onPressed: cart.items.isEmpty
                 ? null
                 : () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CheckoutPage(),
-                ),
-              );
-            },
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CheckoutPage(),
+                      ),
+                    );
+                  },
             child: Text(
               AppLocalizations.of(context)!.checkout,
               style: const TextStyle(color: Colors.white),
@@ -241,7 +254,6 @@ class _CartPageState extends State<CartPage> {
       ),
     );
   }
-
 
   Widget _emptyCart() {
     return Center(
@@ -254,7 +266,8 @@ class _CartPageState extends State<CartPage> {
           Text(
             "Your cart is empty",
             style: GoogleFonts.poppins(
-                fontSize: 16, color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
+                fontSize: 16,
+                color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
           ),
         ],
       ),
