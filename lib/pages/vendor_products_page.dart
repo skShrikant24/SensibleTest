@@ -7,7 +7,7 @@ import 'package:GraBiTT/models/product.dart';
 import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/sharedClasses.dart';
+import 'package:GraBiTT/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;

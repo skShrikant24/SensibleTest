@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:GraBiTT/utils/sharedClasses.dart';
+import 'package:GraBiTT/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';

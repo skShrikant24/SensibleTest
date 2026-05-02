@@ -8,7 +8,7 @@ import 'package:GraBiTT/models/address_model.dart';
 import 'package:GraBiTT/services/address_api_service.dart';
 import 'package:GraBiTT/services/auth_service.dart';
 import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/sharedClasses.dart';
+import 'package:GraBiTT/utils/shared_classes.dart';
 
 class AddressManagementPage extends StatefulWidget {
   const AddressManagementPage({super.key});

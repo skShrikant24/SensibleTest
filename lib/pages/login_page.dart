@@ -12,7 +12,7 @@ import 'package:GraBiTT/pages/signup_page.dart';
 // import 'package:readotp/readotp.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../utils/sharedClasses.dart';
+import '../utils/shared_classes.dart';
 // import 'package:sms_autofill/sms_autofill.dart';
 
 enum LoginStep { phoneNumber, otp, success }

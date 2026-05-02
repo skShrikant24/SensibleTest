@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static final String USER_NAME = "Hello";
-  static final String APP_NAME = "GraBiTT";
+  static final String userName = "Hello";
+  static final String appName = "GraBiTT";
   /// Indian Rupee symbol – use for all price displays (no dollar).
   static const String currencySymbol = '₹';
 }

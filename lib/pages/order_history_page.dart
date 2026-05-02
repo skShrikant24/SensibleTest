@@ -1,4 +1,4 @@
-import 'package:GraBiTT/utils/sharedClasses.dart';
+import 'package:GraBiTT/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/models/order_history_item.dart';

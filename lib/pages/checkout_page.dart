@@ -13,7 +13,7 @@ import 'package:GraBiTT/services/payment_service.dart';
 import 'package:GraBiTT/services/razorpay_order_service.dart';
 import 'package:GraBiTT/services/selected_address_storage.dart';
 import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/sharedClasses.dart';
+import 'package:GraBiTT/utils/shared_classes.dart';
 
 import '../services/cart_api_service.dart';
 
