@@ -135,7 +135,8 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: StoreProfileTheme.accentPink),
+              child: CircularProgressIndicator(
+                  color: StoreProfileTheme.accentPink),
             )
           : _userId == null || _userId!.isEmpty
               ? Center(
@@ -144,10 +145,12 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
+                        Icon(Icons.person_off,
+                            size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(context)!.pleaseLogInToManageAddresses,
+                          AppLocalizations.of(context)!
+                              .pleaseLogInToManageAddresses,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
@@ -166,7 +169,8 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                           Icon(
                             Icons.location_off_outlined,
                             size: 72,
-                            color: StoreProfileTheme.accentPink.withValues(alpha: 0.6),
+                            color: StoreProfileTheme.accentPink
+                                .withValues(alpha: 0.6),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -201,7 +205,8 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
-                                color: StoreProfileTheme.border.withValues(alpha: 0.5),
+                                color: StoreProfileTheme.border
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                             child: ListTile(
@@ -210,7 +215,9 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                                 vertical: 12,
                               ),
                               title: Text(
-                                a.addressType.isNotEmpty ? a.addressType : 'Address',
+                                a.addressType.isNotEmpty
+                                    ? a.addressType
+                                    : 'Address',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w600,
                                   color: StoreProfileTheme.accentPink,
@@ -362,7 +369,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
         return;
       }
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
       if (mounted) {
         _lon.text = position.longitude.toString();
@@ -464,7 +473,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
         backgroundColor: StoreProfileTheme.background,
         elevation: 0,
         title: Text(
-          isEdit ? AppLocalizations.of(context)!.editAddress : AppLocalizations.of(context)!.addAddress,
+          isEdit
+              ? AppLocalizations.of(context)!.editAddress
+              : AppLocalizations.of(context)!.addAddress,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: StoreProfileTheme.accentPink,
@@ -557,7 +568,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
                       )
                     : const Icon(Icons.my_location),
                 label: Text(
-                  _loadingLocation ? 'Getting location...' : 'Get current location',
+                  _loadingLocation
+                      ? 'Getting location...'
+                      : 'Get current location',
                   style: GoogleFonts.poppins(fontSize: 14),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -605,7 +618,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, {bool required = false}) {
+  Widget _buildField(String label, TextEditingController controller,
+      {bool required = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -634,12 +648,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: StoreProfileTheme.accentPink, width: 1.5),
+                borderSide:
+                    BorderSide(color: StoreProfileTheme.accentPink, width: 1.5),
               ),
             ),
             validator: required
                 ? (v) {
-                    if (v == null || v.toString().trim().isEmpty) return 'Required';
+                    if (v == null || v.toString().trim().isEmpty)
+                      return 'Required';
                     return null;
                   }
                 : null,
