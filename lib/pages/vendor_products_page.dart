@@ -290,7 +290,7 @@ class _ProductCard extends StatelessWidget {
                 },
                 onDecrease: () => cart.decrease(cartItem!),
               ))
-                  : _OutOfStock(),
+                  : _outOfStock(),
             ),
           ],
         ),
@@ -309,7 +309,7 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
-  Widget _OutOfStock() {
+  Widget _outOfStock() {
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 10),

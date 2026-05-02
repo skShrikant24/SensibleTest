@@ -16,7 +16,7 @@ const String _geoapifyApiKey = 'd23ffd31df254fe59912a07a909c69e4';
 
 class ProfilePage extends StatelessWidget {
   final ValueChanged<int> onSelectTab;
-  ProfilePage({super.key, required this.onSelectTab});
+  const ProfilePage({super.key, required this.onSelectTab});
 
   /// Safe string from saved user map (API keys: Name, Email, phone, Sex, DateOfBirth, lan, lon).
   static String _str(Map<String, dynamic>? user, String key) {
