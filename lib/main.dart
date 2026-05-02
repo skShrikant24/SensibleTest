@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/app_State/cart.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'app.dart';
 

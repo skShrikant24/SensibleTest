@@ -12,7 +12,7 @@ import 'package:GraBiTT/pages/pick_deliver_order_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category.dart';
-import '../app_State/Cart.dart';
+import '../app_State/cart.dart';
 import '../utils/constants.dart';
 
 class StorePage extends StatefulWidget {
@@ -856,7 +856,7 @@ List<Restaurant> _getDummyRestaurants(String category) {
     // Default: return restaurants for any other category
     return List.generate(2, (index) => Restaurant(
       id: 'store_${index + 1}',
-      name: '${category} Store ${index + 1}',
+      name: '$category Store ${index + 1}',
       category: category,
       rating: 4.0,
     ));

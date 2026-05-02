@@ -3,7 +3,7 @@ import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../app_State/Cart.dart';
+import '../app_State/cart.dart';
 import '../services/sound_service.dart';
 import 'cart_page.dart';
 
@@ -341,7 +341,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withOpacity(0.1),
+                          color: Colors.redAccent.withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -461,7 +461,7 @@ class _PaperPlaneOverlay extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha:0.3),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),

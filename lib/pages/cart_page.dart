@@ -3,7 +3,7 @@ import 'package:GraBiTT/pages/checkout_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../app_State/Cart.dart';
+import '../app_State/cart.dart';
 import '../utils/constants.dart';
 class CartPage extends StatefulWidget {
   const CartPage({super.key });

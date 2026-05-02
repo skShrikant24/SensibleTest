@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/app_State/cart.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/address_model.dart';
 import 'package:GraBiTT/pages/address_management_page.dart';

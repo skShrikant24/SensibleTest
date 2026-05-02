@@ -654,8 +654,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
             ),
             validator: required
                 ? (v) {
-                    if (v == null || v.toString().trim().isEmpty)
+                    if (v == null || v.toString().trim().isEmpty) {
                       return 'Required';
+                    }
                     return null;
                   }
                 : null,

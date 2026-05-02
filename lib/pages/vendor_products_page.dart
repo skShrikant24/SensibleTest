@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/app_State/Cart.dart';
+import 'package:GraBiTT/app_State/cart.dart';
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/product.dart';
