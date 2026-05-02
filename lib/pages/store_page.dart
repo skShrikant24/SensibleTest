@@ -11,8 +11,7 @@ import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:GraBiTT/pages/pick_deliver_order_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/Category.dart';
-import '../models/product.dart';
+import '../models/category.dart';
 import '../app_State/Cart.dart';
 import '../utils/constants.dart';
 
