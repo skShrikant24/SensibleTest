@@ -305,7 +305,7 @@ class _VendorCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Open Store Time: ${vendor.OpeningTime ?? 'N/A'} to ${vendor.ClosingTime ?? 'N/A'}",
+                          "Open Store Time: ${vendor.openingTime} to ${vendor.closingTime}",
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.grey[600],

@@ -4,8 +4,8 @@ class Vendor {
   final String categoryName;
   final String city;
   final String mobileNo;
-  final String OpeningTime;
-  final String ClosingTime;
+  final String openingTime;
+  final String closingTime;
   final List<String> images;
 
   Vendor({
@@ -14,8 +14,8 @@ class Vendor {
     required this.categoryName,
     required this.city,
     required this.mobileNo,
-    required this.OpeningTime,
-    required this.ClosingTime,
+    required this.openingTime,
+    required this.closingTime,
     required this.images,
   });
 
@@ -42,8 +42,8 @@ class Vendor {
       categoryName: json['CategoryName']?.toString() ?? '',
       city: json['City']?.toString() ?? '',
       mobileNo: json['MobileNo']?.toString() ?? '',
-      OpeningTime: json['OpeningTime']?.toString() ?? 'NA',
-      ClosingTime: json['ClosingTime']?.toString() ?? 'NA',
+      openingTime: json['OpeningTime']?.toString() ?? 'NA',
+      closingTime: json['ClosingTime']?.toString() ?? 'NA',
       images: imageList,
     );
   }
@@ -58,8 +58,8 @@ Vendor(
   city: $city,
   mobile: $mobileNo,
   images: $images,
-  OpeningTime: $OpeningTime,
-  ClosingTime: $ClosingTime,
+  OpeningTime: $openingTime,
+  ClosingTime: $closingTime,
 )
 ''';
   }

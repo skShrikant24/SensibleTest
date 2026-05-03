@@ -272,7 +272,7 @@ class _ProductCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: vendorProduct.IsActive == 1
+              child: vendorProduct.isActive == 1
                   ? (cartItem == null
                   ? _AddButton(
                 onPressed: () {
