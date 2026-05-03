@@ -1,6 +1,6 @@
 import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/models/Vender.dart';
+import 'package:GraBiTT/models/vender.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 import 'package:GraBiTT/pages/vendor_products_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
