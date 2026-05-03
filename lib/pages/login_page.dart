@@ -24,10 +24,9 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
-    with TickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   LoginStep _currentStep = LoginStep.phoneNumber;
-  
+
   // Phone number input
   final TextEditingController _phoneController = TextEditingController();
   final FocusNode _phoneFocusNode = FocusNode();
@@ -35,7 +34,7 @@ class _LoginPageState extends State<LoginPage>
   Animation<double>? _pulseAnimation;
   Animation<double>? _jumpAnimation;
   bool _isPhoneValid = false;
-  
+
   // OTP input (used with PinFieldAutoFill for SMS autofill)
   String _otpCode = '';
   String? _storedOtp;
@@ -45,11 +44,12 @@ class _LoginPageState extends State<LoginPage>
   bool _isResendingOtp = false;
 
   // Legacy 4-box OTP (kept for manual entry fallback / animation)
-  final List<TextEditingController> _otpControllers = List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers =
+      List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(4, (_) => FocusNode());
-  List<AnimationController> _otpSlideControllers = [];
-  List<Animation<Offset>> _otpSlideAnimations = [];
-  
+  final List<AnimationController> _otpSlideControllers = [];
+  final List<Animation<Offset>> _otpSlideAnimations = [];
+
   // Verification success
   AnimationController? _successController;
   Animation<double>? _rotationAnimation;
@@ -75,11 +75,11 @@ class _LoginPageState extends State<LoginPage>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut),
     );
-    
+
     _jumpAnimation = Tween<double>(begin: 0.0, end: -8.0).animate(
       CurvedAnimation(parent: _pulseController!, curve: Curves.elasticOut),
     );
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage>
         duration: const Duration(milliseconds: 600),
       );
       _otpSlideControllers.add(controller);
-      
+
       final animation = Tween<Offset>(
         begin: const Offset(0, 0.5),
         end: Offset.zero,
@@ -109,14 +109,14 @@ class _LoginPageState extends State<LoginPage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    
+
     _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _successController!,
         curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
       ),
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
         parent: _successController!,
@@ -128,7 +128,7 @@ class _LoginPageState extends State<LoginPage>
   void _onPhoneChanged() {
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
     final isValid = phone.length >= 10;
-    
+
     if (isValid != _isPhoneValid) {
       setState(() {
         _isPhoneValid = isValid;
@@ -161,8 +161,8 @@ class _LoginPageState extends State<LoginPage>
     late String otp;
 
     if (phone == "9158724772") {
-      otp="5555";
-    }else{
+      otp = "5555";
+    } else {
       otp = '${1000 + Random().nextInt(9000)}';
     }
 
@@ -183,7 +183,9 @@ class _LoginPageState extends State<LoginPage>
     _storedOtp = otp;
     _loggedInUser = result.user;
     _otpCode = '';
-    for (var c in _otpControllers) c.clear();
+    for (var c in _otpControllers) {
+      c.clear();
+    }
     setState(() => _currentStep = LoginStep.otp);
 
     try {
@@ -234,7 +236,8 @@ class _LoginPageState extends State<LoginPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+            child:
+                Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
@@ -243,7 +246,10 @@ class _LoginPageState extends State<LoginPage>
                 MaterialPageRoute(builder: (_) => const SignupPage()),
               );
             },
-            child: Text('Sign up', style: GoogleFonts.poppins(color: const Color(0xFFFF0000), fontWeight: FontWeight.w600)),
+            child: Text('Sign up',
+                style: GoogleFonts.poppins(
+                    color: const Color(0xFFFF0000),
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -263,17 +269,23 @@ class _LoginPageState extends State<LoginPage>
         _storedOtp = otp;
         ToastMessage.success(context: context, msg: 'OTP resent successfully');
       } else {
-        ToastMessage.error(context: context, msg: result.message ?? 'Failed to resend OTP');
+        ToastMessage.error(
+            context: context, msg: result.message ?? 'Failed to resend OTP');
       }
     }
   }
 
   /// Verify entered OTP with stored OTP; on match save user and navigate to main app.
   Future<void> _verifyOtp() async {
-    final entered = _otpCode.length == 4 ? _otpCode : _otpControllers.map((c) => c.text).join();
-    if (entered.length != 4 || _storedOtp == null || _loggedInUser == null) return;
+    final entered = _otpCode.length == 4
+        ? _otpCode
+        : _otpControllers.map((c) => c.text).join();
+    if (entered.length != 4 || _storedOtp == null || _loggedInUser == null) {
+      return;
+    }
     if (entered != _storedOtp) {
-      ToastMessage.error(context: context, msg: 'Invalid OTP. Please try again.');
+      ToastMessage.error(
+          context: context, msg: 'Invalid OTP. Please try again.');
       return;
     }
 
@@ -296,7 +308,9 @@ class _LoginPageState extends State<LoginPage>
     for (int i = 0; i < 4; i++) {
       if (i < (code?.length ?? 0)) {
         _otpControllers[i].text = code![i];
-        if (_otpSlideControllers[i].value == 0) _otpSlideControllers[i].forward();
+        if (_otpSlideControllers[i].value == 0) {
+          _otpSlideControllers[i].forward();
+        }
       } else {
         _otpControllers[i].clear();
       }
@@ -367,7 +381,7 @@ class _LoginPageState extends State<LoginPage>
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 30),
-          
+
           // Title
           Text(
             "Welcome to GraB iTT!",
@@ -388,7 +402,7 @@ class _LoginPageState extends State<LoginPage>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          
+
           // Phone input with pulse animation
           AnimatedBuilder(
             animation: _pulseController!,
@@ -402,8 +416,8 @@ class _LoginPageState extends State<LoginPage>
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(
-                            _pulseController!.value * 0.3,
+                          color: Colors.blue.withValues(
+                            alpha: (_pulseController!.value * 0.3),
                           ),
                           blurRadius: 20,
                           spreadRadius: 2,
@@ -463,13 +477,15 @@ class _LoginPageState extends State<LoginPage>
             },
           ),
           const SizedBox(height: 12),
-          
+
           // Continue button
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp) ? _sendOtp : null,
+              onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp)
+                  ? _sendOtp
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: StoreProfileTheme.accentPink,
                 disabledBackgroundColor: Colors.grey[300],
@@ -482,7 +498,10 @@ class _LoginPageState extends State<LoginPage>
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white)),
                     )
                   : Text(
                       'Continue',
@@ -530,7 +549,9 @@ class _LoginPageState extends State<LoginPage>
             builder: (context, snapshot) {
               final version = snapshot.data?.version ?? '';
               final build = snapshot.data?.buildNumber ?? '';
-              final text = version.isEmpty ? '' : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
+              final text = version.isEmpty
+                  ? ''
+                  : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
               if (text.isEmpty) return const SizedBox.shrink();
               return Text(
                 text,
@@ -568,13 +589,15 @@ class _LoginPageState extends State<LoginPage>
                     _storedOtp = null;
                     _loggedInUser = null;
                     _otpCode = '';
-                    for (var c in _otpControllers) c.clear();
+                    for (var c in _otpControllers) {
+                      c.clear();
+                    }
                   });
                 },
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Title
             Text(
               'Enter OTP',
@@ -594,154 +617,157 @@ class _LoginPageState extends State<LoginPage>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 80),
-          
-          // Manual OTP input (SMS autofill / readotp commented out for now)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(4, (index) {
-              return SizedBox(
-                width: 60,
-                height: 60,
-                child: TextField(
-                  controller: _otpControllers[index],
-                  focusNode: _otpFocusNodes[index],
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  maxLength: 1,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300!),
+
+            // Manual OTP input (SMS autofill / readotp commented out for now)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(4, (index) {
+                return SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: TextField(
+                    controller: _otpControllers[index],
+                    focusNode: _otpFocusNodes[index],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300!),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: StoreProfileTheme.accentPink, width: 2),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    if (value.isNotEmpty && index < 3) {
-                      _otpFocusNodes[index + 1].requestFocus();
-                    } else if (value.isEmpty && index > 0) {
-                      _otpFocusNodes[index - 1].requestFocus();
-                    }
-                    setState(() {
-                      _otpCode = _otpControllers.map((c) => c.text).join();
-                    });
-                    if (_otpCode.length == 4 && !_isVerifying && !_isVerified) {
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (mounted) _verifyOtp();
-                      });
-                    }
-                  },
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 56),
-          
-          // Verify button with transformation animation
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: AnimatedBuilder(
-              animation: _successController!,
-              builder: (context, child) {
-                final isTransforming = _isVerified && _successController!.value > 0;
-                final buttonColor = isTransforming
-                    ? Color.lerp(
-                      StoreProfileTheme.accentPink,
-                        Colors.green,
-                        _successController!.value,
-                      )!
-                    : StoreProfileTheme.accentPink;
-                
-                return Transform.rotate(
-                  angle: _rotationAnimation!.value * 2 * 3.14159,
-                  child: ElevatedButton(
-                    onPressed: _isVerifying || _isVerified
-                        ? null
-                        : () {
-                            if (_otpCode.length == 4) _verifyOtp();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonColor,
-                      disabledBackgroundColor: buttonColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      elevation: isTransforming ? 8 : 0,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                            color: StoreProfileTheme.accentPink, width: 2),
+                      ),
                     ),
-                    child: isTransforming
-                        ? Transform.scale(
-                            scale: _scaleAnimation!.value,
-                            child: const Icon(
-                              Icons.home,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          )
-                        : _isVerifying
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : Text(
-                                'Verify',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
+                    onChanged: (value) {
+                      if (value.isNotEmpty && index < 3) {
+                        _otpFocusNodes[index + 1].requestFocus();
+                      } else if (value.isEmpty && index > 0) {
+                        _otpFocusNodes[index - 1].requestFocus();
+                      }
+                      setState(() {
+                        _otpCode = _otpControllers.map((c) => c.text).join();
+                      });
+                      if (_otpCode.length == 4 &&
+                          !_isVerifying &&
+                          !_isVerified) {
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (mounted) _verifyOtp();
+                        });
+                      }
+                    },
                   ),
                 );
-              },
+              }),
             ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Resend OTP
-          TextButton(
-            onPressed: _isResendingOtp ? null : _resendOtp,
-            child: _isResendingOtp
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Resend OTP',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: StoreProfileTheme.accentPink,
-                      fontWeight: FontWeight.w500,
+            const SizedBox(height: 56),
+
+            // Verify button with transformation animation
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: AnimatedBuilder(
+                animation: _successController!,
+                builder: (context, child) {
+                  final isTransforming =
+                      _isVerified && _successController!.value > 0;
+                  final buttonColor = isTransforming
+                      ? Color.lerp(
+                          StoreProfileTheme.accentPink,
+                          Colors.green,
+                          _successController!.value,
+                        )!
+                      : StoreProfileTheme.accentPink;
+
+                  return Transform.rotate(
+                    angle: _rotationAnimation!.value * 2 * 3.14159,
+                    child: ElevatedButton(
+                      onPressed: _isVerifying || _isVerified
+                          ? null
+                          : () {
+                              if (_otpCode.length == 4) _verifyOtp();
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor,
+                        disabledBackgroundColor: buttonColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: isTransforming ? 8 : 0,
+                      ),
+                      child: isTransforming
+                          ? Transform.scale(
+                              scale: _scaleAnimation!.value,
+                              child: const Icon(
+                                Icons.home,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            )
+                          : _isVerifying
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'Verify',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                     ),
-                  ),
-          ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Resend OTP
+            TextButton(
+              onPressed: _isResendingOtp ? null : _resendOtp,
+              child: _isResendingOtp
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Resend OTP',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: StoreProfileTheme.accentPink,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
     );
   }
-
 }
-

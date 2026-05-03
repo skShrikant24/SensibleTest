@@ -129,13 +129,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
           );
+           if (!mounted) return;
           if (result == true && mounted) await _loadAddressesAndSelection();
         },
       ),
     );
+     if (!mounted) return;
     if (picked != null && mounted) {
       setState(() => _selectedAddress = picked);
       await SelectedAddressStorage.instance.save(picked);
+       if (!mounted) return;
       ToastMessage.success(context: context, msg: 'Address saved for checkout');
       await _validateSelectedAddressRadius(picked);
     }
@@ -194,7 +197,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               _paymentCard(),
               const SizedBox(height: 20),
               _sectionTitle(AppLocalizations.of(context)!.orderSummary),
-              ...cart.items.map(_orderItem).toList(),
+              ...cart.items.map(_orderItem),
               const SizedBox(height: 16),
               _totalCard(),
             ],
@@ -299,7 +302,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.location_on_outlined, color: StoreProfileTheme.accentPink),
+              Icon(Icons.location_on_outlined,
+                  color: StoreProfileTheme.accentPink),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -312,7 +316,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               TextButton(
                 onPressed: _openAddressSelector,
                 child: Text(
-                  _selectedAddress != null ? AppLocalizations.of(context)!.change : AppLocalizations.of(context)!.select,
+                  _selectedAddress != null
+                      ? AppLocalizations.of(context)!.change
+                      : AppLocalizations.of(context)!.select,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     color: StoreProfileTheme.accentPink,
@@ -333,7 +339,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 const SizedBox(width: 8),
                 Text(
                   'Checking delivery availability...',
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+                  style: GoogleFonts.poppins(
+                      fontSize: 12, color: Colors.grey[700]),
                 ),
               ],
             ),
@@ -343,7 +350,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               _orderRadiusStatus!.userMessage,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: _orderRadiusStatus!.allowed ? Colors.green[700] : Colors.red[700],
+                color: _orderRadiusStatus!.allowed
+                    ? Colors.green[700]
+                    : Colors.red[700],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -388,6 +397,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
+
   Widget _disabledPaymentTile(String value, IconData icon, String title) {
     return ListTile(
       onTap: () {
@@ -575,7 +585,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _onPlaceOrder() async {
     final ctx = await CartService.instance.getUserContext();
-
+    if (!mounted) return;
     if (cart.items.isEmpty) return;
     if (_loadingAddresses) {
       ToastMessage.warning(
@@ -613,6 +623,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (paymentMethod == 'razorpay') {
       final amountPaise = (amount * 100).round();
       final orderId = await createRazorpayOrder(amountPaise);
+      if (!mounted) return;
       if (orderId == null || orderId.isEmpty) {
         debugPrint(
           '[Razorpay] Backend order API failed. Falling back to amount-based checkout for testing.',
@@ -625,16 +636,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
         String? contact;
         String? email;
         final user = await AuthService.instance.getSavedUser();
+        if (!mounted) return;
         if (user != null) {
           contact = user['phone']?.toString();
           email = user['Email']?.toString();
         }
-        if (mounted) {
-          ToastMessage.warning(
-            context: context,
-            msg: 'Order API unavailable. Opening fallback checkout.',
-          );
-        }
+
+        ToastMessage.warning(
+          context: context,
+          msg: 'Order API unavailable. Opening fallback checkout.',
+        );
+
         _paymentService.openCheckout(
           amount: amount,
           contact: contact,
@@ -650,6 +662,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       String? contact;
       String? email;
       final user = await AuthService.instance.getSavedUser();
+      if (!mounted) return;
       if (user != null) {
         contact = user['phone']?.toString();
         email = user['Email']?.toString();
@@ -660,26 +673,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
         email: email,
       );
       return;
-    }else{
+    } else {
       await CartApiService.placeOrder(
         userId: ctx['userId']!,
         macId: ctx['macId']!,
         paymentMode: paymentMethod,
         addressId: _selectedAddress!.id.toString(),
       );
-// Clear cart after order
+      if (!mounted) return;
+      // Clear cart after order
       CartService.instance.clearCart();
       _navigateToWaitingPage();
-      return ;
+      return;
     }
-
-    _navigateToWaitingPage();
+    // _navigateToWaitingPage();
   }
 
   Widget _placeOrderBar() {
     final isDisabled = paymentMethod != "cod";
-    final radiusBlocked =
-        _selectedAddress != null &&
+    final radiusBlocked = _selectedAddress != null &&
         !_checkingOrderRadius &&
         _orderRadiusStatus != null &&
         !_orderRadiusStatus!.allowed;
@@ -701,23 +713,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
           onPressed: (cart.items.isEmpty || isDisabled || radiusBlocked)
               ? () {
-            if (isDisabled) {
-              _showWorkInProgressDialog(context);
-            } else if (radiusBlocked) {
-              ToastMessage.warning(
-                context: context,
-                msg: _orderRadiusStatus?.userMessage ??
-                    'Delivery is not available for this address.',
-              );
-            }
-          }
+                  if (isDisabled) {
+                    _showWorkInProgressDialog(context);
+                  } else if (radiusBlocked) {
+                    ToastMessage.warning(
+                      context: context,
+                      msg: _orderRadiusStatus?.userMessage ??
+                          'Delivery is not available for this address.',
+                    );
+                  }
+                }
               : _onPlaceOrder,
           child: Text(
             isDisabled
                 ? "Coming Soon 🚧"
                 : radiusBlocked
                     ? 'Address not serviceable'
-                : AppLocalizations.of(context)!.placeOrder,
+                    : AppLocalizations.of(context)!.placeOrder,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
