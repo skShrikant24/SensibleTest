@@ -12,6 +12,7 @@ class OrderHistoryPage extends StatefulWidget {
   @override
   State<OrderHistoryPage> createState() => _OrderHistoryPageState();
 }
+
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
   bool _loading = true;
   String? _userId;
@@ -111,10 +112,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           final star = index + 1;
                           final selected = star <= selectedRating;
                           return IconButton(
-                            onPressed: () => setLocalState(() => selectedRating = star),
+                            onPressed: () =>
+                                setLocalState(() => selectedRating = star),
                             icon: Icon(
-                              selected ? Icons.star_rounded : Icons.star_border_rounded,
-                              color: selected ? Colors.amber[700] : Colors.grey[400],
+                              selected
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: selected
+                                  ? Colors.amber[700]
+                                  : Colors.grey[400],
                               size: 34,
                             ),
                           );
@@ -130,11 +136,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           fillColor: StoreProfileTheme.surfaceVariant,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: StoreProfileTheme.border),
+                            borderSide:
+                                BorderSide(color: StoreProfileTheme.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: StoreProfileTheme.border),
+                            borderSide:
+                                BorderSide(color: StoreProfileTheme.border),
                           ),
                         ),
                       ),
@@ -160,7 +168,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           },
                           child: Text(
                             'Submit rating',
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                            style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -195,10 +204,12 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       _ratingSubmittingOrders.remove(orderId);
       if (ok) _ratedOrders.add(orderId);
     });
-    if(ok){
-      ToastMessage.success(context: context, msg: "Thanks! Rider rating submitted.");
-    }else{
-      ToastMessage.error(context: context, msg: 'Could not submit rating. Please try again.');
+    if (ok) {
+      ToastMessage.success(
+          context: context, msg: "Thanks! Rider rating submitted.");
+    } else {
+      ToastMessage.error(
+          context: context, msg: 'Could not submit rating. Please try again.');
     }
   }
 
@@ -224,7 +235,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: StoreProfileTheme.accentPink),
+              child: CircularProgressIndicator(
+                  color: StoreProfileTheme.accentPink),
             )
           : _userId == null || _userId!.isEmpty
               ? _buildLoggedOutState()
@@ -240,7 +252,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           final order = _orders[index];
                           return _OrderCard(
                             order: order,
-                            isRatingSubmitting: _ratingSubmittingOrders.contains(order.orderId),
+                            isRatingSubmitting:
+                                _ratingSubmittingOrders.contains(order.orderId),
                             isRated: _ratedOrders.contains(order.orderId),
                             onTapRateRider: () => _openRatingSheet(order),
                           );
@@ -277,7 +290,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long_outlined, size: 72, color: Colors.grey[400]),
+            Icon(Icons.receipt_long_outlined,
+                size: 72, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No orders found',
@@ -312,6 +326,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     );
   }
 }
+
 class _OrderCard extends StatelessWidget {
   final OrderHistoryItem order;
   final bool isRatingSubmitting;
@@ -358,7 +373,8 @@ class _OrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: StoreProfileTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: StoreProfileTheme.border.withValues(alpha: 0.6)),
+        border:
+            Border.all(color: StoreProfileTheme.border.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
             color: StoreProfileTheme.border.withValues(alpha: 0.12),
@@ -385,7 +401,8 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
@@ -410,7 +427,8 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _detailRow(Icons.storefront_outlined, 'Shop', order.shopDisplayName),
+            _detailRow(
+                Icons.storefront_outlined, 'Shop', order.shopDisplayName),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -433,60 +451,65 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F3FF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: StoreProfileTheme.border.withValues(alpha: 0.6)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.pin_outlined, size: 18, color: StoreProfileTheme.accentPink),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Delivery OTP: 1234',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: StoreProfileTheme.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            // Container(
+            //   width: double.infinity,
+            //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            //   decoration: BoxDecoration(
+            //     color: const Color(0xFFF8F3FF),
+            //     borderRadius: BorderRadius.circular(10),
+            //     border: Border.all(color: StoreProfileTheme.border.withValues(alpha: 0.6)),
+            //   ),
+            //   child: Row(
+            //     children: [
+            //       Icon(Icons.pin_outlined, size: 18, color: StoreProfileTheme.accentPink),
+            //       const SizedBox(width: 8),
+            //       Expanded(
+            //         child: Text(
+            //           'Delivery OTP: 1234',
+            //           style: GoogleFonts.poppins(
+            //             fontSize: 12.5,
+            //             fontWeight: FontWeight.w600,
+            //             color: StoreProfileTheme.textPrimary,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
+            // const SizedBox(height: 12),
             if (order.items.isNotEmpty) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: StoreProfileTheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
-                  children: order.items
-                      .map((item) => _orderItemTile(item))
-                      .toList(),
+                  children:
+                      order.items.map((item) => _orderItemTile(item)).toList(),
                 ),
               ),
               const SizedBox(height: 12),
             ],
-            Divider(color: StoreProfileTheme.border.withValues(alpha: 0.7), height: 1),
+            Divider(
+                color: StoreProfileTheme.border.withValues(alpha: 0.7),
+                height: 1),
             const SizedBox(height: 10),
-            _detailRow(Icons.delivery_dining, 'Rider Name', order.riderDisplayName),
+            _detailRow(
+                Icons.delivery_dining, 'Rider Name', order.riderDisplayName),
             const SizedBox(height: 8),
             _detailRow(Icons.phone, 'Mobile No', order.riderDisplayMobile),
             const SizedBox(height: 8),
-            _detailRow(Icons.two_wheeler, 'Rider Bike No', order.bikeDisplayNumber),
+            _detailRow(
+                Icons.two_wheeler, 'Rider Bike No', order.bikeDisplayNumber),
             if (_isDelivered) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: (isRatingSubmitting || isRated) ? null : onTapRateRider,
+                  onPressed:
+                      (isRatingSubmitting || isRated) ? null : onTapRateRider,
                   icon: isRatingSubmitting
                       ? const SizedBox(
                           width: 14,
@@ -494,7 +517,9 @@ class _OrderCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Icon(
-                          isRated ? Icons.check_circle_outline : Icons.star_outline_rounded,
+                          isRated
+                              ? Icons.check_circle_outline
+                              : Icons.star_outline_rounded,
                           size: 18,
                         ),
                   label: Text(
@@ -558,7 +583,8 @@ class _OrderCard extends StatelessWidget {
                     width: 52,
                     height: 52,
                     color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported_outlined, size: 18),
+                    child: const Icon(Icons.image_not_supported_outlined,
+                        size: 18),
                   )
                 : Image.network(
                     item.imageUrl,
