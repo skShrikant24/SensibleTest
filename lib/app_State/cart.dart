@@ -30,7 +30,8 @@ class CartItem {
 
   static CartItem? fromJson(Map<String, dynamic> json) {
     final productJson = json['product'];
-    if (productJson == null || productJson is! Map<String, dynamic>) return null;
+    if (productJson == null || productJson is! Map<String, dynamic>)
+      return null;
     try {
       final product = Product.fromJson(Map<String, dynamic>.from(productJson));
       final quantity = (json['quantity'] is int)
@@ -51,14 +52,19 @@ class CartService extends ChangeNotifier {
   bool _shouldAnimateCart = false;
   double _cartTotal = 0.0;
   double _deliveryCharge = 0.0;
+  double _deliveryDiscount = 0.0; // ADDED
+  String _deliveryDiscountText = ""; // ADDED
   double _extraCharge = 0.0;
   double _gst = 0.0;
   double _finalTotal = 0.0;
   bool _isSyncingCart = false;
 
-  double get subtotal =>
-      _cartTotal > 0 ? _cartTotal : items.fold(0.0, (sum, item) => sum + item.total);
+  double get subtotal => _cartTotal > 0
+      ? _cartTotal
+      : items.fold(0.0, (sum, item) => sum + item.total);
   double get deliveryCharge => _deliveryCharge;
+  double get deliveryDiscount => _deliveryDiscount; // ADDED
+  String get deliveryDiscountText => _deliveryDiscountText; // ADDED
   double get extraCharge => _extraCharge;
   double get gst => _gst;
   double get finalTotal => _finalTotal > 0 ? _finalTotal : subtotal;
@@ -132,7 +138,7 @@ class CartService extends ChangeNotifier {
     _saveToStorage();
   }
 
-  void increase(CartItem item) async{
+  void increase(CartItem item) async {
     final apiId = item.cartId ?? item.product.id;
     await CartApiService.increaseQty(apiId);
     item.quantity++;
@@ -141,7 +147,7 @@ class CartService extends ChangeNotifier {
     await syncCartFromServer();
   }
 
-  void decrease(CartItem item) async{
+  void decrease(CartItem item) async {
     final apiId = item.cartId ?? item.product.id;
     await CartApiService.decreaseQty(apiId);
     if (item.quantity > 1) {
@@ -154,7 +160,7 @@ class CartService extends ChangeNotifier {
     await syncCartFromServer();
   }
 
-  void remove(CartItem item) async{
+  void remove(CartItem item) async {
     final apiId = item.cartId ?? item.product.id;
     await CartApiService.removeItem(apiId);
     items.remove(item);
@@ -182,6 +188,9 @@ class CartService extends ChangeNotifier {
       items.clear();
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
+      _deliveryDiscount = _toDouble(response['DeliveryDiscount']); // ADDED
+      _deliveryDiscountText =
+          response['DeliveryDiscountText']?.toString() ?? ""; // ADDED
       _extraCharge = _toDouble(response['ExtraCharge']);
       _gst = _toDouble(response['GST']);
       _finalTotal = _toDouble(response['FinalTotal']);
@@ -198,7 +207,8 @@ class CartService extends ChangeNotifier {
             'OriginalPrice': item['OriginalPrice']?.toString() ?? '0',
             'DiscountPrice': item['DiscountPrice']?.toString() ?? '0',
             'DiscountPercent': item['DiscountPercent']?.toString() ?? '0',
-            'ProductImage': CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
+            'ProductImage':
+                CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
             'Image1': '',
             'Image2': '',
             'Image3': '',
@@ -228,6 +238,8 @@ class CartService extends ChangeNotifier {
     items.clear();
     _cartTotal = 0.0;
     _deliveryCharge = 0.0;
+    _deliveryDiscount = 0.0; // ADDED
+    _deliveryDiscountText = ""; // ADDED
     _extraCharge = 0.0;
     _gst = 0.0;
     _finalTotal = 0.0;
