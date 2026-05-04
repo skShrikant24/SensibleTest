@@ -30,7 +30,6 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
   List<Vendor> _filteredVendors = [];
   bool _loading = true;
 
-
   @override
   void initState() {
     super.initState();
@@ -51,7 +50,6 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
     setState(() => _loading = false);
   }
 
-
   void _onSearchChanged(String query) {
     query = query.toLowerCase().trim();
 
@@ -66,8 +64,6 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
     });
   }
 
-
-
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
@@ -75,7 +71,8 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
         decoration: BoxDecoration(
           color: StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: StoreProfileTheme.border.withValues(alpha: .4)),
+          border:
+              Border.all(color: StoreProfileTheme.border.withValues(alpha: .4)),
           boxShadow: [
             BoxShadow(
               color: StoreProfileTheme.border.withValues(alpha: .15),
@@ -92,12 +89,12 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
             prefixIcon: Icon(Icons.search, color: StoreProfileTheme.accentPink),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
-                _searchController.clear();
-                _onSearchChanged("");
-              },
-            )
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchChanged("");
+                    },
+                  )
                 : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -107,12 +104,10 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: StoreProfileTheme.background,
-
       appBar: AppBar(
         elevation: 0,
         backgroundColor: StoreProfileTheme.background,
@@ -127,7 +122,6 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.pinkAccent),
       ),
-
       body: SafeArea(
         child: Column(
           children: [
@@ -135,50 +129,49 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
             Expanded(
               child: _loading
                   ? Center(
-                child: CircularProgressIndicator(
-                  color: StoreProfileTheme.accentPink,
-                ),
-              )
+                      child: CircularProgressIndicator(
+                        color: StoreProfileTheme.accentPink,
+                      ),
+                    )
                   : _filteredVendors.isEmpty
-                  ? _StateMessage(
-                icon: Icons.search_off,
-                message: "No matching vendors",
-              )
-                  : ListView.separated(
-            padding: const EdgeInsets.all(16),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        itemCount: _filteredVendors.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final vendor = _filteredVendors[index];
+                      ? _StateMessage(
+                          icon: Icons.search_off,
+                          message: "No matching vendors",
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          itemCount: _filteredVendors.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final vendor = _filteredVendors[index];
 
-          return _VendorCard(
-            vendor: vendor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => VendorProductsPage(
-                    vendorId: vendor.id,
-                    vendorName: vendor.name,
-                    catergoryId: widget.categoryId,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    )
+                            return _VendorCard(
+                              vendor: vendor,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => VendorProductsPage(
+                                      vendorId: vendor.id,
+                                      vendorName: vendor.name,
+                                      catergoryId: widget.categoryId,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+            )
           ],
         ),
       ),
     );
   }
 }
-
-
-
 
 class _VendorCard extends StatelessWidget {
   final Vendor vendor;
@@ -220,10 +213,10 @@ class _VendorCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             /// 🖼 COVER IMAGE
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
               child: Stack(
                 children: [
                   AspectRatio(
@@ -232,12 +225,12 @@ class _VendorCard extends StatelessWidget {
                       image,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_,__,___)=>Container(
-                        color: StoreProfileTheme.lightPink.withValues(alpha: .25),
+                      errorBuilder: (_, __, ___) => Container(
+                        color:
+                            StoreProfileTheme.lightPink.withValues(alpha: .25),
                         child: Center(
                           child: Icon(Icons.store,
-                              size: 48,
-                              color: StoreProfileTheme.accentPink),
+                              size: 48, color: StoreProfileTheme.accentPink),
                         ),
                       ),
                     ),
@@ -247,7 +240,8 @@ class _VendorCard extends StatelessWidget {
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20)),
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.center,
@@ -285,7 +279,6 @@ class _VendorCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Row(
                 children: [
-
                   /// small icon badge
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -294,8 +287,7 @@ class _VendorCard extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(Icons.storefront,
-                        size: 20,
-                        color: StoreProfileTheme.accentPink),
+                        size: 20, color: StoreProfileTheme.accentPink),
                   ),
 
                   const SizedBox(width: 12),
@@ -304,49 +296,71 @@ class _VendorCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Open Store Time: ${vendor.openingTime} to ${vendor.closingTime}",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        // Text(
+                        //   "Open Store Time: ${vendor.openingTime} to ${vendor.closingTime}",
+                        //   style: GoogleFonts.poppins(
+                        //     fontSize: 12,
+                        //     color: Colors.grey[600],
+                        //   ),
+                        // ),
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "Open Store Time: ",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    "${vendor.openingTime} - ${vendor.closingTime}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: StoreProfileTheme.accentPink,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-
                         const SizedBox(height: 4),
 
                         /// 📞 MOBILE + CALL BUTTON
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                "Mobile No: ${vendor.mobileNo.isNotEmpty
-                                    ? vendor.mobileNo
-                                    : "No contact"}",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child: Text(
+                        //         "Mobile No: ${vendor.mobileNo.isNotEmpty
+                        //             ? vendor.mobileNo
+                        //             : "No contact"}",
+                        //         style: GoogleFonts.poppins(
+                        //           fontSize: 13,
+                        //           fontWeight: FontWeight.w500,
+                        //         ),
+                        //       ),
+                        //     ),
 
-                            // if (vendor.mobileNo.isNotEmpty)
-                            //   InkWell(
-                            //     onTap: () => _callVendor(vendor.mobileNo),
-                            //     child: Container(
-                            //       padding: const EdgeInsets.all(6),
-                            //       decoration: BoxDecoration(
-                            //         color: Colors.green,
-                            //         borderRadius: BorderRadius.circular(6),
-                            //       ),
-                            //       child: const Icon(
-                            //         Icons.call,
-                            //         color: Colors.white,
-                            //         size: 16,
-                            //       ),
-                            //     ),
-                            //   ),
-                          ],
-                        ),
+                        //     if (vendor.mobileNo.isNotEmpty)
+                        //       InkWell(
+                        //         onTap: () => _callVendor(vendor.mobileNo),
+                        //         child: Container(
+                        //           padding: const EdgeInsets.all(6),
+                        //           decoration: BoxDecoration(
+                        //             color: Colors.green,
+                        //             borderRadius: BorderRadius.circular(6),
+                        //           ),
+                        //           child: const Icon(
+                        //             Icons.call,
+                        //             color: Colors.white,
+                        //             size: 16,
+                        //           ),
+                        //         ),
+                        //       ),
+                        //   ],
+                        // ),
 
                         // const SizedBox(height: 4),
                         //
@@ -360,6 +374,7 @@ class _VendorCard extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   /// text info
                   // Expanded(
                   //   child: Column(
@@ -398,8 +413,6 @@ class _VendorCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class _StateMessage extends StatelessWidget {
   final IconData icon;
