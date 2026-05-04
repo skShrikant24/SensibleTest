@@ -129,16 +129,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
           );
-           if (!mounted) return;
+          if (!mounted) return;
           if (result == true && mounted) await _loadAddressesAndSelection();
         },
       ),
     );
-     if (!mounted) return;
+    if (!mounted) return;
     if (picked != null && mounted) {
       setState(() => _selectedAddress = picked);
       await SelectedAddressStorage.instance.save(picked);
-       if (!mounted) return;
+      if (!mounted) return;
       ToastMessage.success(context: context, msg: 'Address saved for checkout');
       await _validateSelectedAddressRadius(picked);
     }
@@ -466,12 +466,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              item.product.allImages.first,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-            ),
+            child: (item.product.allImages.isNotEmpty &&
+                    item.product.allImages.first.isNotEmpty)
+                ? Image.network(
+                    item.product.allImages.first,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 60,
+                    height: 60,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image),
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -514,7 +530,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       child: Column(
         children: [
           _priceRow(AppLocalizations.of(context)!.subtotal, cart.subtotal),
+          // Delivery Charge
           _priceRow("Delivery Charge", cart.deliveryCharge),
+          // Show discount only if available
+          if (cart.deliveryDiscount > 0)
+            _priceRow(
+              "Delivery Discount ${cart.deliveryDiscountText}",
+              -cart.deliveryDiscount, // negative so it subtracts
+            ),
           _priceRow("Extra Charge", cart.extraCharge),
           _priceRow("GST", cart.gst),
           const Divider(height: 20),
