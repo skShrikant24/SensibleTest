@@ -15,7 +15,7 @@ class _SplashPageState extends State<SplashPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _logoOffset;
-  late Animation<Offset> _textOffset;
+  // late Animation<Offset> _textOffset;
   late Animation<double> _fadeAnimation;
 
   @override
@@ -37,24 +37,24 @@ class _SplashPageState extends State<SplashPage>
     ));
 
     // Text comes from bottom
-    _textOffset = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    // _textOffset = Tween<Offset>(
+    //   begin: const Offset(0, 1),
+    //   end: Offset.zero,
+    // ).animate(CurvedAnimation(
+    //   parent: _controller,
+    //   curve: Curves.easeOut,
+    // ));
 
     // Fade animation
     _fadeAnimation = Tween<double>(
       begin: 0,
       end: 1,
     ).animate(_controller);
-   
+
     _controller.forward();
 
     // Navigate after splash: if already logged in go to main app, else onboarding
-     _navigateAfterSplash();
+    _navigateAfterSplash();
     // Timer(const Duration(seconds: 3), () async {
     //   if (!context.mounted) return;
     //   final loggedIn = await AuthService.instance.isLoggedIn();
@@ -68,7 +68,8 @@ class _SplashPageState extends State<SplashPage>
     //   );
     // });
   }
-   Future<void> _navigateAfterSplash() async {
+
+  Future<void> _navigateAfterSplash() async {
     await Future.delayed(const Duration(seconds: 3));
 
     if (!mounted) return;
@@ -80,8 +81,7 @@ class _SplashPageState extends State<SplashPage>
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            loggedIn ? const MainShell() : const OnboardingScreen(),
+        builder: (_) => loggedIn ? const MainShell() : const OnboardingScreen(),
       ),
     );
   }

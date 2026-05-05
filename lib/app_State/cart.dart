@@ -30,8 +30,9 @@ class CartItem {
 
   static CartItem? fromJson(Map<String, dynamic> json) {
     final productJson = json['product'];
-    if (productJson == null || productJson is! Map<String, dynamic>)
+    if (productJson == null || productJson is! Map<String, dynamic>) {
       return null;
+    }
     try {
       final product = Product.fromJson(Map<String, dynamic>.from(productJson));
       final quantity = (json['quantity'] is int)
