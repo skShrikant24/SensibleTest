@@ -3,7 +3,7 @@ import '../utils/constants.dart';
 
 class UpdatePopup extends StatelessWidget {
   final VoidCallback onUpdate;
-  final VoidCallback onSkip;
+  final VoidCallback? onSkip;
   final String latestVersion;
 
   const UpdatePopup({
@@ -16,7 +16,7 @@ class UpdatePopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // ❌ back button disable
+      canPop: false, // back button disable
       onPopInvokedWithResult: (didPop, result) {
         // kuch nahi karna, back already blocked hai
       },
@@ -55,29 +55,29 @@ class UpdatePopup extends StatelessWidget {
             Divider(height: 1, color: StoreProfileTheme.border),
             Row(
               children: [
-                // SKIP
-                Expanded(
-                  child: InkWell(
-                    onTap: onSkip,
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Text(
-                        "Skip",
-                        style: TextStyle(
-                          color: StoreProfileTheme.textSecondary,
-                          fontSize: 16,
+                if (onSkip != null)
+                  Expanded(
+                    child: InkWell(
+                      onTap: onSkip,
+                      child: Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: StoreProfileTheme.textSecondary,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-
-                Container(
-                  width: 1,
-                  height: 48,
-                  color: StoreProfileTheme.border,
-                ),
+                if (onSkip != null)
+                  Container(
+                    width: 1,
+                    height: 48,
+                    color: StoreProfileTheme.border,
+                  ),
 
                 // UPDATE
                 Expanded(
@@ -89,7 +89,7 @@ class UpdatePopup extends StatelessWidget {
                       child: Text(
                         "Update",
                         style: TextStyle(
-                          color: StoreProfileTheme.accentPink, // 👈 highlight
+                          color: StoreProfileTheme.accentPink,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),
