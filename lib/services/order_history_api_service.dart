@@ -30,6 +30,34 @@ Future<List<OrderHistoryItem>> getOrderHistoryByUser(String userId) async {
   }
 }
 
+Future<List<OrderHistoryProductItem>> getOrderDetails(String orderId) async {
+  if (orderId.trim().isEmpty) return [];
+
+  try {
+    final uri = Uri.parse('$_baseUrl/Webservice.asmx/GetOrderDetails')
+        .replace(queryParameters: {
+      'OrderID': orderId,
+    });
+
+    final response = await http.get(uri);
+    if (response.statusCode != 200) return [];
+
+    final cleaned = _cleanResponse(response.body);
+    if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
+
+    final decoded = json.decode(cleaned);
+    if (decoded is! List) return [];
+
+    return decoded
+        .map((e) => OrderHistoryProductItem.fromJson(
+              Map<String, dynamic>.from(e),
+            ))
+        .toList();
+  } catch (_) {
+    return [];
+  }
+}
+
 Future<bool> submitRiderRating({
   required String orderId,
   required String rating,
@@ -37,7 +65,8 @@ Future<bool> submitRiderRating({
 }) async {
   if (orderId.trim().isEmpty || rating.trim().isEmpty) return false;
   try {
-    final uri = Uri.parse('$_baseUrl/WebService.asmx/SubmitRiderRating').replace(
+    final uri =
+        Uri.parse('$_baseUrl/WebService.asmx/SubmitRiderRating').replace(
       queryParameters: {
         'OrderID': orderId.trim(),
         'Rating': rating.trim(),

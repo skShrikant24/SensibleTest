@@ -1,4 +1,6 @@
+import 'package:GraBiTT/pages/order_details_page.dart';
 import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/models/order_history_item.dart';
@@ -250,12 +252,22 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         itemCount: _orders.length,
                         itemBuilder: (context, index) {
                           final order = _orders[index];
-                          return _OrderCard(
-                            order: order,
-                            isRatingSubmitting:
-                                _ratingSubmittingOrders.contains(order.orderId),
-                            isRated: _ratedOrders.contains(order.orderId),
-                            onTapRateRider: () => _openRatingSheet(order),
+                          return InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      OrderDetailsPage(order: order),
+                                ),
+                              );
+                            },
+                            child: _OrderCard(
+                              order: order,
+                              isRatingSubmitting: _ratingSubmittingOrders
+                                  .contains(order.orderId),
+                              isRated: _ratedOrders.contains(order.orderId),
+                              onTapRateRider: () => _openRatingSheet(order),
+                            ),
                           );
                         },
                       ),
@@ -576,6 +588,29 @@ class _OrderCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(8),
+          //   child: item.imageUrl.isEmpty
+          //       ? Container(
+          //           width: 52,
+          //           height: 52,
+          //           color: Colors.grey[200],
+          //           child: const Icon(Icons.image_not_supported_outlined,
+          //               size: 18),
+          //         )
+          //       : Image.network(
+          //           item.imageUrl,
+          //           width: 52,
+          //           height: 52,
+          //           fit: BoxFit.cover,
+          //           errorBuilder: (_, __, ___) => Container(
+          //             width: 52,
+          //             height: 52,
+          //             color: Colors.grey[200],
+          //             child: const Icon(Icons.broken_image_outlined, size: 18),
+          //           ),
+          //         ),
+          // ),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: item.imageUrl.isEmpty
@@ -583,19 +618,41 @@ class _OrderCard extends StatelessWidget {
                     width: 52,
                     height: 52,
                     color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported_outlined,
-                        size: 18),
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 18,
+                    ),
                   )
-                : Image.network(
-                    item.imageUrl,
+                : CachedNetworkImage(
+                    imageUrl: item.imageUrl,
                     width: 52,
                     height: 52,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    fadeInDuration: const Duration(milliseconds: 150),
+                    memCacheWidth: 200,
+                    maxWidthDiskCache: 300,
+                    placeholder: (context, url) => Container(
                       width: 52,
                       height: 52,
                       color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image_outlined, size: 18),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 52,
+                      height: 52,
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.broken_image_outlined,
+                        size: 18,
+                      ),
                     ),
                   ),
           ),
