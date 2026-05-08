@@ -148,6 +148,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (!mounted) return;
     setState(() => _checkingOrderRadius = true);
     final result = await checkOrderRadius(address.id);
+     debugPrint("Radius Allowed: ${result.allowed}");
+  debugPrint("Radius Message: ${result.userMessage}");
+  debugPrint("Address ID: ${address.id}");
     if (!mounted) return;
     setState(() {
       _orderRadiusStatus = result;
@@ -524,65 +527,79 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _totalCard() {
-    //    final bool showNewUserDiscount = cart.newUserDiscount > 0;
-    // final bool showEvenOrderDiscount = cart.evenOrderDiscount > 0;
-    // final bool showHandlingFee = cart.handlingFee > 0;
+    final bool showNewUserDiscount =
+        cart.isNewUserDiscountApplied && cart.newUserDiscountAmount > 0;
+
+    final bool showEvenOrderDiscount =
+        cart.isEvenOrderDiscountApplied && cart.evenOrderDiscountAmount > 0;
+
+    final bool showDeliveryCharge = cart.deliveryCharge > 0;
+    final bool showGST = cart.gst > 0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardStyle(),
       child: Column(
         children: [
-          // Item Price
+          // Subtotal
           _priceRow(AppLocalizations.of(context)!.subtotal, cart.subtotal),
 
-          // Tax
-          _priceRow(
-            //  "Tax (${cart.taxPercent}% )",
-            "GST (5%)",
-            cart.gst,
-          ),
-          // Delivery Charge
-          _priceRow("Delivery Charge", cart.deliveryCharge),
-          // New User Discount
-          // if (showNewUserDiscount)
-          //   _priceRow(
-          //     "New User Discount (${cart.newUserDiscountPercent}% OFF)",
-          //     -cart.newUserDiscount,
-          //     valueColor: Colors.green,
-          //   ),
-          // Show discount only if available
-          // Even Order Discount
-          // if (showEvenOrderDiscount)
-          //   _priceRow(
-          //     "Even Order Discount (${cart.evenOrderDiscountPercent}% OFF)",
-          //     -cart.evenOrderDiscount,
-          //     valueColor: Colors.green,
-          //   ),
-          if (cart.deliveryDiscount > 0)
+          // GST
+          if (showGST)
             _priceRow(
-              "Delivery Discount ${cart.deliveryDiscountText}",
-              -cart.deliveryDiscount,
+              "GST (${cart.gstPercent}%)",
+              cart.gst,
             ),
-          // Service Fee
-          // _priceRow(
-          //   "Service Fee",
-          //   cart.serviceFee,
-          // ),
-          // Handling Fee
-          // if (showHandlingFee)
-          //   _priceRow(
-          //     "Handling Fee",
-          //     cart.handlingFee,
-          //   ),
-          // Packaging Fee
-          // _priceRow(
-          //   "Packaging Fee",
-          //   cart.packagingFee,
-          // ),
 
-          _priceRow("Extra Charge", cart.extraCharge),
+          // Delivery Charge
+          if (showDeliveryCharge)
+            _priceRow(
+              "Delivery Charge",
+              cart.deliveryCharge,
+            ),
+
+          // New User Discount
+          if (showNewUserDiscount)
+            _priceRow(
+              "New User Discount (${cart.newUserDiscountPercent}% OFF)",
+              -cart.newUserDiscountAmount,
+              valueColor: Colors.green,
+            ),
+
+          // Even Order Discount
+          if (showEvenOrderDiscount)
+            _priceRow(
+              "Even Order Discount (${cart.evenOrderDiscountPercent}% OFF)",
+              -cart.evenOrderDiscountAmount,
+              valueColor: Colors.green,
+            ),
+
+          // Service Fee
+          _priceRow(
+            "Service Fee",
+            cart.serviceFee,
+            showNil: true,
+          ),
+
+// Handling Fee
+          _priceRow(
+            cart.handlingFeeText.isNotEmpty
+                ? cart.handlingFeeText
+                : "Handling Fee",
+            cart.handlingFee,
+            showNil: true,
+          ),
+
+// Packaging Fee
+          _priceRow(
+            "Packaging Fee",
+            cart.packagingFee,
+            showNil: true,
+          ),
+
           const Divider(height: 22),
-          // Total
+
+          // Final Total
           _priceRow("Final Total", cart.finalTotal, isFinal: true),
         ],
       ),
@@ -594,8 +611,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
     double amount, {
     bool isFinal = false,
     Color? valueColor,
+    bool showNil = false,
   }) {
     final bool isNegative = amount < 0;
+    final bool isZero = amount == 0;
+    String amountText;
+    if (showNil && isZero) {
+      amountText = "Nil";
+    } else if (isNegative) {
+      amountText =
+          '- ${AppConstants.currencySymbol}${amount.abs().toStringAsFixed(0)}';
+    } else {
+      amountText = '${AppConstants.currencySymbol}${amount.toStringAsFixed(0)}';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -613,9 +641,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
           const SizedBox(width: 10),
           Text(
-            isNegative
-                ? '- ${AppConstants.currencySymbol}${amount.abs().toStringAsFixed(0)}'
-                : '${AppConstants.currencySymbol}${amount.toStringAsFixed(0)}',
+            amountText,
             style: GoogleFonts.poppins(
               fontSize: isFinal ? 18 : 14,
               fontWeight: isFinal ? FontWeight.bold : FontWeight.w500,
@@ -689,6 +715,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     }
+    debugPrint("_orderRadiusStatus: ${_orderRadiusStatus?.allowed}");
     if (_orderRadiusStatus == null || !_orderRadiusStatus!.allowed) {
       ToastMessage.warning(
         context: context,
