@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/utils/constants.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../app_State/cart.dart';
@@ -75,18 +76,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
 
   @override
   void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     _flyController.dispose();
     _quoteController.dispose();
-    _removeOverlay();
+    // _removeOverlay();
     super.dispose();
   }
 
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
-    setState(() {
-      _showQuote = false;
-    });
+    if (mounted) {
+      setState(() {
+        _showQuote = false;
+      });
+    }
   }
 
   Offset _getCartIconPosition() {
@@ -133,8 +138,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
 
     final Size screenSize = MediaQuery.of(context).size;
     final double statusBarHeight = MediaQuery.of(context).padding.top;
-    final Offset fallbackEnd = Offset(screenSize.width - 36, statusBarHeight + 28);
-    final Offset finalEndPos = (endPos.dx <= 0 || endPos.dy <= 0) ? fallbackEnd : endPos;
+    final Offset fallbackEnd =
+        Offset(screenSize.width - 36, statusBarHeight + 28);
+    final Offset finalEndPos =
+        (endPos.dx <= 0 || endPos.dy <= 0) ? fallbackEnd : endPos;
 
     setState(() {
       _showQuote = true;
@@ -196,7 +203,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
         slivers: [
           // 🔙 AppBar
           SliverAppBar(
-            backgroundColor:StoreProfileTheme.background,
+            backgroundColor: StoreProfileTheme.background,
             elevation: 0,
             pinned: true,
             leading: IconButton(
@@ -219,7 +226,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                     children: [
                       IconButton(
                         key: _cartIconKey,
-                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.pinkAccent),
+                        icon: const Icon(Icons.shopping_cart_outlined,
+                            color: Colors.pinkAccent),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -261,33 +269,63 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
           ),
 
           // 🖼 Image Slider
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 300,
-              child: (widget.product.allImages.isNotEmpty)
-                  ? PageView(
-                children: widget.product.allImages
-                    .asMap()
-                    .entries
-                    .map(
-                      (entry) => Image.network(
-                    entry.value,
-                    key: entry.key == 0 ? _imageKey : null,
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => _placeholder(),
-                  ),
-                )
-                    .toList(),
-              )
-                  : _placeholder(),
-            ),
-          ),
+          // SliverToBoxAdapter(
+          //   child: SizedBox(
+          //     height: 300,
+          //     child: (widget.product.allImages.isNotEmpty)
+          //         ? PageView(
+          //       children: widget.product.allImages
+          //           .asMap()
+          //           .entries
+          //           .map(
+          //             (entry) => Image.network(
+          //           entry.value,
+          //           key: entry.key == 0 ? _imageKey : null,
+          //           fit: BoxFit.contain,
+          //           loadingBuilder: (context, child, progress) {
+          //             if (progress == null) return child;
+          //             return const Center(
+          //               child: CircularProgressIndicator(),
+          //             );
+          //           },
+          //           errorBuilder: (_, __, ___) => _placeholder(),
+          //         ),
+          //       )
+          //           .toList(),
+          //     )
+          //         : _placeholder(),
+          //   ),
+          // ),
+
+          // SliverToBoxAdapter(
+          //   child: SizedBox(
+          //     height: 300,
+          //     child: (widget.product.allImages.isNotEmpty)
+          //         ? PageView(
+          //             children: widget.product.allImages
+          //                 .asMap()
+          //                 .entries
+          //                 .map(
+          //                   (entry) => CachedNetworkImage(
+          //                     imageUrl: entry.value,
+          //                     key: entry.key == 0 ? _imageKey : null,
+          //                     fit: BoxFit.contain,
+          //                     memCacheWidth: 700,
+          //                     maxWidthDiskCache: 900,
+          //                     fadeInDuration: const Duration(milliseconds: 150),
+          //                     placeholder: (context, url) {
+          //                       return const Center(
+          //                         child: CircularProgressIndicator(),
+          //                       );
+          //                     },
+          //                     errorWidget: (_, __, ___) => _placeholder(),
+          //                   ),
+          //                 )
+          //                 .toList(),
+          //           )
+          //         : _placeholder(),
+          //   ),
+          // ),
 
           // 📦 Product Info
           SliverToBoxAdapter(
@@ -341,7 +379,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha:0.1),
+                          color: Colors.redAccent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -377,6 +415,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
       ),
     );
   }
+
   Widget _placeholder() {
     return Container(
       width: double.infinity,
@@ -427,7 +466,8 @@ class _PaperPlaneOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([flyAnimation, scaleAnimation, rotationAnimation]),
+      animation:
+          Listenable.merge([flyAnimation, scaleAnimation, rotationAnimation]),
       builder: (context, child) {
         final double t = flyAnimation.value.dx;
         final Offset currentPos = _getCurvedPosition(t);
@@ -435,7 +475,8 @@ class _PaperPlaneOverlay extends StatelessWidget {
         final double rotation = rotationAnimation.value;
 
         // Fade out and shrink into cart in last 25% so no small image stays visible
-        final double endOpacity = t <= 0.75 ? 1.0 : ((1.0 - (t - 0.75) / 0.25).clamp(0.0, 1.0));
+        final double endOpacity =
+            t <= 0.75 ? 1.0 : ((1.0 - (t - 0.75) / 0.25).clamp(0.0, 1.0));
         if (t > 0.8) {
           scale = scale * ((1.0 - (t - 0.8) / 0.2).clamp(0.0, 1.0));
         }
@@ -461,7 +502,7 @@ class _PaperPlaneOverlay extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha:0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -480,11 +521,38 @@ class _PaperPlaneOverlay extends StatelessWidget {
                               },
                             ),
                           ),
+                          // child: CachedNetworkImage(
+                          //   imageUrl: productImage,
+                          //   fit: BoxFit.cover,
+                          //   memCacheWidth: 250,
+                          //   maxWidthDiskCache: 350,
+                          //   fadeInDuration: const Duration(milliseconds: 100),
+                          //   placeholder: (context, url) {
+                          //     return Container(
+                          //       color: Colors.grey[200],
+                          //       child: const Center(
+                          //         child: SizedBox(
+                          //           width: 16,
+                          //           height: 16,
+                          //           child: CircularProgressIndicator(
+                          //             strokeWidth: 2,
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     );
+                          //   },
+                            // errorWidget: (context, url, error) {
+                            //   return Container(
+                            //     color: Colors.grey[300],
+                            //     child: const Icon(Icons.image),
+                            //   );
+                            // },
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                // ),
 
               // Quote: "Fast as a flight."
               // if (showQuote && t < 0.8)
