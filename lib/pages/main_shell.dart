@@ -43,26 +43,27 @@ class _MainShellState extends State<MainShell> {
       final res = await http.get(
         Uri.parse("https://grabitt.in/Webservice.asmx/GetCustomerAppVersion"),
       );
-
       if (res.statusCode != 200) return;
 
-      final body = res.body
-          .replaceAll('<string xmlns="http://tempuri.org/">', '')
-          .replaceAll('</string>', '');
+      final cleanedBody = res.body
+          .replaceAll(RegExp(r'<\?xml.*?\?>'), '')
+          .replaceAll(RegExp(r'<string[^>]*>'), '')
+          .replaceAll('</string>', '')
+          .trim();
 
-      final jsonData = jsonDecode(body);
+      debugPrint("Version API Response => $cleanedBody");
+
+      final jsonData = jsonDecode(cleanedBody);
+
       final data = jsonData["data"];
 
       final latestVersion = data["latest_version"].toString();
       final forceUpdate = data["force_update"] ?? false;
 
-      // ✅ safe parsing
       final serverBuild = int.tryParse(data["build"].toString()) ?? 0;
-
       final prefs = await SharedPreferences.getInstance();
       final skippedVersion = prefs.getString("skipped_version");
 
-      // ✅ real condition (backend pe depend nahi)
       final shouldUpdate = serverBuild > currentBuild;
 
       if (!_isDialogShowing &&
