@@ -53,10 +53,31 @@ class CartService extends ChangeNotifier {
   bool _shouldAnimateCart = false;
   double _cartTotal = 0.0;
   double _deliveryCharge = 0.0;
-  double _deliveryDiscount = 0.0; // ADDED
-  String _deliveryDiscountText = ""; // ADDED
-  double _extraCharge = 0.0;
+
+  // ❌ REMOVED
+  // double _deliveryDiscount = 0.0; // ADDED
+  // String _deliveryDiscountText = ""; // ADDED
+  // double _extraCharge = 0.0;
+
   double _gst = 0.0;
+  int _gstPercent = 0;
+
+  bool _isNewUserDiscountApplied = false;
+  int _newUserDiscountPercent = 0;
+  double _newUserDiscountAmount = 0.0;
+
+  bool _isEvenOrderDiscountApplied = false;
+  int _evenOrderDiscountPercent = 0;
+  double _evenOrderDiscountAmount = 0.0;
+
+  double _serviceFee = 0.0;
+
+  bool _isHandlingFeeApplied = false;
+  double _handlingFee = 0.0;
+  String _handlingFeeText = "";
+
+  double _packagingFee = 0.0;
+
   double _finalTotal = 0.0;
   bool _isSyncingCart = false;
 
@@ -64,11 +85,33 @@ class CartService extends ChangeNotifier {
       ? _cartTotal
       : items.fold(0.0, (sum, item) => sum + item.total);
   double get deliveryCharge => _deliveryCharge;
-  double get deliveryDiscount => _deliveryDiscount; // ADDED
-  String get deliveryDiscountText => _deliveryDiscountText; // ADDED
-  double get extraCharge => _extraCharge;
+
+  // ❌ REMOVED
+  // double get deliveryDiscount => _deliveryDiscount; // ADDED
+  // String get deliveryDiscountText => _deliveryDiscountText; // ADDED
+  // double get extraCharge => _extraCharge;
+
   double get gst => _gst;
+  int get gstPercent => _gstPercent;
+
+  bool get isNewUserDiscountApplied => _isNewUserDiscountApplied;
+  int get newUserDiscountPercent => _newUserDiscountPercent;
+  double get newUserDiscountAmount => _newUserDiscountAmount;
+
+  bool get isEvenOrderDiscountApplied => _isEvenOrderDiscountApplied;
+  int get evenOrderDiscountPercent => _evenOrderDiscountPercent;
+  double get evenOrderDiscountAmount => _evenOrderDiscountAmount;
+
+  double get serviceFee => _serviceFee;
+
+  bool get isHandlingFeeApplied => _isHandlingFeeApplied;
+  double get handlingFee => _handlingFee;
+  String get handlingFeeText => _handlingFeeText;
+
+  double get packagingFee => _packagingFee;
+
   double get finalTotal => _finalTotal > 0 ? _finalTotal : subtotal;
+
   bool get isSyncingCart => _isSyncingCart;
 
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
@@ -187,13 +230,44 @@ class CartService extends ChangeNotifier {
       }
 
       items.clear();
+
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
-      _deliveryDiscount = _toDouble(response['DeliveryDiscount']); // ADDED
-      _deliveryDiscountText =
-          response['DeliveryDiscountText']?.toString() ?? ""; // ADDED
-      _extraCharge = _toDouble(response['ExtraCharge']);
+
+      // ❌ REMOVED
+      // _deliveryDiscount = _toDouble(response['DeliveryDiscount']); // ADDED
+      // _deliveryDiscountText =
+      //     response['DeliveryDiscountText']?.toString() ?? ""; // ADDED
+      // _extraCharge = _toDouble(response['ExtraCharge']);
+
       _gst = _toDouble(response['GST']);
+      _gstPercent = int.tryParse(response['GSTPercent']?.toString() ?? '0') ?? 0;
+
+
+      _isNewUserDiscountApplied = response['IsNewUserDiscountApplied'] == true;
+
+      _newUserDiscountPercent = int.tryParse(response['NewUserDiscountPercent']?.toString() ?? '0') ?? 0;
+
+      _newUserDiscountAmount = _toDouble(response['NewUserDiscountAmount']);
+
+      _isEvenOrderDiscountApplied =
+          response['IsEvenOrderDiscountApplied'] == true;
+
+      _evenOrderDiscountPercent =
+          int.tryParse(response['EvenOrderDiscountPercent']?.toString() ?? '0') ?? 0;
+
+      _evenOrderDiscountAmount = _toDouble(response['EvenOrderDiscountAmount']);
+
+      _serviceFee = _toDouble(response['ServiceFee']);
+
+      _isHandlingFeeApplied = response['IsHandlingFeeApplied'] == true;
+
+      _handlingFee = _toDouble(response['HandlingFee']);
+
+      _handlingFeeText = response['HandlingFeeText']?.toString() ?? "";
+
+      _packagingFee = _toDouble(response['PackagingFee']);
+
       _finalTotal = _toDouble(response['FinalTotal']);
 
       final rawItems = response['CartItems'];
@@ -207,7 +281,10 @@ class CartService extends ChangeNotifier {
             'CategoryName': item['CategoryName']?.toString() ?? '',
             'OriginalPrice': item['OriginalPrice']?.toString() ?? '0',
             'DiscountPrice': item['DiscountPrice']?.toString() ?? '0',
-            'DiscountPercent': item['DiscountPercent']?.toString() ?? '0',
+
+            // ❌ REMOVED
+            // 'DiscountPercent': item['DiscountPercent']?.toString() ?? '0',
+
             'ProductImage':
                 CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
             'Image1': '',
@@ -215,7 +292,9 @@ class CartService extends ChangeNotifier {
             'Image3': '',
             'Image4': '',
             'Image5': '',
-            'description': item['Description']?.toString() ?? '',
+
+            // ❌ REMOVED
+            // 'description': item['Description']?.toString() ?? '',
           });
 
           items.add(
@@ -239,10 +318,32 @@ class CartService extends ChangeNotifier {
     items.clear();
     _cartTotal = 0.0;
     _deliveryCharge = 0.0;
-    _deliveryDiscount = 0.0; // ADDED
-    _deliveryDiscountText = ""; // ADDED
-    _extraCharge = 0.0;
+
+    // ❌ REMOVED
+    // _deliveryDiscount = 0.0; // ADDED
+    // _deliveryDiscountText = ""; // ADDED
+    // _extraCharge = 0.0;
+
     _gst = 0.0;
+    _gstPercent = 0;
+
+    // ✅ RESET NEW FIELDS
+    _isNewUserDiscountApplied = false;
+    _newUserDiscountPercent = 0;
+    _newUserDiscountAmount = 0.0;
+
+    _isEvenOrderDiscountApplied = false;
+    _evenOrderDiscountPercent = 0;
+    _evenOrderDiscountAmount = 0.0;
+
+    _serviceFee = 0.0;
+
+    _isHandlingFeeApplied = false;
+    _handlingFee = 0.0;
+    _handlingFeeText = "";
+
+    _packagingFee = 0.0;
+
     _finalTotal = 0.0;
     notifyListeners();
     _saveToStorage();
