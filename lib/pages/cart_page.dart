@@ -1,5 +1,6 @@
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/checkout_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -91,26 +92,74 @@ class _CartPageState extends State<CartPage> {
       ),
       child: Row(
         children: [
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(12),
+          //   child: (item.product.allImages.isNotEmpty)
+          //       ? Image.network(
+          //           item.product.allImages.first,
+          //           width: 70,
+          //           height: 70,
+          //           fit: BoxFit.cover,
+          //           errorBuilder: (context, error, stackTrace) {
+          //             return Container(
+          //               color: Colors.grey[300],
+          //               child: const Icon(Icons.image),
+          //             );
+          //           },
+          //         )
+          //       : Container(
+          //           width: 70,
+          //           height: 70,
+          //           color: Colors.grey[300],
+          //           child: const Icon(Icons.image),
+          //         ),
+          // ),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: (item.product.allImages.isNotEmpty)
-                ? Image.network(
-                    item.product.allImages.first,
+            child: (item.product.allImages.isNotEmpty &&
+                    item.product.allImages.first.isNotEmpty)
+                ? CachedNetworkImage(
+                    imageUrl: item.product.allImages.first,
                     width: 70,
                     height: 70,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    fadeInDuration: const Duration(milliseconds: 150),
+                    memCacheWidth: 300,
+                    maxWidthDiskCache: 400,
+                    placeholder: (context, url) {
                       return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image),
+                        width: 70,
+                        height: 70,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorWidget: (context, url, error) {
+                      return Container(
+                        width: 70,
+                        height: 70,
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                        ),
                       );
                     },
                   )
                 : Container(
                     width: 70,
                     height: 70,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image),
+                    color: Colors.grey[200],
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                    ),
                   ),
           ),
           const SizedBox(width: 12),
@@ -162,7 +211,7 @@ class _CartPageState extends State<CartPage> {
                     color: StoreProfileTheme.accentPink),
                 onPressed: () {
                   // setState(() => cart.remove(item));
-                   cart.remove(item);
+                  cart.remove(item);
                 },
               ),
             ],

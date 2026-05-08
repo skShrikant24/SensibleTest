@@ -8,6 +8,7 @@ import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -41,11 +42,13 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
     _loadVendorsProducts();
   }
 
-  Future<List<VendorProduct>> fetchVendorProducts(String vendorId, String catergoryId, [String lang = 'en']) async {
+  Future<List<VendorProduct>> fetchVendorProducts(
+      String vendorId, String catergoryId,
+      [String lang = 'en']) async {
     try {
       final url =
           "https://grabitt.in/webservice.asmx/GetProductsByVendor?vendorid=$vendorId&categoryid=$catergoryId&lang=${Uri.encodeComponent(lang)}";
-     print("+++++++++++++++++++++");
+      print("+++++++++++++++++++++");
       print(url);
       print("__________________________");
       final response = await http.get(Uri.parse(url));
@@ -75,7 +78,8 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
   Future<void> _loadVendorsProducts() async {
     try {
       final lang = LocaleProvider.instance.languageCode;
-      final vendors = await fetchVendorProducts(widget.vendorId, widget.catergoryId, lang);
+      final vendors =
+          await fetchVendorProducts(widget.vendorId, widget.catergoryId, lang);
       _allVendorsProduct = vendors;
       _filteredVendorsProduct = vendors;
     } catch (_) {
@@ -105,7 +109,8 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
         decoration: BoxDecoration(
           color: StoreProfileTheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: StoreProfileTheme.border.withValues(alpha: .4)),
+          border:
+              Border.all(color: StoreProfileTheme.border.withValues(alpha: .4)),
           boxShadow: [
             BoxShadow(
               color: StoreProfileTheme.border.withValues(alpha: .15),
@@ -176,9 +181,11 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
                           builder: (context, _) {
                             return GridView.builder(
                               padding: const EdgeInsets.all(12),
-                              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
                               itemCount: _filteredVendorsProduct.length,
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 mainAxisSpacing: 12,
                                 crossAxisSpacing: 12,
@@ -193,7 +200,8 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => ProductDetailsPage(product: product),
+                                        builder: (_) => ProductDetailsPage(
+                                            product: product),
                                       ),
                                     );
                                   },
@@ -237,15 +245,43 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Expanded(
+            //   child: (vendorProduct.images.isNotEmpty &&
+            //       vendorProduct.images.first.isNotEmpty)
+            //       ? Image.network(
+            //     vendorProduct.images.first,
+            //     fit: BoxFit.cover,
+            //     width: double.infinity,
+            //     errorBuilder: (_, __, ___) => _placeholder(),
+            //   )
+            //       : _placeholder(),
+            // ),
             Expanded(
               child: (vendorProduct.images.isNotEmpty &&
-                  vendorProduct.images.first.isNotEmpty)
-                  ? Image.network(
-                vendorProduct.images.first,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              )
+                      vendorProduct.images.first.isNotEmpty)
+                  ? CachedNetworkImage(
+                      imageUrl: vendorProduct.images.first,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      fadeInDuration: const Duration(milliseconds: 150),
+                      memCacheWidth: 400,
+                      maxWidthDiskCache: 500,
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorWidget: (_, __, ___) => _placeholder(),
+                    )
                   : _placeholder(),
             ),
             Padding(
@@ -274,22 +310,22 @@ class _ProductCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: vendorProduct.isActive == 1
                   ? (cartItem == null
-                  ? _AddButton(
-                onPressed: () {
-                  cart.addItem(product);
-                  ToastMessage.success(
-                    context: context,
-                    msg: "Added to cart",
-                  );
-                },
-              )
-                  : _QtyControls(
-                cartItem: cartItem,
-                onIncrease: () {
-                  cart.increase(cartItem!);
-                },
-                onDecrease: () => cart.decrease(cartItem!),
-              ))
+                      ? _AddButton(
+                          onPressed: () {
+                            cart.addItem(product);
+                            ToastMessage.success(
+                              context: context,
+                              msg: "Added to cart",
+                            );
+                          },
+                        )
+                      : _QtyControls(
+                          cartItem: cartItem,
+                          onIncrease: () {
+                            cart.increase(cartItem!);
+                          },
+                          onDecrease: () => cart.decrease(cartItem!),
+                        ))
                   : _outOfStock(),
             ),
           ],
@@ -297,6 +333,7 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
+
   Widget _placeholder() {
     return Container(
       color: StoreProfileTheme.lightPink.withValues(alpha: .25),
@@ -309,6 +346,7 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
+
   Widget _outOfStock() {
     return Container(
       alignment: Alignment.center,
@@ -383,7 +421,8 @@ class _QtyControls extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onDecrease,
-          icon: Icon(Icons.remove_circle_outline, color: StoreProfileTheme.accentPink, size: 24),
+          icon: Icon(Icons.remove_circle_outline,
+              color: StoreProfileTheme.accentPink, size: 24),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
         ),
@@ -400,7 +439,8 @@ class _QtyControls extends StatelessWidget {
         ),
         IconButton(
           onPressed: onIncrease,
-          icon: Icon(Icons.add_circle_outline, color: StoreProfileTheme.accentPink, size: 24),
+          icon: Icon(Icons.add_circle_outline,
+              color: StoreProfileTheme.accentPink, size: 24),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
         ),

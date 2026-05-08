@@ -1,5 +1,6 @@
 import 'package:GraBiTT/models/vender.dart';
 import 'package:GraBiTT/pages/category_vendors_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ import '../utils/constants.dart';
 
 class StorePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
+
   /// Called with true when user scrolls down (hide bar), false when scrolls up (show bar).
   final ValueChanged<bool>? onScrollDirection;
 
@@ -42,6 +44,7 @@ class _StorePageState extends State<StorePage> {
 
   /// When true, bottom nav is hidden (scrolled down) → buttons sit at very bottom.
   bool _bottomBarHidden = false;
+
   /// Approximate height of main_shell bottom bar (with padding) so buttons sit above it when visible.
   static const double _bottomBarHeight = 72;
 
@@ -61,7 +64,6 @@ class _StorePageState extends State<StorePage> {
       _categoriesFuture = fetchCategories(lang);
     });
   }
-
 
   void _onScroll() {
     final offset = _scrollController.offset;
@@ -111,7 +113,9 @@ class _StorePageState extends State<StorePage> {
               const SizedBox(height: 12),
               ListTile(
                 title: Text(l10n.english),
-                trailing: localeProvider.isEnglish ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                trailing: localeProvider.isEnglish
+                    ? Icon(Icons.check, color: StoreProfileTheme.accentPink)
+                    : null,
                 onTap: () async {
                   await localeProvider.setEnglish();
                   if (ctx.mounted) Navigator.pop(ctx);
@@ -119,7 +123,9 @@ class _StorePageState extends State<StorePage> {
               ),
               ListTile(
                 title: Text(l10n.kannada),
-                trailing: localeProvider.isKannada ? Icon(Icons.check, color: StoreProfileTheme.accentPink) : null,
+                trailing: localeProvider.isKannada
+                    ? Icon(Icons.check, color: StoreProfileTheme.accentPink)
+                    : null,
                 onTap: () async {
                   await localeProvider.setKannada();
                   if (ctx.mounted) Navigator.pop(ctx);
@@ -159,7 +165,9 @@ class _StorePageState extends State<StorePage> {
                     child: _buildVendorGrid(),
                   ),
                   SliverToBoxAdapter(
-                    child:SizedBox(height: 50,),
+                    child: SizedBox(
+                      height: 50,
+                    ),
                   ),
                 ],
               ),
@@ -196,23 +204,28 @@ class _StorePageState extends State<StorePage> {
                   GestureDetector(
                     onTap: () => _showLanguageSheet(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: StoreProfileTheme.lightPink.withValues(alpha: 0.5),
+                        color:
+                            StoreProfileTheme.lightPink.withValues(alpha: 0.5),
                         border: Border.all(color: StoreProfileTheme.border),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         children: [
                           Text(
-                            localeProvider.isKannada ? l10n.kannada : l10n.english,
+                            localeProvider.isKannada
+                                ? l10n.kannada
+                                : l10n.english,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_drop_down, size: 18, color: Colors.grey[600]),
+                          Icon(Icons.arrow_drop_down,
+                              size: 18, color: Colors.grey[600]),
                         ],
                       ),
                     ),
@@ -241,7 +254,8 @@ class _StorePageState extends State<StorePage> {
                         color: Colors.grey[700],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+                    const Icon(Icons.arrow_forward_ios,
+                        size: 12, color: Colors.grey),
                   ],
                 ),
               ),
@@ -277,7 +291,7 @@ class _StorePageState extends State<StorePage> {
                   const SizedBox(width: 10),
 
                   // Notification Icon
-                /*  HeaderPill(
+                  /*  HeaderPill(
                     icon: Icons.notifications_none_rounded,
                     onTap: () {
                       Navigator.push(
@@ -321,7 +335,8 @@ class _StorePageState extends State<StorePage> {
             ),
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           style: GoogleFonts.poppins(fontSize: 14),
         ),
@@ -330,7 +345,6 @@ class _StorePageState extends State<StorePage> {
   }
 
   Widget _buildVendorGrid() {
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: FutureBuilder<List<Category>>(
@@ -380,7 +394,6 @@ class _StorePageState extends State<StorePage> {
                     ),
                   );
                 },
-
               );
             },
           );
@@ -388,7 +401,6 @@ class _StorePageState extends State<StorePage> {
       ),
     );
   }
-
 
   // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
   Widget _buildFixedActionButtons() {
@@ -578,19 +590,66 @@ class _CategoryGridTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Expanded(
+            //   flex: 3,
+            //   child: ClipRRect(
+            //     // borderRadius: BorderRadius.circular(8),
+            //     child: Image.network(
+            //       url,
+            //       fit: BoxFit.contain,
+            //       width: double.infinity,
+            //       errorBuilder: (_, __, ___) => Image.network(
+            //         _placeholder,
+            //         fit: BoxFit.cover,
+            //         width: double.infinity,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             Expanded(
               flex: 3,
               child: ClipRRect(
-                // borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  url,
+                child: CachedNetworkImage(
+                  imageUrl: url,
                   fit: BoxFit.contain,
                   width: double.infinity,
-                  errorBuilder: (_, __, ___) => Image.network(
-                    _placeholder,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                  ),
+                  memCacheWidth: 300,
+                  maxWidthDiskCache: 400,
+                  fadeInDuration: const Duration(milliseconds: 150),
+                  placeholder: (context, url) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  errorWidget: (_, __, ___) {
+                    return CachedNetworkImage(
+                      imageUrl: _placeholder,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey[200],
+                        );
+                      },
+                      errorWidget: (_, __, ___) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ),
@@ -685,8 +744,8 @@ Future<List<Category>> fetchCategories([String lang = 'en']) async {
   }
 }
 
-
-Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en']) async {
+Future<List<Vendor>> fetchVendorsByCategory(String category,
+    [String lang = 'en']) async {
   try {
     final url =
         'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?categoryid=${Uri.encodeComponent(category)}&lang=${Uri.encodeComponent(lang)}';
@@ -698,9 +757,7 @@ Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en'
     if (response.statusCode != 200) return [];
 
     /// Remove XML wrapper
-    final cleaned = response.body
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .trim();
+    final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
     print("______________-------------------___________________");
     print("VENDOR API RAW => $cleaned");
     print("______________-------------------___________________");
@@ -724,7 +781,6 @@ Future<List<Vendor>> fetchVendorsByCategory(String category, [String lang = 'en'
       final map = Map<String, dynamic>.from(decoded);
       return [Vendor.fromJson(map)];
     }
-
 
     return [];
   } catch (e) {
@@ -757,7 +813,9 @@ class Restaurant {
       name: json['RestaurantName'] ?? json['name'] ?? '',
       category: json['Category'] ?? json['category'] ?? '',
       imageUrl: json['ImageUrl'] ?? json['imageUrl'],
-      rating: json['Rating'] != null ? double.tryParse(json['Rating'].toString()) : null,
+      rating: json['Rating'] != null
+          ? double.tryParse(json['Rating'].toString())
+          : null,
       address: json['Address'] ?? json['address'],
     );
   }
@@ -779,7 +837,7 @@ class Restaurant {
 Future<List<Restaurant>> fetchRestaurantsByCategory(String category) async {
   // TODO: Replace with actual API call when backend is ready
   // Example API endpoint: 'https://grabitt.in/webservice.asmx/GetRestaurantsByCategory?category=${Uri.encodeComponent(category)}'
-  
+
   // For now, return dummy data based on category
   return _getDummyRestaurants(category);
 
@@ -822,43 +880,54 @@ List<Restaurant> _getDummyRestaurants(String category) {
   // In production, this will be replaced by actual API call
 
   final categoryLower = category.toLowerCase();
-  
+
   // Generate dummy restaurants based on category
   if (categoryLower == 'all' || categoryLower.isEmpty) {
-    return List.generate(4, (index) => Restaurant(
-      id: 'rest_${index + 1}',
-      name: 'Restaurant ${index + 1}',
-      category: 'Restaurant',
-      rating: 4.0 + (index * 0.2),
-    ));
+    return List.generate(
+        4,
+        (index) => Restaurant(
+              id: 'rest_${index + 1}',
+              name: 'Restaurant ${index + 1}',
+              category: 'Restaurant',
+              rating: 4.0 + (index * 0.2),
+            ));
   } else if (categoryLower.contains('restaurant')) {
-    return List.generate(4, (index) => Restaurant(
-      id: 'rest_${index + 1}',
-      name: 'Restaurant ${index + 1}',
-      category: 'Restaurant',
-      rating: 4.0 + (index * 0.2),
-    ));
+    return List.generate(
+        4,
+        (index) => Restaurant(
+              id: 'rest_${index + 1}',
+              name: 'Restaurant ${index + 1}',
+              category: 'Restaurant',
+              rating: 4.0 + (index * 0.2),
+            ));
   } else if (categoryLower.contains('grocery')) {
-    return List.generate(3, (index) => Restaurant(
-      id: 'grocery_${index + 1}',
-      name: 'Grocery Store ${index + 1}',
-      category: 'Grocery',
-      rating: 4.2 + (index * 0.1),
-    ));
-  } else if (categoryLower.contains('medical') || categoryLower.contains('pharmacy')) {
-    return List.generate(3, (index) => Restaurant(
-      id: 'medical_${index + 1}',
-      name: 'Medical Store ${index + 1}',
-      category: 'Medical',
-      rating: 4.5 + (index * 0.1),
-    ));
+    return List.generate(
+        3,
+        (index) => Restaurant(
+              id: 'grocery_${index + 1}',
+              name: 'Grocery Store ${index + 1}',
+              category: 'Grocery',
+              rating: 4.2 + (index * 0.1),
+            ));
+  } else if (categoryLower.contains('medical') ||
+      categoryLower.contains('pharmacy')) {
+    return List.generate(
+        3,
+        (index) => Restaurant(
+              id: 'medical_${index + 1}',
+              name: 'Medical Store ${index + 1}',
+              category: 'Medical',
+              rating: 4.5 + (index * 0.1),
+            ));
   } else {
     // Default: return restaurants for any other category
-    return List.generate(2, (index) => Restaurant(
-      id: 'store_${index + 1}',
-      name: '$category Store ${index + 1}',
-      category: category,
-      rating: 4.0,
-    ));
+    return List.generate(
+        2,
+        (index) => Restaurant(
+              id: 'store_${index + 1}',
+              name: '$category Store ${index + 1}',
+              category: category,
+              rating: 4.0,
+            ));
   }
 }

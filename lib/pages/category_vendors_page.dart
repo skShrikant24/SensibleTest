@@ -4,6 +4,7 @@ import 'package:GraBiTT/models/vender.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 import 'package:GraBiTT/pages/vendor_products_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -219,21 +220,71 @@ class _VendorCard extends StatelessWidget {
                   const BorderRadius.vertical(top: Radius.circular(20)),
               child: Stack(
                 children: [
+                  // AspectRatio(
+                  //   aspectRatio: 16 / 9,
+                  //   child: Image.network(
+                  //     image,
+                  //     width: double.infinity,
+                  //     fit: BoxFit.cover,
+                  //     errorBuilder: (_, __, ___) => Container(
+                  //       color:
+                  //           StoreProfileTheme.lightPink.withValues(alpha: .25),
+                  //       child: Center(
+                  //         child: Icon(Icons.store,
+                  //             size: 48, color: StoreProfileTheme.accentPink),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                   AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: Image.network(
-                      image,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color:
-                            StoreProfileTheme.lightPink.withValues(alpha: .25),
-                        child: Center(
-                          child: Icon(Icons.store,
-                              size: 48, color: StoreProfileTheme.accentPink),
-                        ),
-                      ),
-                    ),
+                    child: image.isEmpty
+                        ? Container(
+                            color: StoreProfileTheme.lightPink
+                                .withValues(alpha: .25),
+                            child: Center(
+                              child: Icon(
+                                Icons.store,
+                                size: 48,
+                                color: StoreProfileTheme.accentPink,
+                              ),
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: image,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 150),
+                            memCacheWidth: 700,
+                            maxWidthDiskCache: 900,
+                            placeholder: (context, url) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorWidget: (context, url, error) {
+                              return Container(
+                                color: StoreProfileTheme.lightPink
+                                    .withValues(alpha: .25),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 48,
+                                    color: StoreProfileTheme.accentPink,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
 
                   /// gradient overlay

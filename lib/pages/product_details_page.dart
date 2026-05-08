@@ -297,35 +297,35 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
           //   ),
           // ),
 
-          // SliverToBoxAdapter(
-          //   child: SizedBox(
-          //     height: 300,
-          //     child: (widget.product.allImages.isNotEmpty)
-          //         ? PageView(
-          //             children: widget.product.allImages
-          //                 .asMap()
-          //                 .entries
-          //                 .map(
-          //                   (entry) => CachedNetworkImage(
-          //                     imageUrl: entry.value,
-          //                     key: entry.key == 0 ? _imageKey : null,
-          //                     fit: BoxFit.contain,
-          //                     memCacheWidth: 700,
-          //                     maxWidthDiskCache: 900,
-          //                     fadeInDuration: const Duration(milliseconds: 150),
-          //                     placeholder: (context, url) {
-          //                       return const Center(
-          //                         child: CircularProgressIndicator(),
-          //                       );
-          //                     },
-          //                     errorWidget: (_, __, ___) => _placeholder(),
-          //                   ),
-          //                 )
-          //                 .toList(),
-          //           )
-          //         : _placeholder(),
-          //   ),
-          // ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 300,
+              child: (widget.product.allImages.isNotEmpty)
+                  ? PageView(
+                      children: widget.product.allImages
+                          .asMap()
+                          .entries
+                          .map(
+                            (entry) => CachedNetworkImage(
+                              imageUrl: entry.value,
+                              key: entry.key == 0 ? _imageKey : null,
+                              fit: BoxFit.contain,
+                              memCacheWidth: 700,
+                              maxWidthDiskCache: 900,
+                              fadeInDuration: const Duration(milliseconds: 150),
+                              placeholder: (context, url) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              },
+                              errorWidget: (_, __, ___) => _placeholder(),
+                            ),
+                          )
+                          .toList(),
+                    )
+                  : _placeholder(),
+            ),
+          ),
 
           // 📦 Product Info
           SliverToBoxAdapter(
@@ -508,51 +508,51 @@ class _PaperPlaneOverlay extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              productImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.image),
-                                );
-                              },
-                            ),
-                          ),
-                          // child: CachedNetworkImage(
-                          //   imageUrl: productImage,
-                          //   fit: BoxFit.cover,
-                          //   memCacheWidth: 250,
-                          //   maxWidthDiskCache: 350,
-                          //   fadeInDuration: const Duration(milliseconds: 100),
-                          //   placeholder: (context, url) {
-                          //     return Container(
-                          //       color: Colors.grey[200],
-                          //       child: const Center(
-                          //         child: SizedBox(
-                          //           width: 16,
-                          //           height: 16,
-                          //           child: CircularProgressIndicator(
-                          //             strokeWidth: 2,
-                          //           ),
-                          //         ),
-                          //       ),
-                          //     );
-                          //   },
-                            // errorWidget: (context, url, error) {
-                            //   return Container(
-                            //     color: Colors.grey[300],
-                            //     child: const Icon(Icons.image),
-                            //   );
-                            // },
+                          // child: ClipRRect(
+                          //   borderRadius: BorderRadius.circular(8),
+                          //   child: Image.network(
+                          //     productImage,
+                          //     fit: BoxFit.cover,
+                          //     errorBuilder: (context, error, stackTrace) {
+                          //       return Container(
+                          //         color: Colors.grey[300],
+                          //         child: const Icon(Icons.image),
+                          //       );
+                          //     },
+                          //   ),
+                          // ),
+                          child: CachedNetworkImage(
+                            imageUrl: productImage,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 250,
+                            maxWidthDiskCache: 350,
+                            fadeInDuration: const Duration(milliseconds: 100),
+                            placeholder: (context, url) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorWidget: (context, url, error) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image),
+                              );
+                            },
                           ),
                         ),
                       ),
                     ),
                   ),
-                // ),
+                ),
 
               // Quote: "Fast as a flight."
               // if (showQuote && t < 0.8)
