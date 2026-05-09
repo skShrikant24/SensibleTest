@@ -18,21 +18,37 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _index = 0;
 
   /// On Store page: hide bottom bar when scrolling down, show when scrolling up.
   bool _hideBottomBar = false;
+  
   bool _isDialogShowing = false;
   @override
   void initState() {
     super.initState();
-
+    // ✅ App lifecycle observer add
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAppUpdate();
     });
   }
 
+  @override
+  void dispose() {
+    // ✅ Remove observer
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ✅ Called when app resumes from background / Play Store
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAppUpdate();
+    }
+  }
   // ================= VERSION CHECK =================
 
   Future<void> _checkAppUpdate() async {
@@ -97,22 +113,22 @@ class _MainShellState extends State<MainShell> {
         onSkip: force
             ? null
             : () {
-                _isDialogShowing = false;
                 _handleSkip(latestVersion);
               },
 
         // ✅ Update
-        onUpdate: () {
-          _isDialogShowing = false;
-
-          if (!force && mounted) {
+        onUpdate: () async {
+          if (mounted) {
             Navigator.pop(context);
           }
 
-          _openPlayStore();
+          await _openPlayStore();
         },
       ),
-    );
+    ).then((_) {
+      // ✅ Reset only after popup closes
+      _isDialogShowing = false;
+    });
   }
 
   Future<void> _handleSkip(String latestVersion) async {
