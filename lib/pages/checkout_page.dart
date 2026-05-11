@@ -148,10 +148,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _validateSelectedAddressRadius(AddressModel address) async {
     if (!mounted) return;
     setState(() => _checkingOrderRadius = true);
-    final result = await checkOrderRadius(address.id);
+    final result = await checkOrderRadius(
+      address.id,
+      address.userID,
+    );
     debugPrint("Radius Allowed: ${result.allowed}");
     debugPrint("Radius Message: ${result.userMessage}");
     debugPrint("Address ID: ${address.id}");
+    debugPrint("User ID: ${address.userID}");
     if (!mounted) return;
     setState(() {
       _orderRadiusStatus = result;

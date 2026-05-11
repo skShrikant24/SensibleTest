@@ -29,7 +29,6 @@ Future<List<AddressModel>> getAddressByUser(String userID) async {
     return decoded
         .map((e) => AddressModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-
   } catch (_) {
     return [];
   }
@@ -166,19 +165,27 @@ class OrderRadiusCheckResult {
 /// GET CheckOrderRadius?AddressID=string
 /// Success => "Success"
 /// Failure => "RadiusIssue|minDistanceKm|currentDistanceMeters"
-Future<OrderRadiusCheckResult> checkOrderRadius(String addressId) async {
-  if (addressId.trim().isEmpty) {
+Future<OrderRadiusCheckResult> checkOrderRadius(
+  String addressId,
+  String userId,
+) async {
+  if (addressId.trim().isEmpty || userId.trim().isEmpty) {
     return const OrderRadiusCheckResult(
       allowed: false,
       rawResponse: 'Address id missing',
     );
   }
   try {
-    final uri =
-        Uri.parse('$_baseUrl/WebService.asmx/CheckOrderRadius').replace(
-      queryParameters: {'AddressID': addressId},
+    final uri = Uri.parse('$_baseUrl/WebService.asmx/CheckOrderRadius').replace(
+      queryParameters: {
+        'AddressID': addressId,
+        'UserID': userId,
+      },
     );
+    print("Check Radius URL => $uri");
     final response = await http.get(uri);
+    print("Check Radius Status => ${response.statusCode}");
+    print("Check Radius Raw => ${response.body}");
     if (response.statusCode != 200) {
       return const OrderRadiusCheckResult(
         allowed: false,
@@ -186,7 +193,8 @@ Future<OrderRadiusCheckResult> checkOrderRadius(String addressId) async {
       );
     }
     final cleaned = _cleanResponse(response.body);
-    print("----WebService.asmx/CheckOrderRadius--AddressID----$addressId");
+    print(
+        "----WebService.asmx/CheckOrderRadius--AddressID----$addressId--UserID----$userId");
     print(cleaned);
     if (cleaned.toLowerCase() == 'success') {
       return OrderRadiusCheckResult(allowed: true, rawResponse: cleaned);
@@ -206,7 +214,8 @@ Future<OrderRadiusCheckResult> checkOrderRadius(String addressId) async {
       );
     }
     return OrderRadiusCheckResult(allowed: false, rawResponse: cleaned);
-  } catch (_) {
+  } catch (e) {
+    print("Check Radius Error => $e");
     return const OrderRadiusCheckResult(
       allowed: false,
       rawResponse: 'Network error',
