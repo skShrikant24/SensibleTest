@@ -19,6 +19,7 @@ class OrderDetailsPage extends StatefulWidget {
 
 class _OrderDetailsPageState extends State<OrderDetailsPage> {
   bool _loading = true;
+  OrderHistoryItem? _orderDetails;
   List<OrderHistoryProductItem> _items = [];
 
   @override
@@ -35,7 +36,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     if (!mounted) return;
 
     setState(() {
-      _items = res;
+      _orderDetails = res;
+      _items = res?.items ?? [];
       _loading = false;
     });
   }
@@ -67,7 +69,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
+    final order = _orderDetails ?? widget.order;
 
     return Scaffold(
       backgroundColor: StoreProfileTheme.background,
@@ -248,6 +250,16 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   // ================= PRICE SECTION =================
 
   Widget _priceSection(OrderHistoryItem order) {
+    final bool showNewUserDiscount =
+        order.isNewUserDiscountApplied && order.newUserDiscountAmountValue > 0;
+
+    final bool showEvenOrderDiscount = order.isEvenOrderDiscountApplied &&
+        order.evenOrderDiscountAmountValue > 0;
+
+    final bool showDeliveryCharge = order.deliveryChargeValue > 0;
+
+    final bool showGST = order.gstValue > 0;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -259,26 +271,77 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       ),
       child: Column(
         children: [
+          // Subtotal
           _priceRow(
-            'Item Total',
-            '${AppConstants.currencySymbol}${order.totalAmount}',
+            'Subtotal',
+            order.subtotalValue,
           ),
-          // const SizedBox(height: 10),
-          // _priceRow(
-          //   'Delivery Fee',
-          //   '${AppConstants.currencySymbol}0',
-          // ),
-          const Divider(height: 24),
+
+          // GST
+          if (showGST)
+            _priceRow(
+              'GST (${order.gstPercent}%)',
+              order.gstValue,
+            ),
+
+          // Delivery Charge
+          if (showDeliveryCharge)
+            _priceRow(
+              'Delivery Charge',
+              order.deliveryChargeValue,
+            ),
+
+          // New User Discount
+          if (showNewUserDiscount)
+            _priceRow(
+              'New User Discount (${order.newUserDiscountPercent}% OFF)',
+              -order.newUserDiscountAmountValue,
+              valueColor: Colors.green,
+            ),
+
+          // Even Order Discount
+          if (showEvenOrderDiscount)
+            _priceRow(
+              'Even Order Discount (${order.evenOrderDiscountPercent}% OFF)',
+              -order.evenOrderDiscountAmountValue,
+              valueColor: Colors.green,
+            ),
+
+          // Service Fee
           _priceRow(
-            'Grand Total',
-            '${AppConstants.currencySymbol}${order.totalAmount}',
-            isBold: true,
+            'Service Fee',
+            order.serviceFeeValue,
+            showNil: true,
+          ),
+
+          // Handling Fee
+          _priceRow(
+            order.handlingFeeText.isNotEmpty
+                ? order.handlingFeeText
+                : 'Handling Fee',
+            order.handlingFeeValue,
+            showNil: true,
+          ),
+
+          // Packaging Fee
+          _priceRow(
+            'Packaging Fee',
+            order.packagingFeeValue,
+            showNil: true,
+          ),
+
+          const Divider(height: 24),
+
+          // Final Total
+          _priceRow(
+            'Final Total',
+            order.finalTotalValue,
+            isFinal: true,
           ),
         ],
       ),
     );
   }
-
   // ================= ITEMS SECTION =================
 
   Widget _itemsSection() {
@@ -482,30 +545,52 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   Widget _priceRow(
-    String title,
-    String value, {
-    bool isBold = false,
+    String label,
+    double amount, {
+    bool isFinal = false,
+    Color? valueColor,
+    bool showNil = false,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.w600 : FontWeight.w500,
-            color: StoreProfileTheme.textPrimary,
+    final bool isNegative = amount < 0;
+    final bool isZero = amount == 0;
+
+    String amountText;
+
+    if (showNil && isZero) {
+      amountText = "Nil";
+    } else if (isNegative) {
+      amountText =
+          '- ${AppConstants.currencySymbol}${amount.abs().toStringAsFixed(0)}';
+    } else {
+      amountText = '${AppConstants.currencySymbol}${amount.toStringAsFixed(0)}';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: isFinal ? 15 : 13,
+                fontWeight: isFinal ? FontWeight.w600 : FontWeight.w400,
+                color: isFinal ? Colors.black : StoreProfileTheme.textPrimary,
+              ),
+            ),
           ),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: StoreProfileTheme.accentPink,
+          const SizedBox(width: 10),
+          Text(
+            amountText,
+            style: GoogleFonts.poppins(
+              fontSize: isFinal ? 18 : 14,
+              fontWeight: isFinal ? FontWeight.bold : FontWeight.w500,
+              color: valueColor ?? StoreProfileTheme.accentPink,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

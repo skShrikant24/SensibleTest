@@ -453,7 +453,7 @@ class _OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${AppConstants.currencySymbol}${order.totalAmountValue.toStringAsFixed(2)}',
+                  '${AppConstants.currencySymbol}${order.finalTotalValue.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,

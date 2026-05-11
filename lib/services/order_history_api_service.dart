@@ -30,31 +30,38 @@ Future<List<OrderHistoryItem>> getOrderHistoryByUser(String userId) async {
   }
 }
 
-Future<List<OrderHistoryProductItem>> getOrderDetails(String orderId) async {
-  if (orderId.trim().isEmpty) return [];
+Future<OrderHistoryItem?> getOrderDetails(String orderId) async {
+  if (orderId.trim().isEmpty) return null;
 
   try {
-    final uri = Uri.parse('$_baseUrl/Webservice.asmx/GetOrderDetails')
-        .replace(queryParameters: {
-      'OrderID': orderId,
-    });
+    final uri = Uri.parse(
+      '$_baseUrl/Webservice.asmx/GetOrderDetails',
+    ).replace(
+      queryParameters: {
+        'OrderID': orderId,
+      },
+    );
 
     final response = await http.get(uri);
-    if (response.statusCode != 200) return [];
+
+    if (response.statusCode != 200) return null;
 
     final cleaned = _cleanResponse(response.body);
-    if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
+
+    if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') {
+      return null;
+    }
 
     final decoded = json.decode(cleaned);
-    if (decoded is! List) return [];
 
-    return decoded
-        .map((e) => OrderHistoryProductItem.fromJson(
-              Map<String, dynamic>.from(e),
-            ))
-        .toList();
+    // API returns single object
+    if (decoded is! Map<String, dynamic>) {
+      return null;
+    }
+
+    return OrderHistoryItem.fromJson(decoded);
   } catch (_) {
-    return [];
+    return null;
   }
 }
 
