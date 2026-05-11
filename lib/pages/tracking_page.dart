@@ -1,4 +1,3 @@
-import 'package:GraBiTT/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -7,8 +6,8 @@ import '../utils/constants.dart';
 
 enum TrackingPhase {
   roadRibbon, // Phase 1: Road Ribbon
-  doorbell,   // Phase 2: Doorbell (within 200m)
-  unboxing,   // Phase 3: Unboxing (after OTP)
+  doorbell, // Phase 2: Doorbell (within 200m)
+  unboxing, // Phase 3: Unboxing (after OTP)
 }
 
 class TrackingPage extends StatefulWidget {
@@ -22,9 +21,9 @@ class _TrackingPageState extends State<TrackingPage> {
   TrackingPhase _currentPhase = TrackingPhase.roadRibbon;
 
   // OTP
-  final TextEditingController _otpController = TextEditingController();
-  final String _correctOTP = "1234"; // Demo OTP
-  bool _showOTPDialog = false;
+  // final TextEditingController _otpController = TextEditingController();
+  // final String _correctOTP = "1234"; // Demo OTP
+  // bool _showOTPDialog = false;
 
   // Distance tracking
   double _distance = 500.0; // Start at 500m
@@ -41,12 +40,25 @@ class _TrackingPageState extends State<TrackingPage> {
         setState(() {
           _distance -= 50;
         });
+
         if (_distance <= 200 && _currentPhase == TrackingPhase.roadRibbon) {
           setState(() {
             _currentPhase = TrackingPhase.doorbell;
           });
+
           SoundService.instance.playWhistle();
+
+          Future.delayed(const Duration(seconds: 3), () {
+            if (!mounted) return;
+
+            setState(() {
+              _currentPhase = TrackingPhase.unboxing;
+            });
+
+            SoundService.instance.playDing();
+          });
         }
+
         if (_distance > 0) {
           _startTracking();
         }
@@ -54,30 +66,30 @@ class _TrackingPageState extends State<TrackingPage> {
     });
   }
 
-  void _showOTPEntry() {
-    setState(() {
-      _showOTPDialog = true;
-    });
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _OTPDialog(
-        otpController: _otpController,
-        onVerify: (otp) {
-          if (otp == _correctOTP) {
-            Navigator.of(context).pop();
-            setState(() {
-              _currentPhase = TrackingPhase.unboxing;
-              _showOTPDialog = false;
-            });
-            SoundService.instance.playDing();
-          } else {
-            ToastMessage.error(context: context, msg: "Incorrect OTP. Please try again.");
-          }
-        },
-      ),
-    );
-  }
+  // void _showOTPEntry() {
+  //   setState(() {
+  //     _showOTPDialog = true;
+  //   });
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (context) => _OTPDialog(
+  //       otpController: _otpController,
+  //       onVerify: (otp) {
+  //         if (otp == _correctOTP) {
+  //           Navigator.of(context).pop();
+  //           setState(() {
+  //             _currentPhase = TrackingPhase.unboxing;
+  //             _showOTPDialog = false;
+  //           });
+  //           SoundService.instance.playDing();
+  //         } else {
+  //           ToastMessage.error(context: context, msg: "Incorrect OTP. Please try again.");
+  //         }
+  //       },
+  //     ),
+  //   );
+  // }
 
   double get _progressValue {
     switch (_currentPhase) {
@@ -90,11 +102,11 @@ class _TrackingPageState extends State<TrackingPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _otpController.dispose();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _otpController.dispose();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -105,12 +117,12 @@ class _TrackingPageState extends State<TrackingPage> {
           children: [
             // App Bar
             _buildAppBar(),
-            
+
             // Main Content
             Expanded(
               child: _buildPhaseContent(),
             ),
-            
+
             // Bottom Section
             _buildBottomSection(),
           ],
@@ -138,17 +150,17 @@ class _TrackingPageState extends State<TrackingPage> {
               ),
             ),
           ),
-          if (_currentPhase == TrackingPhase.doorbell)
-            TextButton(
-              onPressed: _showOTPEntry,
-              child: Text(
-                'Enter OTP',
-                style: GoogleFonts.poppins(
-                  color: StoreProfileTheme.ctaAction,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          // if (_currentPhase == TrackingPhase.doorbell)
+          //   TextButton(
+          //     onPressed: _showOTPEntry,
+          //     child: Text(
+          //       'Enter OTP',
+          //       style: GoogleFonts.poppins(
+          //         color: StoreProfileTheme.ctaAction,
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
     );
@@ -177,8 +189,10 @@ class _TrackingPageState extends State<TrackingPage> {
                 ),
                 textAlign: TextAlign.center,
               ),
+
               const SizedBox(height: 24),
-              // Lottie: Delivery at door
+
+              // Lottie Animation
               SizedBox(
                 width: 260,
                 height: 260,
@@ -189,8 +203,10 @@ class _TrackingPageState extends State<TrackingPage> {
                   animate: true,
                 ),
               ),
+
               const SizedBox(height: 24),
-              // Status / distance
+
+              // Status Text
               Text(
                 statusText,
                 style: GoogleFonts.poppins(
@@ -204,27 +220,27 @@ class _TrackingPageState extends State<TrackingPage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              if (_currentPhase == TrackingPhase.doorbell) ...[
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _showOTPEntry,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: StoreProfileTheme.accentPink,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Enter OTP',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+              // if (_currentPhase == TrackingPhase.doorbell) ...[
+              //   const SizedBox(height: 20),
+              //   ElevatedButton(
+              //     onPressed: _showOTPEntry,
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: StoreProfileTheme.accentPink,
+              //       foregroundColor: Colors.white,
+              //       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //     ),
+              //     child: Text(
+              //       'Enter OTP',
+              //       style: GoogleFonts.poppins(
+              //         fontSize: 16,
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
+              // ],
             ],
           ),
         ),
@@ -281,7 +297,7 @@ class _TrackingPageState extends State<TrackingPage> {
         ),
       );
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -290,9 +306,12 @@ class _TrackingPageState extends State<TrackingPage> {
           LinearProgressIndicator(
             value: _progressValue,
             backgroundColor: StoreProfileTheme.progressTrack,
-            valueColor: AlwaysStoppedAnimation<Color>(StoreProfileTheme.accentPink),
+            valueColor:
+                AlwaysStoppedAnimation<Color>(StoreProfileTheme.accentPink),
           ),
+
           const SizedBox(height: 10),
+
           Text(
             '${(_progressValue * 100).toInt()}% Complete',
             style: GoogleFonts.poppins(
@@ -307,134 +326,134 @@ class _TrackingPageState extends State<TrackingPage> {
 }
 
 // OTP Dialog
-class _OTPDialog extends StatefulWidget {
-  final TextEditingController otpController;
-  final Function(String) onVerify;
+// class _OTPDialog extends StatefulWidget {
+//   final TextEditingController otpController;
+//   final Function(String) onVerify;
 
-  const _OTPDialog({
-    required this.otpController,
-    required this.onVerify,
-  });
+//   const _OTPDialog({
+//     required this.otpController,
+//     required this.onVerify,
+//   });
 
-  @override
-  State<_OTPDialog> createState() => _OTPDialogState();
-}
+//   @override
+//   State<_OTPDialog> createState() => _OTPDialogState();
+// }
 
-class _OTPDialogState extends State<_OTPDialog> {
-  final List<TextEditingController> _controllers = List.generate(
-    4,
-    (index) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(
-    4,
-    (index) => FocusNode(),
-  );
+// class _OTPDialogState extends State<_OTPDialog> {
+//   final List<TextEditingController> _controllers = List.generate(
+//     4,
+//     (index) => TextEditingController(),
+//   );
+//   final List<FocusNode> _focusNodes = List.generate(
+//     4,
+//     (index) => FocusNode(),
+//   );
 
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
-    super.dispose();
-  }
+//   @override
+//   void dispose() {
+//     for (var controller in _controllers) {
+//       controller.dispose();
+//     }
+//     for (var node in _focusNodes) {
+//       node.dispose();
+//     }
+//     super.dispose();
+//   }
 
-  void _onChanged(int index, String value) {
-    if (value.isNotEmpty && index < 3) {
-      _focusNodes[index + 1].requestFocus();
-    }
+//   void _onChanged(int index, String value) {
+//     if (value.isNotEmpty && index < 3) {
+//       _focusNodes[index + 1].requestFocus();
+//     }
     
-    // Auto verify when all fields are filled
-    if (index == 3 && value.isNotEmpty) {
-      final otp = _controllers.map((c) => c.text).join();
-      if (otp.length == 4) {
-        widget.onVerify(otp);
-      }
-    }
-  }
+//     // Auto verify when all fields are filled
+//     if (index == 3 && value.isNotEmpty) {
+//       final otp = _controllers.map((c) => c.text).join();
+//       if (otp.length == 4) {
+//         widget.onVerify(otp);
+//       }
+//     }
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter OTP',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: StoreProfileTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(4, (index) {
-                return SizedBox(
-                  width: 50,
-                  height: 60,
-                  child: TextField(
-                    controller: _controllers[index],
-                    focusNode: _focusNodes[index],
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    maxLength: 1,
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: StoreProfileTheme.ctaAction,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    onChanged: (value) => _onChanged(index, value),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                final otp = _controllers.map((c) => c.text).join();
-                widget.onVerify(otp);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: StoreProfileTheme.ctaAction,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Verify',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Dialog(
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(20),
+//       ),
+//       child: Padding(
+//         padding: const EdgeInsets.all(24),
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Text(
+//               'Enter OTP',
+//               style: GoogleFonts.poppins(
+//                 fontSize: 20,
+//                 fontWeight: FontWeight.w700,
+//                 color: StoreProfileTheme.textPrimary,
+//               ),
+//             ),
+//             const SizedBox(height: 20),
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//               children: List.generate(4, (index) {
+//                 return SizedBox(
+//                   width: 50,
+//                   height: 60,
+//                   child: TextField(
+//                     controller: _controllers[index],
+//                     focusNode: _focusNodes[index],
+//                     textAlign: TextAlign.center,
+//                     keyboardType: TextInputType.number,
+//                     maxLength: 1,
+//                     style: GoogleFonts.poppins(
+//                       fontSize: 24,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                     decoration: InputDecoration(
+//                       counterText: '',
+//                       border: OutlineInputBorder(
+//                         borderRadius: BorderRadius.circular(12),
+//                       ),
+//                       focusedBorder: OutlineInputBorder(
+//                         borderRadius: BorderRadius.circular(12),
+//                         borderSide: BorderSide(
+//                           color: StoreProfileTheme.ctaAction,
+//                           width: 2,
+//                         ),
+//                       ),
+//                     ),
+//                     onChanged: (value) => _onChanged(index, value),
+//                   ),
+//                 );
+//               }),
+//             ),
+//             const SizedBox(height: 20),
+//             ElevatedButton(
+//               onPressed: () {
+//                 final otp = _controllers.map((c) => c.text).join();
+//                 widget.onVerify(otp);
+//               },
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: StoreProfileTheme.ctaAction,
+//                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+//                 shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                 ),
+//               ),
+//               child: Text(
+//                 'Verify',
+//                 style: GoogleFonts.poppins(
+//                   fontSize: 16,
+//                   fontWeight: FontWeight.w600,
+//                   color: Colors.white,
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 

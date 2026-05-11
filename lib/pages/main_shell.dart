@@ -23,7 +23,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   /// On Store page: hide bottom bar when scrolling down, show when scrolling up.
   bool _hideBottomBar = false;
-  
+
   bool _isDialogShowing = false;
   @override
   void initState() {
@@ -49,8 +49,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       _checkAppUpdate();
     }
   }
-  // ================= VERSION CHECK =================
 
+  // ================= VERSION CHECK =================
   Future<void> _checkAppUpdate() async {
     try {
       final info = await PackageInfo.fromPlatform();
@@ -131,6 +131,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     });
   }
 
+  // ================= SKIP =================
   Future<void> _handleSkip(String latestVersion) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("skipped_version", latestVersion);
