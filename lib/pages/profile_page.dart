@@ -241,7 +241,7 @@ class ProfilePage extends StatelessWidget {
                   ],
                 ),
               ),
-
+  
               // 🔹 Personal Details Section (from login data)
               _buildSectionHeader(AppLocalizations.of(context)!.personalDetails),
               _buildInfoRow(AppLocalizations.of(context)!.email, email),
