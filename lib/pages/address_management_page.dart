@@ -414,6 +414,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
       return;
     }
 
+    if (lon.isEmpty || lan.isEmpty || lon == '0' || lan == '0') {
+      ToastMessage.warning(
+        context: context,
+        msg: 'Please get current location before saving address',
+      );
+      setState(() => _saving = false);
+      return;
+    }
+
     bool success;
     if (widget.address != null) {
       success = await updateAddress(
@@ -427,8 +436,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
         district: di,
         state: st,
         pincode: pi,
-        lon: lon.isEmpty ? '0' : lon,
-        lan: lan.isEmpty ? '0' : lan,
+        lon: lon,
+        lan: lan,
       );
     } else {
       success = await addAddress(
@@ -442,8 +451,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
         district: di,
         state: st,
         pincode: pi,
-        lon: lon.isEmpty ? '0' : lon,
-        lan: lan.isEmpty ? '0' : lan,
+        lon: lon,
+        lan: lan,
       );
     }
 
@@ -586,7 +595,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: _saving ? null : _submit,
+                onPressed: _saving ||
+                        _lon.text.trim().isEmpty ||
+                        _lan.text.trim().isEmpty ||
+                        _lon.text.trim() == '0' ||
+                        _lan.text.trim() == '0'
+                    ? null
+                    : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: StoreProfileTheme.accentPink,
                   foregroundColor: Colors.white,
