@@ -6,6 +6,7 @@ class Vendor {
   final String mobileNo;
   final String openingTime;
   final String closingTime;
+  final bool shopStatus;
   final List<String> images;
 
   Vendor({
@@ -16,6 +17,7 @@ class Vendor {
     required this.mobileNo,
     required this.openingTime,
     required this.closingTime,
+    required this.shopStatus,
     required this.images,
   });
 
@@ -44,6 +46,9 @@ class Vendor {
       mobileNo: json['MobileNo']?.toString() ?? '',
       openingTime: json['OpeningTime']?.toString() ?? 'NA',
       closingTime: json['ClosingTime']?.toString() ?? 'NA',
+
+      /// NEW FIELD
+      shopStatus: json['ShopStatus'] == true,
       images: imageList,
     );
   }
@@ -60,6 +65,8 @@ Vendor(
   images: $images,
   OpeningTime: $openingTime,
   ClosingTime: $closingTime,
+   shopStatus: $shopStatus,
+  images: $images,
 )
 ''';
   }
