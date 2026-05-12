@@ -30,13 +30,18 @@ class _WaitingPageState extends State<WaitingPage> {
   void initState() {
     super.initState();
     _determineCategory();
-    _navTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const TrackingPage()),
-        );
-      }
-    });
+    // TODO: Replace this temporary waiting UI with
+    // real backend order confirmation + live tracking flow.
+    // Tracking page navigation is disabled for now because
+    // current tracking screen shows mocked delivered states
+    // which may confuse users after placing order.
+    // _navTimer = Timer(const Duration(seconds: 5), () {
+    //   if (mounted) {
+    //     Navigator.of(context).pushReplacement(
+    //       MaterialPageRoute(builder: (_) => const TrackingPage()),
+    //     );
+    //   }
+    // });
   }
 
   @override
@@ -146,6 +151,30 @@ class _WaitingPageState extends State<WaitingPage> {
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     StoreProfileTheme.accentPink,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: StoreProfileTheme.accentPink,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Continue Shopping',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
