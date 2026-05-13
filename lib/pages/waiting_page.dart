@@ -6,7 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../app_State/cart.dart';
 import '../utils/constants.dart';
-import 'tracking_page.dart';
+// import 'tracking_page.dart';
 
 enum OrderCategoryType {
   food,
@@ -42,6 +42,11 @@ class _WaitingPageState extends State<WaitingPage> {
     //     );
     //   }
     // });
+    _navTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    });
   }
 
   @override
@@ -154,30 +159,30 @@ class _WaitingPageState extends State<WaitingPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: StoreProfileTheme.accentPink,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Continue Shopping',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              // const SizedBox(height: 32),
+              // ElevatedButton(
+              //   onPressed: () {
+              //     Navigator.of(context).popUntil((route) => route.isFirst);
+              //   },
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: StoreProfileTheme.accentPink,
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: 40,
+              //       vertical: 14,
+              //     ),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //   ),
+              //   child: Text(
+              //     'Continue Shopping',
+              //     style: GoogleFonts.poppins(
+              //       fontSize: 15,
+              //       fontWeight: FontWeight.w600,
+              //       color: Colors.white,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
