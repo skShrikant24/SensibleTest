@@ -54,11 +54,6 @@ class CartService extends ChangeNotifier {
   double _cartTotal = 0.0;
   double _deliveryCharge = 0.0;
 
-  // ❌ REMOVED
-  // double _deliveryDiscount = 0.0; // ADDED
-  // String _deliveryDiscountText = ""; // ADDED
-  // double _extraCharge = 0.0;
-
   double _gst = 0.0;
   int _gstPercent = 0;
 
@@ -85,11 +80,6 @@ class CartService extends ChangeNotifier {
       ? _cartTotal
       : items.fold(0.0, (sum, item) => sum + item.total);
   double get deliveryCharge => _deliveryCharge;
-
-  // ❌ REMOVED
-  // double get deliveryDiscount => _deliveryDiscount; // ADDED
-  // String get deliveryDiscountText => _deliveryDiscountText; // ADDED
-  // double get extraCharge => _extraCharge;
 
   double get gst => _gst;
   int get gstPercent => _gstPercent;
@@ -188,7 +178,7 @@ class CartService extends ChangeNotifier {
     item.quantity++;
     notifyListeners();
     _saveToStorage();
-    await syncCartFromServer();
+    // await syncCartFromServer();
   }
 
   void decrease(CartItem item) async {
@@ -201,7 +191,7 @@ class CartService extends ChangeNotifier {
     }
     notifyListeners();
     _saveToStorage();
-    await syncCartFromServer();
+    // await syncCartFromServer();
   }
 
   void remove(CartItem item) async {
@@ -210,7 +200,7 @@ class CartService extends ChangeNotifier {
     items.remove(item);
     notifyListeners();
     _saveToStorage();
-    await syncCartFromServer();
+    // await syncCartFromServer();
   }
 
   Future<void> syncCartFromServer() async {
@@ -234,27 +224,24 @@ class CartService extends ChangeNotifier {
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
 
-      // ❌ REMOVED
-      // _deliveryDiscount = _toDouble(response['DeliveryDiscount']); // ADDED
-      // _deliveryDiscountText =
-      //     response['DeliveryDiscountText']?.toString() ?? ""; // ADDED
-      // _extraCharge = _toDouble(response['ExtraCharge']);
-
       _gst = _toDouble(response['GST']);
-      _gstPercent = int.tryParse(response['GSTPercent']?.toString() ?? '0') ?? 0;
-
+      _gstPercent =
+          int.tryParse(response['GSTPercent']?.toString() ?? '0') ?? 0;
 
       _isNewUserDiscountApplied = response['IsNewUserDiscountApplied'] == true;
 
-      _newUserDiscountPercent = int.tryParse(response['NewUserDiscountPercent']?.toString() ?? '0') ?? 0;
+      _newUserDiscountPercent =
+          int.tryParse(response['NewUserDiscountPercent']?.toString() ?? '0') ??
+              0;
 
       _newUserDiscountAmount = _toDouble(response['NewUserDiscountAmount']);
 
       _isEvenOrderDiscountApplied =
           response['IsEvenOrderDiscountApplied'] == true;
 
-      _evenOrderDiscountPercent =
-          int.tryParse(response['EvenOrderDiscountPercent']?.toString() ?? '0') ?? 0;
+      _evenOrderDiscountPercent = int.tryParse(
+              response['EvenOrderDiscountPercent']?.toString() ?? '0') ??
+          0;
 
       _evenOrderDiscountAmount = _toDouble(response['EvenOrderDiscountAmount']);
 
@@ -281,10 +268,6 @@ class CartService extends ChangeNotifier {
             'CategoryName': item['CategoryName']?.toString() ?? '',
             'OriginalPrice': item['OriginalPrice']?.toString() ?? '0',
             'DiscountPrice': item['DiscountPrice']?.toString() ?? '0',
-
-            // ❌ REMOVED
-            // 'DiscountPercent': item['DiscountPercent']?.toString() ?? '0',
-
             'ProductImage':
                 CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
             'Image1': '',
@@ -292,9 +275,6 @@ class CartService extends ChangeNotifier {
             'Image3': '',
             'Image4': '',
             'Image5': '',
-
-            // ❌ REMOVED
-            // 'description': item['Description']?.toString() ?? '',
           });
 
           items.add(
@@ -319,15 +299,9 @@ class CartService extends ChangeNotifier {
     _cartTotal = 0.0;
     _deliveryCharge = 0.0;
 
-    // ❌ REMOVED
-    // _deliveryDiscount = 0.0; // ADDED
-    // _deliveryDiscountText = ""; // ADDED
-    // _extraCharge = 0.0;
-
     _gst = 0.0;
     _gstPercent = 0;
 
-    // ✅ RESET NEW FIELDS
     _isNewUserDiscountApplied = false;
     _newUserDiscountPercent = 0;
     _newUserDiscountAmount = 0.0;
