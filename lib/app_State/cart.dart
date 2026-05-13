@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:GraBiTT/models/product.dart';
+import 'package:GraBiTT/services/device_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,10 +111,11 @@ class CartService extends ChangeNotifier {
 
   Future<Map<String, String>> getUserContext() async {
     final user = await AuthService.instance.getSavedUser();
+     final deviceId = await DeviceService.instance.getDeviceId();
 
     return {
       "userId": user?['ID']?.toString() ?? '',
-      "macId": "DEVICE123", // TODO: replace with real device ID
+      "macId": deviceId,
     };
   }
 
