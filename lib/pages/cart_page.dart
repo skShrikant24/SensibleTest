@@ -20,7 +20,8 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+       cart.loadFromStorage();
+    WidgetsBinding.instance.addPostFrameCallback((_)  {
       cart.syncCartFromServer();
     });
   }
@@ -92,28 +93,6 @@ class _CartPageState extends State<CartPage> {
       ),
       child: Row(
         children: [
-          // ClipRRect(
-          //   borderRadius: BorderRadius.circular(12),
-          //   child: (item.product.allImages.isNotEmpty)
-          //       ? Image.network(
-          //           item.product.allImages.first,
-          //           width: 70,
-          //           height: 70,
-          //           fit: BoxFit.cover,
-          //           errorBuilder: (context, error, stackTrace) {
-          //             return Container(
-          //               color: Colors.grey[300],
-          //               child: const Icon(Icons.image),
-          //             );
-          //           },
-          //         )
-          //       : Container(
-          //           width: 70,
-          //           height: 70,
-          //           color: Colors.grey[300],
-          //           child: const Icon(Icons.image),
-          //         ),
-          // ),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: (item.product.allImages.isNotEmpty &&

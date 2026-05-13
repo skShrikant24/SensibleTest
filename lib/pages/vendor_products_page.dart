@@ -311,6 +311,9 @@ class _ProductCard extends StatelessWidget {
               child: vendorProduct.isActive == 1
                   ? (cartItem == null
                       ? _AddButton(
+                        // ===================== CHANGE 5 =====================
+// VendorProductsPage -> _AddButton call
+                        isLoading: cart.isProductUpdating(product.id.toString()),
                           onPressed: () {
                             cart.addItem(product);
                             ToastMessage.success(
@@ -320,7 +323,10 @@ class _ProductCard extends StatelessWidget {
                           },
                         )
                       : _QtyControls(
+                        // ===================== CHANGE 6 =====================
+// VendorProductsPage -> _QtyControls call
                           cartItem: cartItem,
+                          isLoading: cart.isProductUpdating(product.id.toString()),
                           onIncrease: () {
                             cart.increase(cartItem!);
                           },
@@ -366,11 +372,16 @@ class _ProductCard extends StatelessWidget {
     );
   }
 }
-
+// ===================== CHANGE 7 =====================
+// REPLACE FULL _AddButton CLASS
 class _AddButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final bool isLoading;
 
-  const _AddButton({required this.onPressed});
+  const _AddButton({
+    required this.onPressed,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -378,49 +389,62 @@ class _AddButton extends StatelessWidget {
       color: StoreProfileTheme.accentPink,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        onTap: onPressed,
+        onTap: isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.add, color: Colors.white, size: 20),
-              const SizedBox(width: 6),
-              Text(
-                AppLocalizations.of(context)!.addToCart,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+          child: Center(
+            child: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+               mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  AppLocalizations.of(context)!.addToCart,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
+// ===================== CHANGE 8 =====================
+// REPLACE FULL _QtyControls CLASS
 class _QtyControls extends StatelessWidget {
   final CartItem cartItem;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
-
+final bool isLoading;
   const _QtyControls({
     required this.cartItem,
     required this.onIncrease,
     required this.onDecrease,
+    required this.isLoading,
   });
-
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          onPressed: onDecrease,
+          onPressed: isLoading ? null : onDecrease,
           icon: Icon(Icons.remove_circle_outline,
               color: StoreProfileTheme.accentPink, size: 24),
           padding: EdgeInsets.zero,
@@ -428,7 +452,15 @@ class _QtyControls extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
+          child:  isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(
             "${cartItem.quantity}",
             style: GoogleFonts.poppins(
               fontSize: 15,
@@ -438,7 +470,7 @@ class _QtyControls extends StatelessWidget {
           ),
         ),
         IconButton(
-          onPressed: onIncrease,
+          onPressed: isLoading ? null : onIncrease,
           icon: Icon(Icons.add_circle_outline,
               color: StoreProfileTheme.accentPink, size: 24),
           padding: EdgeInsets.zero,

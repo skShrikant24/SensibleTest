@@ -51,6 +51,11 @@ class CartService extends ChangeNotifier {
   CartService._();
 
   final List<CartItem> items = [];
+
+  // ===================== CHANGE =====================
+  // Prevent fast multiple taps issue
+  final Set<String> _updatingProducts = {};
+
   bool _shouldAnimateCart = false;
   double _cartTotal = 0.0;
   double _deliveryCharge = 0.0;
@@ -109,9 +114,15 @@ class CartService extends ChangeNotifier {
 
   bool get shouldAnimateCart => _shouldAnimateCart;
 
+ // ===================== CHANGE =====================
+  bool isProductUpdating(String productId) {
+    return _updatingProducts.contains(productId);
+  }
+
+
   Future<Map<String, String>> getUserContext() async {
     final user = await AuthService.instance.getSavedUser();
-     final deviceId = await DeviceService.instance.getDeviceId();
+    final deviceId = await DeviceService.instance.getDeviceId();
 
     return {
       "userId": user?['ID']?.toString() ?? '',
@@ -157,52 +168,255 @@ class CartService extends ChangeNotifier {
     });
   }
 
-  void addItem(Product product) async {
-    final ctx = await getUserContext();
-    await CartApiService.addToCart(
-      userId: ctx['userId']!,
-      macId: ctx['macId']!,
-      productId: product.id.toString(),
-    );
+  // void addItem(Product product) async {
+  //   // final ctx = await getUserContext();
+  //   // await CartApiService.addToCart(
+  //   //   userId: ctx['userId']!,
+  //   //   macId: ctx['macId']!,
+  //   //   productId: product.id.toString(),
+  //   // );
+  //   final index = items.indexWhere((e) => e.product.id == product.id);
+  //   if (index >= 0) {
+  //     items[index].quantity++;
+  //   } else {
+  //     items.add(CartItem(product: product, quantity: 1));
+  //   }
+  //   final price = double.tryParse(product.discountPrice.toString()) ?? 0.0;
+
+  //   _cartTotal += price;
+  //   _finalTotal += price;
+  //   notifyListeners();
+  //   _saveToStorage();
+
+  //   await _syncAddToServer(product);
+  //   await syncCartFromServer();
+  // }
+  
+ // ===================== CHANGE =====================
+  // Added tap protection and loading state handling
+Future<void> addItem(Product product) async {
+  // ===================== CHANGE =====================
+  // Prevent fast multiple taps during API sync
+  if (_updatingProducts.contains(product.id.toString())) return;
+
+  _updatingProducts.add(product.id.toString());
+  notifyListeners();
+
+  try {
     final index = items.indexWhere((e) => e.product.id == product.id);
+
     if (index >= 0) {
       items[index].quantity++;
     } else {
       items.add(CartItem(product: product, quantity: 1));
     }
+
+    final price =
+        double.tryParse(product.discountPrice.toString()) ?? 0.0;
+
+    _cartTotal += price;
+    _finalTotal += price;
+
     notifyListeners();
     _saveToStorage();
-  }
 
-  void increase(CartItem item) async {
-    final apiId = item.cartId ?? item.product.id;
-    await CartApiService.increaseQty(apiId);
+    await _syncAddToServer(product);
+    await syncCartFromServer();
+  } finally {
+    _updatingProducts.remove(product.id.toString());
+    notifyListeners();
+  }
+}
+
+  // Future<void> _syncAddToServer(Product product) async {
+  //   try {
+  //     final ctx = await getUserContext();
+
+  //     await CartApiService.addToCart(
+  //       userId: ctx['userId']!,
+  //       macId: ctx['macId']!,
+  //       productId: product.id.toString(),
+  //     );
+  //   } catch (_) {}
+  // }
+
+// ===================== CHANGE =====================
+// _syncAddToServer
+Future<void> _syncAddToServer(Product product) async {
+  final productId = product.id.toString();
+
+  _updatingProducts.add(productId);
+  notifyListeners();
+
+  try {
+    final ctx = await getUserContext();
+
+    await CartApiService.addToCart(
+      userId: ctx['userId']!,
+      macId: ctx['macId']!,
+      productId: productId,
+    );
+  } catch (_) {
+  } finally {
+    _updatingProducts.remove(productId);
+    notifyListeners();
+  }
+}
+  // void increase(CartItem item) async {
+  //   // final apiId = item.cartId ?? item.product.id;
+  //   // await CartApiService.increaseQty(apiId);
+  //   item.quantity++;
+  //   final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
+  //   _cartTotal += price;
+  //   _finalTotal += price;
+  //   notifyListeners();
+  //   _saveToStorage();
+  //   _syncIncrease(item);
+  //   // await syncCartFromServer();
+  // }
+ 
+ // ===================== CHANGE =====================
+  // Added fast tap prevention for increase qty
+Future<void> increase(CartItem item) async {
+  if (_updatingProducts.contains(item.product.id.toString())) return;
+
+  _updatingProducts.add(item.product.id.toString());
+  notifyListeners();
+
+  try {
     item.quantity++;
+
+    final price =
+        double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
+
+    _cartTotal += price;
+    _finalTotal += price;
+
     notifyListeners();
     _saveToStorage();
-    // await syncCartFromServer();
+
+    await _syncIncrease(item);
+  } finally {
+    _updatingProducts.remove(item.product.id.toString());
+    notifyListeners();
+  }
+}
+
+  Future<void> _syncIncrease(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer();
+      }
+      final apiId = item.cartId;
+      if (apiId == null) return;
+      await CartApiService.increaseQty(apiId);
+    } catch (_) {}
   }
 
-  void decrease(CartItem item) async {
-    final apiId = item.cartId ?? item.product.id;
-    await CartApiService.decreaseQty(apiId);
+  // void decrease(CartItem item) async {
+  //   // final apiId = item.cartId ?? item.product.id;
+  //   // await CartApiService.decreaseQty(apiId);
+  //   final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
+  //   if (item.quantity > 1) {
+  //     item.quantity--;
+  //     _cartTotal -= price;
+  //     _finalTotal -= price;
+  //   } else {
+  //     _cartTotal -= price;
+  //     _finalTotal -= price;
+  //     items.remove(item);
+  //   }
+  //   if (_cartTotal < 0) {
+  //     _cartTotal = 0;
+  //   }
+  //   if (_finalTotal < 0) {
+  //     _finalTotal = 0;
+  //   }
+  //   notifyListeners();
+  //   _saveToStorage();
+  //   _syncDecrease(item);
+  //   // await syncCartFromServer();
+  // }
+
+ // ===================== CHANGE =====================
+  // Added fast tap prevention for decrease qty
+Future<void> decrease(CartItem item) async {
+  if (_updatingProducts.contains(item.product.id.toString())) return;
+
+  _updatingProducts.add(item.product.id.toString());
+  notifyListeners();
+
+  try {
+    final price =
+        double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
+
     if (item.quantity > 1) {
       item.quantity--;
+      _cartTotal -= price;
+      _finalTotal -= price;
     } else {
+      _cartTotal -= price;
+      _finalTotal -= price;
       items.remove(item);
     }
+
+    if (_cartTotal < 0) {
+      _cartTotal = 0;
+    }
+
+    if (_finalTotal < 0) {
+      _finalTotal = 0;
+    }
+
     notifyListeners();
     _saveToStorage();
-    // await syncCartFromServer();
+
+    await _syncDecrease(item);
+  } finally {
+    _updatingProducts.remove(item.product.id.toString());
+    notifyListeners();
+  }
+}
+
+  Future<void> _syncDecrease(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer();
+      }
+      final apiId = item.cartId;
+      if (apiId == null) return;
+      await CartApiService.decreaseQty(apiId);
+    } catch (_) {}
   }
 
   void remove(CartItem item) async {
-    final apiId = item.cartId ?? item.product.id;
-    await CartApiService.removeItem(apiId);
+    // final apiId = item.cartId ?? item.product.id;
+    // await CartApiService.removeItem(apiId);
+    final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
+    _cartTotal -= (price * item.quantity);
+    _finalTotal -= (price * item.quantity);
+    if (_cartTotal < 0) {
+      _cartTotal = 0;
+    }
+    if (_finalTotal < 0) {
+      _finalTotal = 0;
+    }
     items.remove(item);
     notifyListeners();
     _saveToStorage();
+    _syncRemove(item);
     // await syncCartFromServer();
+  }
+
+  Future<void> _syncRemove(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer();
+      }
+      final apiId = item.cartId;
+      if (apiId == null) return;
+      await CartApiService.removeItem(apiId);
+    } catch (_) {}
   }
 
   Future<void> syncCartFromServer() async {
