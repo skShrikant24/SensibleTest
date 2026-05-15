@@ -240,7 +240,8 @@ class _ProductCard extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
+      // Prevent navigation for out of stock products
+      onTap: vendorProduct.isActive == 1 ? onTap : null,
       child: Card(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -311,9 +312,10 @@ class _ProductCard extends StatelessWidget {
               child: vendorProduct.isActive == 1
                   ? (cartItem == null
                       ? _AddButton(
-                        // ===================== CHANGE 5 =====================
+                          // ===================== CHANGE 5 =====================
 // VendorProductsPage -> _AddButton call
-                        isLoading: cart.isProductUpdating(product.id.toString()),
+                          isLoading:
+                              cart.isProductUpdating(product.id.toString()),
                           onPressed: () {
                             cart.addItem(product);
                             ToastMessage.success(
@@ -323,13 +325,12 @@ class _ProductCard extends StatelessWidget {
                           },
                         )
                       : _QtyControls(
-                        // ===================== CHANGE 6 =====================
+                          // ===================== CHANGE 6 =====================
 // VendorProductsPage -> _QtyControls call
                           cartItem: cartItem,
-                          isLoading: cart.isProductUpdating(product.id.toString()),
-                          onIncrease: () {
-                            cart.increase(cartItem!);
-                          },
+                          isLoading:
+                              cart.isProductUpdating(product.id.toString()),
+                          onIncrease: () => cart.increase(cartItem!),
                           onDecrease: () => cart.decrease(cartItem!),
                         ))
                   : _outOfStock(),
@@ -372,6 +373,7 @@ class _ProductCard extends StatelessWidget {
     );
   }
 }
+
 // ===================== CHANGE 7 =====================
 // REPLACE FULL _AddButton CLASS
 class _AddButton extends StatelessWidget {
@@ -395,43 +397,44 @@ class _AddButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Center(
             child: isLoading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add, color: Colors.white, size: 20),
+                      const SizedBox(width: 6),
+                      Text(
+                        AppLocalizations.of(context)!.addToCart,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
-                    )
-                  : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-               mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
-                const SizedBox(width: 6),
-                Text(
-                  AppLocalizations.of(context)!.addToCart,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
     );
   }
 }
+
 // ===================== CHANGE 8 =====================
 // REPLACE FULL _QtyControls CLASS
 class _QtyControls extends StatelessWidget {
   final CartItem cartItem;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
-final bool isLoading;
+  final bool isLoading;
   const _QtyControls({
     required this.cartItem,
     required this.onIncrease,
@@ -452,7 +455,7 @@ final bool isLoading;
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child:  isLoading
+          child: isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
@@ -461,13 +464,13 @@ final bool isLoading;
                   ),
                 )
               : Text(
-            "${cartItem.quantity}",
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: StoreProfileTheme.accentPink,
-            ),
-          ),
+                  "${cartItem.quantity}",
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: StoreProfileTheme.accentPink,
+                  ),
+                ),
         ),
         IconButton(
           onPressed: isLoading ? null : onIncrease,
