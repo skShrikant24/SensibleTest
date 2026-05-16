@@ -16,16 +16,23 @@ class CartApiService {
       if (response.statusCode == 200) {
         final body = response.body;
 
-        // ✅ Handle XML response
+     // ===================== CHANGE =====================
+      // OLD: only string "Success"
+      // NEW: handle JSON inside XML response safely
         if (body.contains("<string")) {
-          final value = body
+          final cleaned = body
               .replaceAll(RegExp(r'<[^>]*>'), '') // remove XML tags
               .trim();
 
-          return value; // "Success"
+          try {
+            final decoded = jsonDecode(cleaned);
+            return decoded; // <-- Map return hoga
+          } catch (_) {
+            return cleaned; // fallback string
+          }
         }
 
-        // ✅ fallback JSON (if any API returns JSON)
+        // fallback JSON (if any API returns JSON)
         return jsonDecode(body);
       } else {
         throw Exception("API Error: ${response.statusCode}");
@@ -42,8 +49,7 @@ class CartApiService {
     required String macId,
     required String productId,
   }) {
-    return _get(
-        "AddToCart?UserID=$userId&MacID=$macId&ProductID=$productId");
+    return _get("AddToCart?UserID=$userId&MacID=$macId&ProductID=$productId");
   }
 
   /// Get cart

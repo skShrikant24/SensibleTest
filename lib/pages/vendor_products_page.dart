@@ -316,11 +316,16 @@ class _ProductCard extends StatelessWidget {
 // VendorProductsPage -> _AddButton call
                           isLoading:
                               cart.isProductUpdating(product.id.toString()),
-                          onPressed: () {
-                            cart.addItem(product);
+                          onPressed: () async {
+                            final res = await cart.addItem(product);
+                            // ===================== CHANGE =====================
+                            // Safe context usage after async gap
+                            if (!context.mounted) return;
                             ToastMessage.success(
                               context: context,
-                              msg: "Added to cart",
+                              msg: (res != null && res['message'] != null)
+                                  ? res['message']
+                                  : "Added to cart",
                             );
                           },
                         )
