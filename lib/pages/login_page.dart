@@ -57,6 +57,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isVerifying = false;
   bool _isVerified = false;
 
+  // ================= TIMER ADDED =================
+  Timer? _resendTimer;
+  int _resendSeconds = 90;
+  bool _canResendOtp = false;
+
   // SMS read (readotp) for OTP autofill – commented out for now; manual OTP input only
   // ReadOtp? _readOtp;
   // StreamSubscription? _smsSubscription;
@@ -142,6 +147,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     });
   }
 
+  // ================= TIMER START =================
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+
+    setState(() {
+      _resendSeconds = 90;
+      _canResendOtp = false;
+    });
+
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+
+      if (_resendSeconds > 0) {
+        setState(() => _resendSeconds--);
+      } else {
+        timer.cancel();
+        setState(() => _canResendOtp = true);
+      }
+    });
+  }
+
   /// Check user by phone -> if not found show alert and go to signup; else send OTP and go to OTP step.
   Future<void> _sendOtp() async {
     if (!_isPhoneValid) return;
@@ -187,7 +213,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       c.clear();
     }
     setState(() => _currentStep = LoginStep.otp);
-
+    _startResendTimer(); // ✅ TIMER START
     try {
       // await SmsAutoFill().listenForCode();
     } catch (_) {}
@@ -267,6 +293,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       setState(() => _isResendingOtp = false);
       if (result.success) {
         _storedOtp = otp;
+        _startResendTimer(); // reset timer
         ToastMessage.success(context: context, msg: 'OTP resent successfully');
       } else {
         ToastMessage.error(
@@ -324,6 +351,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _resendTimer?.cancel(); // IMPORTANT
     // _stopSmsListener();
     // SmsAutoFill().unregisterListener();
     _phoneController.dispose();
@@ -367,203 +395,219 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildPhoneNumberStep() {
-    return Padding(
-      key: const ValueKey('phone'),
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Logo
-          Image.asset(
-            'assets/images/newlogo2.png',
-            width: 200,
-            height: 200,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: 30),
-
-          // Title
-          Text(
-            "Welcome to GraB iTT!",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+    return LayoutBuilder(
+     builder: (context, constraints) {
+       return SingleChildScrollView(
+         padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+         child: ConstrainedBox(
+               constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Enter your phone number to continue',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-
-          // Phone input with pulse animation
-          AnimatedBuilder(
-            animation: _pulseController!,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _jumpAnimation?.value ?? 0),
-                child: Transform.scale(
-                  scale: _pulseAnimation?.value ?? 1.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withValues(
-                            alpha: (_pulseController!.value * 0.3),
-                          ),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _phoneController,
-                      focusNode: _phoneFocusNode,
-                      keyboardType: TextInputType.phone,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
-                      ],
-                      onChanged: (_) => _onPhoneDigitTyped(),
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Phone Number',
-                        hintStyle: GoogleFonts.inter(
-                          color: Colors.grey[400],
-                          fontSize: 18,
-                        ),
-                        prefixIcon: const Icon(Icons.phone, color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: Colors.grey[300]!,
-                            width: 2,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                            width: 3,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 20,
-                        ),
-                      ),
+         child: IntrinsicHeight(
+           child: Padding(
+              key: const ValueKey('phone'),
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo
+                  Image.asset(
+                    'assets/images/newlogo2.png',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 30),
+            
+                  // Title
+                  Text(
+                    "Welcome to GraB iTT!",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // Continue button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp)
-                  ? _sendOtp
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: StoreProfileTheme.accentPink,
-                disabledBackgroundColor: Colors.grey[300],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: _isCheckingUser || _isSendingOtp
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white)),
-                    )
-                  : Text(
-                      'Continue',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Enter your phone number to continue',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: Colors.grey[600],
                     ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Don't have an account? ",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SignupPage(),
-                    ),
-                  );
-                },
-                child: Text(
-                  'Sign up',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: StoreProfileTheme.accentPink,
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: 20),
+            
+                  // Phone input with pulse animation
+                  AnimatedBuilder(
+                    animation: _pulseController!,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, _jumpAnimation?.value ?? 0),
+                        child: Transform.scale(
+                          scale: _pulseAnimation?.value ?? 1.0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withValues(
+                                    alpha: (_pulseController!.value * 0.3),
+                                  ),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _phoneController,
+                              focusNode: _phoneFocusNode,
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
+                              onChanged: (_) => _onPhoneDigitTyped(),
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Phone Number',
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.grey[400],
+                                  fontSize: 18,
+                                ),
+                                prefixIcon: const Icon(Icons.phone, color: Colors.grey),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Colors.blue,
+                                    width: 3,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+            
+                  // Continue button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: (_isPhoneValid && !_isCheckingUser && !_isSendingOtp)
+                          ? _sendOtp
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: StoreProfileTheme.accentPink,
+                        disabledBackgroundColor: Colors.grey[300],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isCheckingUser || _isSendingOtp
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white)),
+                            )
+                          : Text(
+                              'Continue',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Don't have an account? ",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SignupPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Sign up',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: StoreProfileTheme.accentPink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.data?.version ?? '';
+                      final build = snapshot.data?.buildNumber ?? '';
+                      final text = version.isEmpty
+                          ? ''
+                          : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
+                      if (text.isEmpty) return const SizedBox.shrink();
+                      return Text(
+                        text,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (context, snapshot) {
-              final version = snapshot.data?.version ?? '';
-              final build = snapshot.data?.buildNumber ?? '';
-              final text = version.isEmpty
-                  ? ''
-                  : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
-              if (text.isEmpty) return const SizedBox.shrink();
-              return Text(
-                text,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+            ),
+         ),
+              ),
+       );
+     },
     );
   }
 
@@ -592,7 +636,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     for (var c in _otpControllers) {
                       c.clear();
                     }
+                    _resendSeconds = 90;
                   });
+                  _resendTimer?.cancel();
                 },
               ),
             ),
@@ -749,7 +795,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
             // Resend OTP
             TextButton(
-              onPressed: _isResendingOtp ? null : _resendOtp,
+              onPressed:
+                  (_isResendingOtp || !_canResendOtp) ? null : _resendOtp,
               child: _isResendingOtp
                   ? const SizedBox(
                       width: 20,
@@ -757,10 +804,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(
-                      'Resend OTP',
+                      _canResendOtp
+                          ? 'Resend OTP'
+                          : 'Resend OTP in $_resendSeconds sec',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: StoreProfileTheme.accentPink,
+                        color: _canResendOtp
+                            ? StoreProfileTheme.accentPink
+                            : Colors.grey,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
