@@ -458,16 +458,17 @@ class CartService extends ChangeNotifier {
       _currentAddressId = addressId;
     }
 
-    // stop if address not available
-    if (_currentAddressId == null || _currentAddressId!.isEmpty) {
-      return;
-    }
     _isSyncingCart = true;
     notifyListeners();
     try {
       final ctx = await getUserContext();
-      // stop if user/device invalid
-      if (ctx['userId']!.isEmpty || ctx['macId']!.isEmpty) {
+      // optional safety only (no early return)
+      final userId = ctx['userId'] ?? '';
+      final macId = ctx['macId'] ?? '';
+
+      if (userId.isEmpty || macId.isEmpty) {
+        _isSyncingCart = false;
+        notifyListeners();
         return;
       }
       final response = await CartApiService.getCart(
