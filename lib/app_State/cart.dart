@@ -472,8 +472,8 @@ class CartService extends ChangeNotifier {
         return;
       }
       final response = await CartApiService.getCart(
-        userId: ctx['userId']!,
-        macId: ctx['macId']!,
+        userId: userId,
+        macId: macId,
         lang: "en",
         addressId: _currentAddressId!,
       );
