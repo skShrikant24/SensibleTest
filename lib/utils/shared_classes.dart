@@ -7,6 +7,8 @@ class ToastMessage {
     required Color backgroundColor,
     required IconData icon,
     Color textColor = Colors.white,
+    String? actionText,
+    VoidCallback? onActionTap,
   }) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -17,6 +19,8 @@ class ToastMessage {
         backgroundColor: backgroundColor,
         icon: icon,
         textColor: textColor,
+        actionText: actionText,
+        onActionTap: onActionTap,
         onDismiss: () => overlayEntry.remove(),
       ),
     );
@@ -28,12 +32,16 @@ class ToastMessage {
   static void success({
     required BuildContext context,
     required String msg,
+    String? actionText,
+    VoidCallback? onActionTap,
   }) {
     _showToast(
       context: context,
       msg: msg,
       backgroundColor: Colors.green.shade600,
       icon: Icons.check_circle,
+      actionText: actionText,
+      onActionTap: onActionTap,
     );
   }
 
@@ -96,13 +104,16 @@ class _BottomToastWidget extends StatefulWidget {
   final IconData icon;
   final Color textColor;
   final VoidCallback onDismiss;
-
+  final String? actionText;
+  final VoidCallback? onActionTap;
   const _BottomToastWidget({
     required this.msg,
     required this.backgroundColor,
     required this.icon,
     required this.textColor,
     required this.onDismiss,
+    this.actionText,
+    this.onActionTap,
   });
 
   @override
@@ -187,6 +198,29 @@ class _BottomToastWidgetState extends State<_BottomToastWidget>
                       ),
                     ),
                   ),
+                  if (widget.actionText != null)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: () async {
+                          await _controller.reverse();
+                          widget.onDismiss();
+                          widget.onActionTap?.call();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Text(
+                            widget.actionText!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

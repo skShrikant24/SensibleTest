@@ -5,6 +5,7 @@ import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/product.dart';
 import 'package:GraBiTT/models/vendor_product.dart';
+import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:GraBiTT/utils/shared_classes.dart';
@@ -326,6 +327,15 @@ class _ProductCard extends StatelessWidget {
                               msg: (res != null && res['message'] != null)
                                   ? res['message']
                                   : "Added to cart",
+                              actionText: "VIEW CART",
+                              onActionTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const CartPage(),
+                                  ),
+                                );
+                              },
                             );
                           },
                         )
