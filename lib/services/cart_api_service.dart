@@ -57,10 +57,14 @@ class CartApiService {
     required String userId,
     required String macId,
     required String lang,
+    String? addressId,
   }) async {
-    final response = await _get(
-      "GetCart?UserID=$userId&MacID=$macId&lang=$lang",
-    );
+     final addressQuery = (addressId != null && addressId.isNotEmpty)
+      ? "&AddressID=$addressId"
+      : "";
+     final response = await _get(
+    "GetCart?UserID=$userId&MacID=$macId&lang=$lang$addressQuery",
+  );
     if (response == null) return null;
 
     if (response is Map<String, dynamic>) {

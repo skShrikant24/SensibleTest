@@ -81,6 +81,8 @@ class CartService extends ChangeNotifier {
 
   double _finalTotal = 0.0;
   bool _isSyncingCart = false;
+  // NEW
+  String? _currentAddressId;
 
   double get subtotal => _cartTotal > 0
       ? _cartTotal
@@ -221,7 +223,9 @@ class CartService extends ChangeNotifier {
       // ===================== CHANGE =====================
       // capture API response
       final response = await _syncAddToServer(product);
-      await syncCartFromServer();
+      await syncCartFromServer(
+        addressId: _currentAddressId,
+      );
 
       return response; // <-- UI ke liye message return
     } finally {
@@ -314,11 +318,17 @@ class CartService extends ChangeNotifier {
   Future<void> _syncIncrease(CartItem item) async {
     try {
       if (item.cartId == null) {
-        await syncCartFromServer();
+        await syncCartFromServer(
+          addressId: _currentAddressId,
+        );
       }
       final apiId = item.cartId;
       if (apiId == null) return;
       await CartApiService.increaseQty(apiId);
+      // NEW
+      await syncCartFromServer(
+        addressId: _currentAddressId,
+      );
     } catch (_) {}
   }
 
@@ -390,11 +400,17 @@ class CartService extends ChangeNotifier {
   Future<void> _syncDecrease(CartItem item) async {
     try {
       if (item.cartId == null) {
-        await syncCartFromServer();
+        await syncCartFromServer(
+          addressId: _currentAddressId,
+        );
       }
       final apiId = item.cartId;
       if (apiId == null) return;
       await CartApiService.decreaseQty(apiId);
+      // NEW
+      await syncCartFromServer(
+        addressId: _currentAddressId,
+      );
     } catch (_) {}
   }
 
@@ -420,15 +436,27 @@ class CartService extends ChangeNotifier {
   Future<void> _syncRemove(CartItem item) async {
     try {
       if (item.cartId == null) {
-        await syncCartFromServer();
+        await syncCartFromServer(
+          addressId: _currentAddressId,
+        );
       }
       final apiId = item.cartId;
       if (apiId == null) return;
       await CartApiService.removeItem(apiId);
+      // NEW
+      await syncCartFromServer(
+        addressId: _currentAddressId,
+      );
     } catch (_) {}
   }
 
-  Future<void> syncCartFromServer() async {
+  Future<void> syncCartFromServer({
+    String? addressId,
+  }) async {
+    // NEW
+    if (addressId != null) {
+      _currentAddressId = addressId;
+    }
     _isSyncingCart = true;
     notifyListeners();
     try {
@@ -438,6 +466,7 @@ class CartService extends ChangeNotifier {
         userId: ctx['userId']!,
         macId: ctx['macId']!,
         lang: "en",
+        addressId: addressId ?? _currentAddressId,
       );
 
       if (response == null) return;

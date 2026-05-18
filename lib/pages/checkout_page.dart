@@ -42,10 +42,30 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _paymentService.init();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      cart.syncCartFromServer();
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   cart.syncCartFromServer();
+    // });
     _loadAddressesAndSelection();
+  }
+
+  // ===================== CHANGE =====================
+  // Refresh cart for updated delivery charges
+  Future<void> _refreshCartForAddressChange() async {
+    try {
+      debugPrint(
+        "Refreshing cart for address: ${_selectedAddress?.id}",
+      );
+
+      await cart.syncCartFromServer(
+        addressId: _selectedAddress?.id.toString(),
+      );
+
+      debugPrint(
+        "Updated delivery charge: ${cart.deliveryCharge}",
+      );
+    } catch (e) {
+      debugPrint("Cart refresh failed: $e");
+    }
   }
 
   @override
@@ -89,6 +109,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
       if (selected != null && mounted) {
         await _validateSelectedAddressRadius(selected);
+        // ===================== CHANGE =====================
+        // Refresh cart totals/delivery charge
+        await _refreshCartForAddressChange();
       } else if (mounted) {
         setState(() => _orderRadiusStatus = null);
       }
@@ -126,22 +149,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
             MaterialPageRoute(
               builder: (_) => AddressFormPage(
                 userId: _userId!,
-                onSaved: () => _loadAddressesAndSelection(),
+                // ===================== CHANGE =====================
+                onSaved: () async {
+                  await _loadAddressesAndSelection();
+                },
               ),
             ),
           );
           if (!mounted) return;
-          if (result == true && mounted) await _loadAddressesAndSelection();
+          if (result == true && mounted) {
+            await _loadAddressesAndSelection();
+          }
         },
       ),
     );
     if (!mounted) return;
-    if (picked != null && mounted) {
+    if (picked != null && picked.id != _selectedAddress?.id) {
       setState(() => _selectedAddress = picked);
       await SelectedAddressStorage.instance.save(picked);
       if (!mounted) return;
       ToastMessage.success(context: context, msg: 'Address saved for checkout');
       await _validateSelectedAddressRadius(picked);
+      await _refreshCartForAddressChange();
     }
   }
 
@@ -854,14 +883,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
         !_checkingOrderRadius &&
         _orderRadiusStatus != null &&
         !_orderRadiusStatus!.allowed;
-
+    final noAddressSelected = _selectedAddress == null || _addresses.isEmpty;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
         height: 54,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: (isDisabled || radiusBlocked)
+            backgroundColor: (isDisabled || radiusBlocked || noAddressSelected)
                 ? Colors.grey
                 : StoreProfileTheme.accentPink,
             foregroundColor: Colors.white,
@@ -870,8 +899,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: (cart.items.isEmpty || isDisabled || radiusBlocked)
+          onPressed: (cart.items.isEmpty ||
+                  isDisabled ||
+                  radiusBlocked ||
+                  noAddressSelected)
               ? () {
+                  if (noAddressSelected) {
+                    _openAddressSelector();
+                    return;
+                  }
+
                   if (isDisabled) {
                     _showWorkInProgressDialog(context);
                   } else if (radiusBlocked) {
@@ -884,11 +921,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 }
               : _onPlaceOrder,
           child: Text(
-            isDisabled
-                ? "Coming Soon 🚧"
-                : radiusBlocked
-                    ? 'Address not serviceable'
-                    : AppLocalizations.of(context)!.placeOrder,
+            noAddressSelected
+                ? 'Add Address to Continue'
+                : isDisabled
+                    ? "Coming Soon 🚧"
+                    : radiusBlocked
+                        ? 'Address not serviceable'
+                        : AppLocalizations.of(context)!.placeOrder,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
