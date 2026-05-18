@@ -59,11 +59,8 @@ class CartApiService {
     required String lang,
     String? addressId,
   }) async {
-     final addressQuery = (addressId != null && addressId.isNotEmpty)
-      ? "&AddressID=$addressId"
-      : "";
-     final response = await _get(
-    "GetCart?UserID=$userId&MacID=$macId&lang=$lang$addressQuery",
+    final response = await _get(
+    "GetCart?UserID=$userId&MacID=$macId&lang=$lang&AddressID=$addressId",
   );
     if (response == null) return null;
 

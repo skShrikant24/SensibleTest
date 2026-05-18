@@ -20,8 +20,8 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
-       cart.loadFromStorage();
-    WidgetsBinding.instance.addPostFrameCallback((_)  {
+    cart.loadFromStorage();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       cart.syncCartFromServer();
     });
   }
@@ -76,6 +76,7 @@ class _CartPageState extends State<CartPage> {
   }
 
   Widget _cartItem(CartItem item) {
+    final isLoading = cart.isProductUpdating(item.product.id.toString());
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(12),
@@ -171,27 +172,38 @@ class _CartPageState extends State<CartPage> {
                   _qtyButton(Icons.remove, () {
                     // setState(() => cart.decrease(item));
                     cart.decrease(item);
-                  }),
+                  }, isLoading),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      item.quantity.toString(),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: StoreProfileTheme.accentPink,
+                            ),
+                          )
+                        : Text(
+                            item.quantity.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
                   _qtyButton(Icons.add, () {
                     // setState(() => cart.increase(item));
                     cart.increase(item);
-                  }),
+                  }, isLoading),
                 ],
               ),
               IconButton(
                 icon: Icon(Icons.delete_outline,
                     color: StoreProfileTheme.accentPink),
-                onPressed: () {
-                  // setState(() => cart.remove(item));
-                  cart.remove(item);
-                },
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        // setState(() => cart.remove(item));
+                        cart.remove(item);
+                      },
               ),
             ],
           )
@@ -200,9 +212,13 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _qtyButton(IconData icon, VoidCallback onTap) {
+  Widget _qtyButton(
+    IconData icon,
+    VoidCallback onTap,
+    bool isLoading,
+  ) {
     return InkWell(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(

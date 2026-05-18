@@ -453,20 +453,28 @@ class CartService extends ChangeNotifier {
   Future<void> syncCartFromServer({
     String? addressId,
   }) async {
-    // NEW
-    if (addressId != null) {
+    // set address safely
+    if (addressId != null && addressId.isNotEmpty) {
       _currentAddressId = addressId;
+    }
+
+    // stop if address not available
+    if (_currentAddressId == null || _currentAddressId!.isEmpty) {
+      return;
     }
     _isSyncingCart = true;
     notifyListeners();
     try {
       final ctx = await getUserContext();
-
+      // stop if user/device invalid
+      if (ctx['userId']!.isEmpty || ctx['macId']!.isEmpty) {
+        return;
+      }
       final response = await CartApiService.getCart(
         userId: ctx['userId']!,
         macId: ctx['macId']!,
         lang: "en",
-        addressId: addressId ?? _currentAddressId,
+        addressId: _currentAddressId!,
       );
 
       if (response == null) return;
