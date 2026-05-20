@@ -76,106 +76,113 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     16,
                     MediaQuery.of(context).viewInsets.bottom + 16,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Rate your delivery rider',
-                        style: GoogleFonts.poppins(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: StoreProfileTheme.accentPink,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        order.riderDisplayName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: StoreProfileTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(5, (index) {
-                          final star = index + 1;
-                          final selected = star <= selectedRating;
-                          return IconButton(
-                            onPressed: () =>
-                                setLocalState(() => selectedRating = star),
-                            icon: Icon(
-                              selected
-                                  ? Icons.star_rounded
-                                  : Icons.star_border_rounded,
-                              color: selected
-                                  ? Colors.amber[700]
-                                  : Colors.grey[400],
-                              size: 34,
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: noteController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          hintText: 'Add a short note (optional)',
-                          filled: true,
-                          fillColor: StoreProfileTheme.surfaceVariant,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                BorderSide(color: StoreProfileTheme.border),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                BorderSide(color: StoreProfileTheme.border),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: StoreProfileTheme.accentPink,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          onPressed: () async {
-                            Navigator.pop(ctx, true);
-                            await _submitRating(
-                              orderId: order.orderId,
-                              rating: selectedRating,
-                              note: noteController.text.trim(),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Rate your delivery rider',
+                          style: GoogleFonts.poppins(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: StoreProfileTheme.accentPink,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          order.riderDisplayName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: StoreProfileTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(5, (index) {
+                            final star = index + 1;
+                            final selected = star <= selectedRating;
+                            return IconButton(
+                              onPressed: () =>
+                                  setLocalState(() => selectedRating = star),
+                              icon: Icon(
+                                selected
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color: selected
+                                    ? Colors.amber[700]
+                                    : Colors.grey[400],
+                                size: 34,
+                              ),
                             );
-                          },
-                          child: Text(
-                            'Submit rating',
-                            style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600),
+                          }),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: noteController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: 'Add a short note (optional)',
+                            filled: true,
+                            fillColor: StoreProfileTheme.surfaceVariant,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: StoreProfileTheme.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: StoreProfileTheme.border),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: StoreProfileTheme.accentPink,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                               final note =
+                                noteController.text.trim();
+                              Navigator.pop(ctx, true);
+                              Future.microtask(() async {
+                              await _submitRating(
+                                orderId: order.orderId,
+                                rating: selectedRating,
+                                note: note,
+                              );
+                            });
+
+                            },
+                            child: Text(
+                              'Submit rating',
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -184,7 +191,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         );
       },
     );
-    noteController.dispose();
+    // noteController.dispose();
     if (submitted == true && mounted) {
       await _loadOrders();
     }
@@ -354,16 +361,63 @@ class _OrderCard extends StatelessWidget {
 
   bool get _isDelivered {
     final s = order.status.toLowerCase();
-    return s.contains('deliver') || s.contains('complete');
+    return s.contains('delivered');
   }
+
+  // String _statusMessage(String status) {
+  //   final s = status.toLowerCase();
+
+  //   if (s.contains('placed')) {
+  //     return 'Order successfully placed';
+  //   }
+
+  //   if (s.contains('accepted')) {
+  //     return 'Vendor accepted the order';
+  //   }
+
+  //   if (s.contains('assigned')) {
+  //     return 'Rider assigned to the order';
+  //   }
+
+  //   if (s.contains('pickup')) {
+  //     return 'Rider picked up the order';
+  //   }
+
+  //   if (s.contains('delivered')) {
+  //     return 'Rider delivered the order';
+  //   }
+
+  //   if (s.contains('rejected')) {
+  //     return 'Vendor rejected the order';
+  //   }
+
+  //   return status;
+  // }
 
   Color _statusColor(String status) {
     final s = status.toLowerCase();
-    if (s.contains('assign')) return Colors.orange;
-    if (s.contains('accept')) return Colors.green;
-    if (s.contains('pickup')) return Colors.blue;
-    if (s.contains('deliver')) return Colors.green;
-    if (s.contains('reject') || s.contains('cancel') || s.contains('fail')) {
+
+    if (s.contains('placed')) {
+      return StoreProfileTheme.accentPink;
+    }
+
+    if (s.contains('accepted')) {
+      return Colors.orange;
+    }
+
+    if (s.contains('assigned')) {
+      return Colors.deepPurple;
+    }
+
+    if (s.contains('pickup')) {
+      return Colors.blue;
+    }
+
+    if (s.contains('delivered')) {
+      return Colors.green;
+    }
+
+    if (s.contains('rejected')) {
       return Colors.red;
     }
 
@@ -380,6 +434,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(order.status);
+    print("ORDER STATUS => ${order.status}");
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -421,6 +476,9 @@ class _OrderCard extends StatelessWidget {
                   ),
                   child: Text(
                     order.status.isEmpty ? 'Unknown' : order.status,
+                    // order.status.isEmpty
+                    //     ? 'Unknown'
+                    //     : _statusMessage(order.status),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

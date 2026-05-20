@@ -45,17 +45,62 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Color _statusColor(String status) {
     final s = status.toLowerCase();
 
-    if (s.contains('assign')) return Colors.orange;
-    if (s.contains('accept')) return Colors.green;
-    if (s.contains('pickup')) return Colors.blue;
-    if (s.contains('deliver')) return Colors.green;
+    if (s.contains('placed')) {
+      return StoreProfileTheme.accentPink;
+    }
 
-    if (s.contains('reject') || s.contains('cancel') || s.contains('fail')) {
+    if (s.contains('accepted')) {
+      return Colors.orange;
+    }
+
+    if (s.contains('assigned')) {
+      return Colors.deepPurple;
+    }
+
+    if (s.contains('pickup')) {
+      return Colors.blue;
+    }
+
+    if (s.contains('delivered')) {
+      return Colors.green;
+    }
+
+    if (s.contains('rejected')) {
       return Colors.red;
     }
 
     return StoreProfileTheme.accentPink;
   }
+
+  // String _statusMessage(String status) {
+  //   final s = status.toLowerCase();
+
+  //   if (s.contains('placed')) {
+  //     return 'Order successfully placed';
+  //   }
+
+  //   if (s.contains('accepted')) {
+  //     return 'Vendor accepted the order';
+  //   }
+
+  //   if (s.contains('assigned')) {
+  //     return 'Rider assigned to the order';
+  //   }
+
+  //   if (s.contains('pickup')) {
+  //     return 'Rider picked up the order';
+  //   }
+
+  //   if (s.contains('delivered')) {
+  //     return 'Rider delivered the order';
+  //   }
+
+  //   if (s.contains('rejected')) {
+  //     return 'Vendor rejected the order';
+  //   }
+
+  //   return status;
+  // }
 
   String _formatDate(String raw) {
     final dt = widget.order.createdOnDateTime;
@@ -163,6 +208,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                 ),
                 child: Text(
                   order.status.isEmpty ? 'Unknown' : order.status,
+                  // order.status.isEmpty
+                  //     ? 'Unknown'
+                  //     : _statusMessage(order.status),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

@@ -414,7 +414,7 @@ class CartService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  void remove(CartItem item) async {
+  Future<void> remove(CartItem item) async {
     // final apiId = item.cartId ?? item.product.id;
     // await CartApiService.removeItem(apiId);
     final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
@@ -429,7 +429,7 @@ class CartService extends ChangeNotifier {
     items.remove(item);
     notifyListeners();
     _saveToStorage();
-    _syncRemove(item);
+   await _syncRemove(item);
     // await syncCartFromServer();
   }
 
@@ -467,15 +467,13 @@ class CartService extends ChangeNotifier {
       final macId = ctx['macId'] ?? '';
 
       if (userId.isEmpty || macId.isEmpty) {
-        _isSyncingCart = false;
-        notifyListeners();
         return;
       }
       final response = await CartApiService.getCart(
         userId: userId,
         macId: macId,
         lang: "en",
-        addressId: _currentAddressId!,
+        addressId: _currentAddressId ?? '',
       );
 
       if (response == null) return;

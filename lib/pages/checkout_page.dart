@@ -871,6 +871,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (!mounted) return;
       // Clear cart after order
       CartService.instance.clearCart();
+      // await launchUrl(
+      //   Uri.parse(url),
+      //   mode: LaunchMode.externalApplication,
+      // );
       _navigateToWaitingPage();
       return;
     }
@@ -884,6 +888,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _orderRadiusStatus != null &&
         !_orderRadiusStatus!.allowed;
     final noAddressSelected = _selectedAddress == null || _addresses.isEmpty;
+
+    // final vendorNumber = '6360974868';
+    // final message = Uri.encodeComponent(
+    //   "New order received 🚀\n\nOrder ID: #1234\nOpen Vendor Panel:\nhttps://vendor.grabbit.com",
+    // );
+    // final url = "https://wa.me/91$vendorNumber?text=$message";
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
