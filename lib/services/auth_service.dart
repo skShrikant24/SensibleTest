@@ -6,6 +6,16 @@ const String _baseUrl = 'https://grabitt.in';
 const String _keyUser = 'grabitt_logged_in_user';
 const String _keyIsLoggedIn = 'grabitt_is_logged_in';
 
+class LoginResult {
+  final bool success;
+  final String? message;
+
+  const LoginResult({
+    required this.success,
+    this.message,
+  });
+}
+
 /// Result of GetUserByPhone. [user] is null when response is "Fail".
 class GetUserByPhoneResult {
   final bool found;
@@ -54,38 +64,88 @@ class AuthService {
 
   /// GET /webservice.asmx/SendOtp?mobileNumber=string&generatedOtp=string
   /// [generatedOtp] is the OTP we generate; server sends it via SMS.
-  Future<SendOtpResult> sendOtp(String mobileNumber, String generatedOtp) async {
-    final uri = Uri.parse('$_baseUrl/webservice.asmx/SendOtp').replace(
+  // Future<SendOtpResult> sendOtp(String mobileNumber, String generatedOtp) async {
+  //   final uri = Uri.parse('$_baseUrl/webservice.asmx/SendOtp').replace(
+  //     queryParameters: {
+  //       'mobileNumber': mobileNumber,
+  //       'generatedOtp': generatedOtp,
+  //     },
+  //   );
+  //   try {
+  //     final response = await http.get(uri);
+  //     if (response.statusCode != 200) {
+  //       return SendOtpResult(success: false, message: 'Server error');
+  //     }
+  //     final raw = response.body.trim();
+  //     final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  //     if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') {
+  //       return const SendOtpResult(success: false, message: 'Fail');
+  //     }
+  //     try {
+  //       final map = json.decode(cleaned) as Map<String, dynamic>?;
+  //       final status = map?['status']?.toString() ?? '';
+  //       final msg = map?['message']?.toString();
+  //       final otp = map?['otp']?.toString();
+  //       return SendOtpResult(
+  //         success: status.toLowerCase() == 'success',
+  //         message: msg,
+  //         otp: otp,
+  //       );
+  //     } catch (_) {
+  //       return SendOtpResult(success: false, message: cleaned);
+  //     }
+  //   } catch (e) {
+  //     return SendOtpResult(success: false, message: e.toString());
+  //   }
+  // }
+
+  /// GET /Webservice.asmx/UserLogin?phoneno=string&Password=string
+  Future<LoginResult> userLogin({
+    required String phoneno,
+    required String password,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/Webservice.asmx/UserLogin').replace(
       queryParameters: {
-        'mobileNumber': mobileNumber,
-        'generatedOtp': generatedOtp,
+        'phoneno': phoneno,
+        'Password': password,
       },
     );
+
     try {
       final response = await http.get(uri);
+
       if (response.statusCode != 200) {
-        return SendOtpResult(success: false, message: 'Server error');
-      }
-      final raw = response.body.trim();
-      final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-      if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') {
-        return const SendOtpResult(success: false, message: 'Fail');
-      }
-      try {
-        final map = json.decode(cleaned) as Map<String, dynamic>?;
-        final status = map?['status']?.toString() ?? '';
-        final msg = map?['message']?.toString();
-        final otp = map?['otp']?.toString();
-        return SendOtpResult(
-          success: status.toLowerCase() == 'success',
-          message: msg,
-          otp: otp,
+        return const LoginResult(
+          success: false,
+          message: 'Server error',
         );
-      } catch (_) {
-        return SendOtpResult(success: false, message: cleaned);
       }
+
+      final raw = response.body.trim();
+
+      final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+      if (cleaned.isEmpty) {
+        return const LoginResult(
+          success: false,
+          message: 'Something went wrong',
+        );
+      }
+
+      final map = json.decode(cleaned) as Map<String, dynamic>;
+
+      final status = map['Status']?.toString() ?? '';
+      final message = map['Message']?.toString() ?? '';
+
+      return LoginResult(
+        success: status.toLowerCase() == 'success',
+        message: message,
+      );
     } catch (e) {
-      return SendOtpResult(success: false, message: e.toString());
+      return LoginResult(
+        success: false,
+        message: e.toString(),
+      );
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -797,7 +799,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     }
-    debugPrint("_orderRadiusStatus: ${_orderRadiusStatus?.allowed}");
+
     if (_orderRadiusStatus == null || !_orderRadiusStatus!.allowed) {
       ToastMessage.warning(
         context: context,
@@ -843,7 +845,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         return;
       }
       _activeRazorpayOrderId = orderId;
-      debugPrint('[Razorpay] Backend order_id sent to checkout: $orderId');
+      debugPrint(
+        '[Razorpay] Backend order_id sent to checkout: $orderId',
+      );
       _paymentService.onPaymentSuccess = null;
       _paymentService.onPaymentError = _handlePaymentFailed;
       _paymentService.onPaymentSuccessData = _handlePaymentSuccessData;
@@ -862,23 +866,90 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     } else {
-      await CartApiService.placeOrder(
+      final response = await CartApiService.placeOrder(
         userId: ctx['userId']!,
         macId: ctx['macId']!,
         paymentMode: paymentMethod,
         addressId: _selectedAddress!.id.toString(),
       );
       if (!mounted) return;
-      // Clear cart after order
-      CartService.instance.clearCart();
-      // await launchUrl(
-      //   Uri.parse(url),
-      //   mode: LaunchMode.externalApplication,
-      // );
-      _navigateToWaitingPage();
+
+      try {
+        debugPrint("Raw Response => $response");
+
+        Map<String, dynamic> responseData = {};
+
+        // CASE 1: Already decoded Map response
+        if (response is Map<String, dynamic>) {
+          responseData = response;
+        }
+
+        // CASE 2: String response with XML wrapper
+        else if (response is String) {
+          final cleanedResponse = response
+              .replaceAll(RegExp(r'<[^>]*>'), '')
+              .replaceAll('<?xml version="1.0" encoding="utf-8"?>', '')
+              .trim();
+
+          debugPrint("Cleaned Response => $cleanedResponse");
+
+          responseData = jsonDecode(cleanedResponse);
+        }
+
+        // Normalize keys to lowercase
+        final normalizedData = <String, dynamic>{};
+
+        responseData.forEach((key, value) {
+          normalizedData[key.toString().toLowerCase()] = value;
+        });
+
+        final status =
+            normalizedData["status"]?.toString().trim().toLowerCase() ?? "";
+
+        final message = normalizedData["message"]?.toString().trim() ?? "";
+
+        debugPrint("Parsed Status => $status");
+        debugPrint("Parsed Message => $message");
+
+        // SUCCESS
+        if (status == "success") {
+          ToastMessage.success(
+            context: context,
+            msg: message.isNotEmpty ? message : "Order placed successfully",
+          );
+
+          CartService.instance.clearCart();
+
+          _navigateToWaitingPage();
+          return;
+        }
+
+        // FAIL
+        if (status == "fail") {
+          ToastMessage.warning(
+            context: context,
+            msg: message.isNotEmpty ? message : "Shop is currently closed",
+          );
+
+          return;
+        }
+
+        // UNKNOWN RESPONSE
+        ToastMessage.warning(
+          context: context,
+          msg: message.isNotEmpty ? message : "Unable to process order",
+        );
+      } catch (e) {
+        debugPrint("Place order parse error => $e");
+
+        ToastMessage.error(
+          context: context,
+          msg: "Something went wrong",
+        );
+      }
+
       return;
     }
-    // _navigateToWaitingPage();
   }
 
   Widget _placeOrderBar() {
