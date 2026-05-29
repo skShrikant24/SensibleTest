@@ -247,17 +247,6 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Expanded(
-            //   child: (vendorProduct.images.isNotEmpty &&
-            //       vendorProduct.images.first.isNotEmpty)
-            //       ? Image.network(
-            //     vendorProduct.images.first,
-            //     fit: BoxFit.cover,
-            //     width: double.infinity,
-            //     errorBuilder: (_, __, ___) => _placeholder(),
-            //   )
-            //       : _placeholder(),
-            // ),
             Expanded(
               child: (vendorProduct.images.isNotEmpty &&
                       vendorProduct.images.first.isNotEmpty)
@@ -313,20 +302,34 @@ class _ProductCard extends StatelessWidget {
               child: vendorProduct.isActive == 1
                   ? (cartItem == null
                       ? _AddButton(
-                          // ===================== CHANGE 5 =====================
-// VendorProductsPage -> _AddButton call
                           isLoading:
                               cart.isProductUpdating(product.id.toString()),
                           onPressed: () async {
                             final res = await cart.addItem(product);
-                            // ===================== CHANGE =====================
-                            // Safe context usage after async gap
                             if (!context.mounted) return;
+
+                            final status = res != null
+                                ? res['status']?.toString().toLowerCase()
+                                : null;
+
+                            final message =
+                                (res != null && res['message'] != null)
+                                    ? res['message']
+                                    : "Something went wrong";
+
+                            // Error Toast
+                            if (status == "error") {
+                              ToastMessage.error(
+                                context: context,
+                                msg: message,
+                              );
+                              return;
+                            }
+
+                            // Success Toast
                             ToastMessage.success(
                               context: context,
-                              msg: (res != null && res['message'] != null)
-                                  ? res['message']
-                                  : "Added to cart",
+                              msg: message,
                               actionText: "VIEW CART",
                               onActionTap: () {
                                 Navigator.push(
@@ -340,8 +343,6 @@ class _ProductCard extends StatelessWidget {
                           },
                         )
                       : _QtyControls(
-                          // ===================== CHANGE 6 =====================
-// VendorProductsPage -> _QtyControls call
                           cartItem: cartItem,
                           isLoading:
                               cart.isProductUpdating(product.id.toString()),
@@ -389,8 +390,6 @@ class _ProductCard extends StatelessWidget {
   }
 }
 
-// ===================== CHANGE 7 =====================
-// REPLACE FULL _AddButton CLASS
 class _AddButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
@@ -443,8 +442,6 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-// ===================== CHANGE 8 =====================
-// REPLACE FULL _QtyControls CLASS
 class _QtyControls extends StatelessWidget {
   final CartItem cartItem;
   final VoidCallback onIncrease;

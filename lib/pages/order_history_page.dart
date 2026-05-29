@@ -162,17 +162,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                               ),
                             ),
                             onPressed: () async {
-                               final note =
-                                noteController.text.trim();
+                              final note = noteController.text.trim();
                               Navigator.pop(ctx, true);
                               Future.microtask(() async {
-                              await _submitRating(
-                                orderId: order.orderId,
-                                rating: selectedRating,
-                                note: note,
-                              );
-                            });
-
+                                await _submitRating(
+                                  orderId: order.orderId,
+                                  rating: selectedRating,
+                                  note: note,
+                                );
+                              });
                             },
                             child: Text(
                               'Submit rating',
@@ -646,29 +644,6 @@ class _OrderCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ClipRRect(
-          //   borderRadius: BorderRadius.circular(8),
-          //   child: item.imageUrl.isEmpty
-          //       ? Container(
-          //           width: 52,
-          //           height: 52,
-          //           color: Colors.grey[200],
-          //           child: const Icon(Icons.image_not_supported_outlined,
-          //               size: 18),
-          //         )
-          //       : Image.network(
-          //           item.imageUrl,
-          //           width: 52,
-          //           height: 52,
-          //           fit: BoxFit.cover,
-          //           errorBuilder: (_, __, ___) => Container(
-          //             width: 52,
-          //             height: 52,
-          //             color: Colors.grey[200],
-          //             child: const Icon(Icons.broken_image_outlined, size: 18),
-          //           ),
-          //         ),
-          // ),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: item.imageUrl.isEmpty

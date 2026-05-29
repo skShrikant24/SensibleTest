@@ -590,22 +590,6 @@ class _CategoryGridTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Expanded(
-            //   flex: 3,
-            //   child: ClipRRect(
-            //     // borderRadius: BorderRadius.circular(8),
-            //     child: Image.network(
-            //       url,
-            //       fit: BoxFit.contain,
-            //       width: double.infinity,
-            //       errorBuilder: (_, __, ___) => Image.network(
-            //         _placeholder,
-            //         fit: BoxFit.cover,
-            //         width: double.infinity,
-            //       ),
-            //     ),
-            //   ),
-            // ),
             Expanded(
               flex: 3,
               child: ClipRRect(

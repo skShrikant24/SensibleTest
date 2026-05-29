@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 // import 'dart:math';
 import 'package:GraBiTT/services/auth_service.dart';
 import 'package:GraBiTT/utils/constants.dart';
@@ -30,9 +31,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Animation<double>? _jumpAnimation;
   bool _isPhoneValid = false;
 
-  final TextEditingController _passwordController = TextEditingController();
-
-  bool _isPasswordVisible = false;
+  // final TextEditingController _passwordController = TextEditingController();
+  // bool _isPasswordVisible = false;
 
   // OTP input (used with PinFieldAutoFill for SMS autofill)
   String _otpCode = '';
@@ -168,118 +168,118 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   /// Check user by phone -> if not found show alert and go to signup; else send OTP and go to OTP step.
-  // Future<void> _sendOtp() async {
-  //   if (!_isPhoneValid) return;
-  //   final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-  //   if (phone.length < 10) return;
-
-  //   setState(() => _isCheckingUser = true);
-  //   final result = await AuthService.instance.getUserByPhone(phone);
-  //   if (!mounted) return;
-
-  //   if (!result.found || result.user == null) {
-  //     setState(() => _isCheckingUser = false);
-  //     _showUserNotFoundAndNavigateToSignup();
-  //     return;
-  //   }
-
-  //   late String otp;
-
-  //   if (phone == "9158724772") {
-  //     otp = "5555";
-  //   } else {
-  //     otp = '${1000 + Random().nextInt(9000)}';
-  //   }
-
-  //   setState(() => _isSendingOtp = true);
-  //   final sendResult = await AuthService.instance.sendOtp(phone, otp);
-  //   if (!mounted) return;
-
-  //   setState(() {
-  //     _isCheckingUser = false;
-  //     _isSendingOtp = false;
-  //   });
-
-  //   if (!sendResult.success) {
-  //     ToastMessage.error(context: context, msg: 'Failed to send OTP');
-  //     return;
-  //   }
-
-  //   _storedOtp = otp;
-  //   _loggedInUser = result.user;
-  //   _otpCode = '';
-  //   for (var c in _otpControllers) {
-  //     c.clear();
-  //   }
-  //   setState(() => _currentStep = LoginStep.otp);
-  //   _startResendTimer(); // ✅ TIMER START
-  //   try {
-  //     // await SmsAutoFill().listenForCode();
-  //   } catch (_) {}
-  //   // _startSmsListener();
-  // }
-
-  Future<void> _login() async {
+  Future<void> _sendOtp() async {
     if (!_isPhoneValid) return;
-
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-
-    final password = _passwordController.text.trim();
-
-    if (password.isEmpty) {
-      ToastMessage.error(
-        context: context,
-        msg: 'Please enter password',
-      );
-      return;
-    }
+    if (phone.length < 10) return;
 
     setState(() => _isCheckingUser = true);
-
-    final userResult = await AuthService.instance.getUserByPhone(phone);
-
+    final result = await AuthService.instance.getUserByPhone(phone);
     if (!mounted) return;
 
-    if (!userResult.found || userResult.user == null) {
+    if (!result.found || result.user == null) {
       setState(() => _isCheckingUser = false);
       _showUserNotFoundAndNavigateToSignup();
       return;
     }
 
-    final loginResult = await AuthService.instance.userLogin(
-      phoneno: phone,
-      password: password,
-    );
+    late String otp;
 
+    if (phone == "9158724772") {
+      otp = "5555";
+    } else {
+      otp = '${1000 + Random().nextInt(9000)}';
+    }
+
+    setState(() => _isSendingOtp = true);
+    final sendResult = await AuthService.instance.sendOtp(phone, otp);
     if (!mounted) return;
 
-    setState(() => _isCheckingUser = false);
+    setState(() {
+      _isCheckingUser = false;
+      _isSendingOtp = false;
+    });
 
-    if (!loginResult.success) {
-      ToastMessage.error(
-        context: context,
-        msg: loginResult.message ?? 'Login failed',
-      );
+    if (!sendResult.success) {
+      ToastMessage.error(context: context, msg: 'Failed to send OTP');
       return;
     }
 
-    await AuthService.instance.saveLoginUser(
-      userResult.user!,
-    );
-
-    if (!mounted) return;
-
-    ToastMessage.success(
-      context: context,
-      msg: loginResult.message ?? 'Login successful',
-    );
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const MainShell(),
-      ),
-    );
+    _storedOtp = otp;
+    _loggedInUser = result.user;
+    _otpCode = '';
+    for (var c in _otpControllers) {
+      c.clear();
+    }
+    setState(() => _currentStep = LoginStep.otp);
+    _startResendTimer(); // ✅ TIMER START
+    try {
+      // await SmsAutoFill().listenForCode();
+    } catch (_) {}
+    // _startSmsListener();
   }
+
+  // Future<void> _login() async {
+  //   if (!_isPhoneValid) return;
+
+  //   final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+
+  //   final password = _passwordController.text.trim();
+
+  //   if (password.isEmpty) {
+  //     ToastMessage.error(
+  //       context: context,
+  //       msg: 'Please enter password',
+  //     );
+  //     return;
+  //   }
+
+  //   setState(() => _isCheckingUser = true);
+
+  //   final userResult = await AuthService.instance.getUserByPhone(phone);
+
+  //   if (!mounted) return;
+
+  //   if (!userResult.found || userResult.user == null) {
+  //     setState(() => _isCheckingUser = false);
+  //     _showUserNotFoundAndNavigateToSignup();
+  //     return;
+  //   }
+
+  //   final loginResult = await AuthService.instance.userLogin(
+  //     phoneno: phone,
+  //     password: password,
+  //   );
+
+  //   if (!mounted) return;
+
+  //   setState(() => _isCheckingUser = false);
+
+  //   if (!loginResult.success) {
+  //     ToastMessage.error(
+  //       context: context,
+  //       msg: loginResult.message ?? 'Login failed',
+  //     );
+  //     return;
+  //   }
+
+  //   await AuthService.instance.saveLoginUser(
+  //     userResult.user!,
+  //   );
+
+  //   if (!mounted) return;
+
+  //   ToastMessage.success(
+  //     context: context,
+  //     msg: loginResult.message ?? 'Login successful',
+  //   );
+
+  //   Navigator.of(context).pushReplacement(
+  //     MaterialPageRoute(
+  //       builder: (_) => const MainShell(),
+  //     ),
+  //   );
+  // }
 
   /// Request SMS permission and start listening for incoming SMS to auto-fill OTP.
   // void _startSmsListener() async {
@@ -344,24 +344,24 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   /// Resend OTP: generate new OTP, call API, update _storedOtp.
-  // Future<void> _resendOtp() async {
-  //   final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-  //   if (phone.isEmpty || _loggedInUser == null) return;
-  //   setState(() => _isResendingOtp = true);
-  //   final otp = '${1000 + Random().nextInt(9000)}';
-  //   final result = await AuthService.instance.sendOtp(phone, otp);
-  //   if (mounted) {
-  //     setState(() => _isResendingOtp = false);
-  //     if (result.success) {
-  //       _storedOtp = otp;
-  //       _startResendTimer(); // reset timer
-  //       ToastMessage.success(context: context, msg: 'OTP resent successfully');
-  //     } else {
-  //       ToastMessage.error(
-  //           context: context, msg: result.message ?? 'Failed to resend OTP');
-  //     }
-  //   }
-  // }
+  Future<void> _resendOtp() async {
+    final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (phone.isEmpty || _loggedInUser == null) return;
+    setState(() => _isResendingOtp = true);
+    final otp = '${1000 + Random().nextInt(9000)}';
+    final result = await AuthService.instance.sendOtp(phone, otp);
+    if (mounted) {
+      setState(() => _isResendingOtp = false);
+      if (result.success) {
+        _storedOtp = otp;
+        _startResendTimer(); // reset timer
+        ToastMessage.success(context: context, msg: 'OTP resent successfully');
+      } else {
+        ToastMessage.error(
+            context: context, msg: result.message ?? 'Failed to resend OTP');
+      }
+    }
+  }
 
   /// Verify entered OTP with stored OTP; on match save user and navigate to main app.
   Future<void> _verifyOtp() async {
@@ -435,15 +435,15 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: _buildPhoneNumberStep(),
-      ),
       // body: SafeArea(
-      //   child: AnimatedSwitcher(
-      //     duration: const Duration(milliseconds: 400),
-      //     child: _buildCurrentStep(),
-      //   ),
+      //   child: _buildPhoneNumberStep(),
       // ),
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: _buildCurrentStep(),
+        ),
+      ),
     );
   }
 
@@ -582,66 +582,66 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 12),
 
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        hintStyle: GoogleFonts.inter(
-                          color: Colors.grey[400],
-                        ),
-                        prefixIcon: const Icon(Icons.lock, color: Colors.grey),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: Colors.grey[300]!,
-                            width: 2,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    // TextField(
+                    //   controller: _passwordController,
+                    //   obscureText: !_isPasswordVisible,
+                    //   style: GoogleFonts.inter(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.w500,
+                    //   ),
+                    //   decoration: InputDecoration(
+                    //     hintText: 'Password',
+                    //     hintStyle: GoogleFonts.inter(
+                    //       color: Colors.grey[400],
+                    //     ),
+                    //     prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                    //     suffixIcon: IconButton(
+                    //       icon: Icon(
+                    //         _isPasswordVisible
+                    //             ? Icons.visibility
+                    //             : Icons.visibility_off,
+                    //       ),
+                    //       onPressed: () {
+                    //         setState(() {
+                    //           _isPasswordVisible = !_isPasswordVisible;
+                    //         });
+                    //       },
+                    //     ),
+                    //     filled: true,
+                    //     fillColor: Colors.grey[50],
+                    //     border: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(16),
+                    //       borderSide: BorderSide.none,
+                    //     ),
+                    //     enabledBorder: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(16),
+                    //       borderSide: BorderSide(
+                    //         color: Colors.grey[300]!,
+                    //         width: 2,
+                    //       ),
+                    //     ),
+                    //     focusedBorder: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(16),
+                    //       borderSide: const BorderSide(
+                    //         color: Colors.blue,
+                    //         width: 3,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 16),
                     // Continue button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        // onPressed: (_isPhoneValid &&
-                        //         !_isCheckingUser &&
-                        //         !_isSendingOtp)
-                        //     ? _sendOtp
-                        //     : null,
-                        onPressed:
-                            (_isPhoneValid && !_isCheckingUser) ? _login : null,
+                        onPressed: (_isPhoneValid &&
+                                !_isCheckingUser &&
+                                !_isSendingOtp)
+                            ? _sendOtp
+                            : null,
+                        // onPressed:
+                        //     (_isPhoneValid && !_isCheckingUser) ? _login : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: StoreProfileTheme.accentPink,
                           disabledBackgroundColor: Colors.grey[300],
@@ -911,28 +911,28 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             const SizedBox(height: 24),
 
             // Resend OTP
-            // TextButton(
-            //   onPressed:
-            //       (_isResendingOtp || !_canResendOtp) ? null : _resendOtp,
-            //   child: _isResendingOtp
-            //       ? const SizedBox(
-            //           width: 20,
-            //           height: 20,
-            //           child: CircularProgressIndicator(strokeWidth: 2),
-            //         )
-            //       : Text(
-            //           _canResendOtp
-            //               ? 'Resend OTP'
-            //               : 'Resend OTP in $_resendSeconds sec',
-            //           style: GoogleFonts.poppins(
-            //             fontSize: 14,
-            //             color: _canResendOtp
-            //                 ? StoreProfileTheme.accentPink
-            //                 : Colors.grey,
-            //             fontWeight: FontWeight.w500,
-            //           ),
-            //         ),
-            // ),
+            TextButton(
+              onPressed:
+                  (_isResendingOtp || !_canResendOtp) ? null : _resendOtp,
+              child: _isResendingOtp
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      _canResendOtp
+                          ? 'Resend OTP'
+                          : 'Resend OTP in $_resendSeconds sec',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: _canResendOtp
+                            ? StoreProfileTheme.accentPink
+                            : Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),

@@ -503,31 +503,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: _cardStyle(),
       child: Row(
         children: [
-          // ClipRRect(
-          //   borderRadius: BorderRadius.circular(10),
-          //   child: (item.product.allImages.isNotEmpty &&
-          //           item.product.allImages.first.isNotEmpty)
-          //       ? Image.network(
-          //           item.product.allImages.first,
-          //           width: 60,
-          //           height: 60,
-          //           fit: BoxFit.cover,
-          //           errorBuilder: (context, error, stackTrace) {
-          //             return Container(
-          //               width: 60,
-          //               height: 60,
-          //               color: Colors.grey[300],
-          //               child: const Icon(Icons.image),
-          //             );
-          //           },
-          //         )
-          //       : Container(
-          //           width: 60,
-          //           height: 60,
-          //           color: Colors.grey[300],
-          //           child: const Icon(Icons.image),
-          //         ),
-          // ),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: (item.product.allImages.isNotEmpty &&

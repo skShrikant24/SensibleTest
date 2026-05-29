@@ -273,35 +273,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
             ],
           ),
 
-          // 🖼 Image Slider
-          // SliverToBoxAdapter(
-          //   child: SizedBox(
-          //     height: 300,
-          //     child: (widget.product.allImages.isNotEmpty)
-          //         ? PageView(
-          //       children: widget.product.allImages
-          //           .asMap()
-          //           .entries
-          //           .map(
-          //             (entry) => Image.network(
-          //           entry.value,
-          //           key: entry.key == 0 ? _imageKey : null,
-          //           fit: BoxFit.contain,
-          //           loadingBuilder: (context, child, progress) {
-          //             if (progress == null) return child;
-          //             return const Center(
-          //               child: CircularProgressIndicator(),
-          //             );
-          //           },
-          //           errorBuilder: (_, __, ___) => _placeholder(),
-          //         ),
-          //       )
-          //           .toList(),
-          //     )
-          //         : _placeholder(),
-          //   ),
-          // ),
-
           SliverToBoxAdapter(
             child: SizedBox(
               height: 300,
@@ -513,19 +484,6 @@ class _PaperPlaneOverlay extends StatelessWidget {
                               ),
                             ],
                           ),
-                          // child: ClipRRect(
-                          //   borderRadius: BorderRadius.circular(8),
-                          //   child: Image.network(
-                          //     productImage,
-                          //     fit: BoxFit.cover,
-                          //     errorBuilder: (context, error, stackTrace) {
-                          //       return Container(
-                          //         color: Colors.grey[300],
-                          //         child: const Icon(Icons.image),
-                          //       );
-                          //     },
-                          //   ),
-                          // ),
                           child: CachedNetworkImage(
                             imageUrl: productImage,
                             fit: BoxFit.cover,

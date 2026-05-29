@@ -223,22 +223,6 @@ class _VendorCard extends StatelessWidget {
                     const BorderRadius.vertical(top: Radius.circular(20)),
                 child: Stack(
                   children: [
-                    // AspectRatio(
-                    //   aspectRatio: 16 / 9,
-                    //   child: Image.network(
-                    //     image,
-                    //     width: double.infinity,
-                    //     fit: BoxFit.cover,
-                    //     errorBuilder: (_, __, ___) => Container(
-                    //       color:
-                    //           StoreProfileTheme.lightPink.withValues(alpha: .25),
-                    //       child: Center(
-                    //         child: Icon(Icons.store,
-                    //             size: 48, color: StoreProfileTheme.accentPink),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
                     AspectRatio(
                       aspectRatio: 16 / 9,
                       child: image.isEmpty
