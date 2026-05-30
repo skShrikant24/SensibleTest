@@ -1,4 +1,6 @@
+import 'package:GraBiTT/services/selected_address_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +23,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
   List<AddressModel> _addresses = [];
   bool _loading = true;
   String? _userId;
+  String? _selectedAddressId;
 
   @override
   void initState() {
@@ -32,19 +35,35 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
     setState(() => _loading = true);
     final user = await AuthService.instance.getSavedUser();
     final uid = user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
+
     if (uid.isEmpty) {
       setState(() {
         _userId = null;
         _addresses = [];
+        _selectedAddressId = null;
         _loading = false;
       });
       return;
     }
     _userId = uid;
     final list = await getAddressByUser(uid);
+    final saved = await SelectedAddressStorage.instance.load();
+    String? selectedId;
+    if (saved != null && list.any((a) => a.id == saved.id)) {
+      selectedId = saved.id.toString();
+    } else if (list.isNotEmpty) {
+      final first = list.first;
+
+      await SelectedAddressStorage.instance.save(first);
+
+      selectedId = first.id.toString();
+    } else {
+      await SelectedAddressStorage.instance.clear();
+    }
     if (mounted) {
       setState(() {
         _addresses = list;
+        _selectedAddressId = selectedId;
         _loading = false;
       });
     }
@@ -79,7 +98,34 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
         ),
       ),
     );
-    if (result == true && mounted) await _loadUserAndAddresses();
+    if (result == true && mounted) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      final updatedList = await getAddressByUser(_userId!);
+      final selected = await SelectedAddressStorage.instance.load();
+
+      if (selected != null) {
+        try {
+          final updatedSelected = updatedList.firstWhere(
+            (a) => a.id == selected.id,
+          );
+
+          await SelectedAddressStorage.instance.save(updatedSelected);
+        } catch (_) {
+          if (updatedList.isNotEmpty) {
+            await SelectedAddressStorage.instance.save(updatedList.first);
+            setState(() {
+              _selectedAddressId = updatedList.first.id.toString();
+            });
+          } else {
+            await SelectedAddressStorage.instance.clear();
+            setState(() {
+              _selectedAddressId = null;
+            });
+          }
+        }
+      }
+      await _loadUserAndAddresses();
+    }
   }
 
   Future<void> _deleteAddress(AddressModel address) async {
@@ -107,6 +153,25 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
     final success = await deleteAddress(address.id);
     if (!mounted) return;
     if (success) {
+      final selected = await SelectedAddressStorage.instance.load();
+
+      if (selected != null && selected.id == address.id) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        final updatedAddresses = await getAddressByUser(_userId!);
+
+        if (updatedAddresses.isNotEmpty) {
+          await SelectedAddressStorage.instance.save(updatedAddresses.first);
+          setState(() {
+            _selectedAddressId = updatedAddresses.first.id.toString();
+          });
+        } else {
+          await SelectedAddressStorage.instance.clear();
+          setState(() {
+            _selectedAddressId = null;
+          });
+        }
+      }
+      if (!mounted) return;
       ToastMessage.success(context: context, msg: 'Address deleted');
       await _loadUserAndAddresses();
     } else {
@@ -200,57 +265,128 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                         itemCount: _addresses.length,
                         itemBuilder: (context, index) {
                           final a = _addresses[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: StoreProfileTheme.border
-                                    .withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              title: Text(
-                                a.addressType.isNotEmpty
-                                    ? a.addressType
-                                    : 'Address',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600,
-                                  color: StoreProfileTheme.accentPink,
+                          final isSelected = a.id == _selectedAddressId;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              await SelectedAddressStorage.instance.save(a);
+
+                              if (!mounted) return;
+
+                              setState(() {
+                                _selectedAddressId = a.id.toString();
+                              });
+
+                              ToastMessage.success(
+                                context: context,
+                                msg: 'Selected delivery address updated',
+                              );
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? StoreProfileTheme.accentPink
+                                      : StoreProfileTheme.border
+                                          .withValues(alpha: 0.5),
+                                  width: isSelected ? 1.4 : 1,
                                 ),
                               ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  a.displaySummary,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    color: StoreProfileTheme.textSecondary,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: isSelected
+                                      ? StoreProfileTheme.lightPink
+                                          .withValues(alpha: 0.15)
+                                      : Colors.white,
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  leading: CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: isSelected
+                                        ? StoreProfileTheme.accentPink
+                                        : Colors.grey.shade300,
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 16,
+                                          )
+                                        : null,
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          a.addressType.isNotEmpty
+                                              ? a.addressType
+                                              : 'Address',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            color: isSelected
+                                                ? StoreProfileTheme.accentPink
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: StoreProfileTheme.accentPink,
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            'Selected',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      a.displaySummary,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        color: StoreProfileTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.edit_outlined,
+                                          color: StoreProfileTheme.accentPink,
+                                        ),
+                                        onPressed: () => _openEditAddress(a),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.delete_outline,
+                                          color: StoreProfileTheme.ctaAction,
+                                        ),
+                                        onPressed: () => _deleteAddress(a),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.edit_outlined,
-                                      color: StoreProfileTheme.accentPink,
-                                    ),
-                                    onPressed: () => _openEditAddress(a),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      color: StoreProfileTheme.ctaAction,
-                                    ),
-                                    onPressed: () => _deleteAddress(a),
-                                  ),
-                                ],
                               ),
                             ),
                           );
@@ -305,6 +441,18 @@ class _AddressFormPageState extends State<AddressFormPage> {
   final _lon = TextEditingController();
   final _lan = TextEditingController();
 
+  final _addressTypeFocus = FocusNode();
+  final _addressLine1Focus = FocusNode();
+  final _addressLine2Focus = FocusNode();
+  final _landmarkFocus = FocusNode();
+  final _areaFocus = FocusNode();
+  final _cityFocus = FocusNode();
+  final _districtFocus = FocusNode();
+  final _stateFocus = FocusNode();
+  final _pincodeFocus = FocusNode();
+
+  bool _submitted = false;
+
   bool _saving = false;
   bool _loadingLocation = false;
 
@@ -340,6 +488,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
     _pincode.dispose();
     _lon.dispose();
     _lan.dispose();
+    _addressTypeFocus.dispose();
+    _addressLine1Focus.dispose();
+    _addressLine2Focus.dispose();
+    _landmarkFocus.dispose();
+    _areaFocus.dispose();
+    _cityFocus.dispose();
+    _districtFocus.dispose();
+    _stateFocus.dispose();
+    _pincodeFocus.dispose();
     super.dispose();
   }
 
@@ -374,8 +531,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
         ),
       );
       if (mounted) {
-        _lon.text = position.longitude.toString();
-        _lan.text = position.latitude.toString();
+        setState(() {
+          _lon.text = position.longitude.toString();
+          _lan.text = position.latitude.toString();
+        });
         ToastMessage.success(
           context: context,
           msg: 'Location updated',
@@ -394,7 +553,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
   }
 
   Future<void> _submit() async {
+    if (_saving) return;
+
+    setState(() {
+      _submitted = true;
+    });
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() => _saving = true);
     final at = _addressType.text.trim();
     final a1 = _addressLine1.text.trim();
@@ -408,11 +573,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final lon = _lon.text.trim();
     final lan = _lan.text.trim();
 
-    if (a1.isEmpty) {
-      ToastMessage.warning(context: context, msg: 'Address line 1 is required');
-      setState(() => _saving = false);
-      return;
-    }
+    // if (a1.isEmpty) {
+    //   ToastMessage.warning(context: context, msg: 'Address line 1 is required');
+    //   setState(() => _saving = false);
+    //   return;
+    // }
 
     if (lon.isEmpty || lan.isEmpty || lon == '0' || lan == '0') {
       ToastMessage.warning(
@@ -463,7 +628,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
         context: context,
         msg: widget.address != null ? 'Address updated' : 'Address added',
       );
-      widget.onSaved?.call();
+      // widget.onSaved?.call();
       Navigator.pop(context, true);
     } else {
       ToastMessage.error(
@@ -497,18 +662,93 @@ class _AddressFormPageState extends State<AddressFormPage> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: _submitted
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(16),
           children: [
-            _buildField('Address type (e.g. Home, Work)', _addressType),
-            _buildField('Address line 1 *', _addressLine1, required: true),
-            _buildField('Address line 2', _addressLine2),
-            _buildField('Landmark', _landmark),
-            _buildField('Area', _area),
-            _buildField('City', _city),
-            _buildField('District', _district),
-            _buildField('State', _state),
-            _buildField('Pincode', _pincode),
+            _buildField(
+              'Address type (e.g. Home, Work)',
+              _addressType,
+              required: true,
+              focusNode: _addressTypeFocus,
+              nextFocus: _addressLine1Focus,
+            ),
+            _buildField(
+              'Address line 1 *',
+              _addressLine1,
+              required: true,
+              focusNode: _addressLine1Focus,
+              nextFocus: _addressLine2Focus,
+            ),
+            _buildField(
+              'Address line 2',
+              _addressLine2,
+              focusNode: _addressLine2Focus,
+              nextFocus: _landmarkFocus,
+            ),
+            _buildField(
+              'Landmark',
+              _landmark,
+              focusNode: _landmarkFocus,
+              nextFocus: _areaFocus,
+            ),
+            _buildField(
+              'Area',
+              _area,
+              required: true,
+              focusNode: _areaFocus,
+              nextFocus: _cityFocus,
+            ),
+            _buildField(
+              'City',
+              _city,
+              required: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r"[a-zA-Z\s]"),
+                ),
+              ],
+              focusNode: _cityFocus,
+              nextFocus: _districtFocus,
+            ),
+            _buildField(
+              'District',
+              _district,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r"[a-zA-Z\s]"),
+                ),
+              ],
+              focusNode: _districtFocus,
+              nextFocus: _stateFocus,
+            ),
+            _buildField(
+              'State',
+              _state,
+              required: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r"[a-zA-Z\s]"),
+                ),
+              ],
+              focusNode: _stateFocus,
+              nextFocus: _pincodeFocus,
+            ),
+            _buildField(
+              'Pincode',
+              _pincode,
+              required: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              focusNode: _pincodeFocus,
+              isLastField: true,
+            ),
             const SizedBox(height: 12),
             Text(
               'Location (lat/lng)',
@@ -518,6 +758,21 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 color: StoreProfileTheme.textPrimary,
               ),
             ),
+            if (_submitted &&
+                (_lon.text.trim().isEmpty ||
+                    _lan.text.trim().isEmpty ||
+                    _lon.text.trim() == '0' ||
+                    _lan.text.trim() == '0'))
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Please get current location',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -595,13 +850,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: _saving ||
-                        _lon.text.trim().isEmpty ||
-                        _lan.text.trim().isEmpty ||
-                        _lon.text.trim() == '0' ||
-                        _lan.text.trim() == '0'
-                    ? null
-                    : _submit,
+                // onPressed: _saving ||
+                //         _lon.text.trim().isEmpty ||
+                //         _lan.text.trim().isEmpty ||
+                //         _lon.text.trim() == '0' ||
+                //         _lan.text.trim() == '0'
+                //     ? null
+                //     : _submit,
+                onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: StoreProfileTheme.accentPink,
                   foregroundColor: Colors.white,
@@ -633,8 +889,16 @@ class _AddressFormPageState extends State<AddressFormPage> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller,
-      {bool required = false}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool required = false,
+    FocusNode? focusNode,
+    FocusNode? nextFocus,
+    TextInputType keyboardType = TextInputType.text,
+    bool isLastField = false,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -651,6 +915,19 @@ class _AddressFormPageState extends State<AddressFormPage> {
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
+            focusNode: focusNode,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            textCapitalization: TextCapitalization.words,
+            textInputAction:
+                isLastField ? TextInputAction.done : TextInputAction.next,
+            onFieldSubmitted: (_) {
+              if (isLastField) {
+                FocusScope.of(context).unfocus();
+              } else if (nextFocus != null) {
+                FocusScope.of(context).requestFocus(nextFocus);
+              }
+            },
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white,
@@ -670,8 +947,17 @@ class _AddressFormPageState extends State<AddressFormPage> {
             validator: required
                 ? (v) {
                     if (v == null || v.toString().trim().isEmpty) {
-                      return 'Required';
+                      if (label.startsWith('Address type')) {
+                        return 'Please enter address type';
+                      }
+                      return 'Please enter $label';
                     }
+                    if (label == 'Pincode') {
+                      if (!RegExp(r'^\d{6}$').hasMatch(v.trim())) {
+                        return 'Enter valid 6 digit pincode';
+                      }
+                    }
+
                     return null;
                   }
                 : null,

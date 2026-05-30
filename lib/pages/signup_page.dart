@@ -28,6 +28,8 @@ class _SignupPageState extends State<SignupPage> {
   double? _latitude;
   double? _longitude;
 
+  bool _obscurePassword = true;
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -101,7 +103,9 @@ class _SignupPageState extends State<SignupPage> {
     await _requestLocationAndGetPosition();
     if (!mounted) return;
     if (!_locationGranted || _latitude == null || _longitude == null) {
-      ToastMessage.warning(context: context, msg: _locationError ?? 'Please allow location to continue.');
+      ToastMessage.warning(
+          context: context,
+          msg: _locationError ?? 'Please allow location to continue.');
       return;
     }
 
@@ -122,12 +126,14 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => _isLoading = false);
 
     if (result.success) {
-        ToastMessage.success(context: context, msg: 'Account created. Please log in.');
+      ToastMessage.success(
+          context: context, msg: 'Account created. Please log in.');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     } else {
-      ToastMessage.error(context: context, msg: result.message ?? 'Sign up failed.');
+      ToastMessage.error(
+          context: context, msg: result.message ?? 'Sign up failed.');
     }
   }
 
@@ -219,8 +225,21 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
-                  decoration: _inputDecoration('Password', Icons.lock),
+                  obscureText: _obscurePassword,
+                  decoration: _inputDecoration('Password', Icons.lock).copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
                   validator: (v) {
                     if (v == null || v.length < 6) {
                       return 'Password must be at least 6 characters';
@@ -233,7 +252,8 @@ class _SignupPageState extends State<SignupPage> {
                   controller: _dobController,
                   readOnly: true,
                   onTap: _pickDate,
-                  decoration: _inputDecoration('Date of birth (DD/MM/YYYY)', Icons.calendar_today),
+                  decoration: _inputDecoration(
+                      'Date of birth (DD/MM/YYYY)', Icons.calendar_today),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'Select date of birth';
