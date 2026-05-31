@@ -21,8 +21,8 @@ Future<List<AddressModel>> getAddressByUser(String userID) async {
     final response = await http.get(uri);
     if (response.statusCode != 200) return [];
     final cleaned = _cleanResponse(response.body);
-    print("--------adress----GetAddressByUser--");
-    print(cleaned);
+    // print("--------adress----GetAddressByUser--");
+    // print(cleaned);
     if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
     final decoded = json.decode(cleaned);
     if (decoded is! List) return [];
@@ -68,12 +68,26 @@ Future<bool> addAddress({
         'lan': lan,
       },
     );
+    // print('\n========== ADD ADDRESS ==========');
+    // print('REQUEST URL: ${uri.toString()}');
+
     final response = await http.get(uri);
+    // print('STATUS CODE: ${response.statusCode}');
+    // print('HEADERS: ${response.headers}');
+    // print('RAW RESPONSE: ${response.body}');
     final cleaned = _cleanResponse(response.body);
+    // print('CLEANED RESPONSE: $cleaned');
+    // print(
+    //     'SUCCESS: ${response.statusCode == 200 && cleaned.isNotEmpty && cleaned.toLowerCase() != 'fail'}');
+    // print('================================\n');
     return response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
   } catch (_) {
+    // print('\n========== ADD ADDRESS ERROR ==========');
+    // print('ERROR: $e');
+    // print('STACKTRACE: $s');
+    // print('=======================================\n');
     return false;
   }
 }
@@ -112,12 +126,25 @@ Future<bool> updateAddress({
         'lan': lan,
       },
     );
+    // print('\n========== UPDATE ADDRESS ==========');
+    // print('REQUEST URL: ${uri.toString()}');
     final response = await http.get(uri);
+    // print('STATUS CODE: ${response.statusCode}');
+    // print('HEADERS: ${response.headers}');
+    // print('RAW RESPONSE: ${response.body}');
     final cleaned = _cleanResponse(response.body);
+    // print('CLEANED RESPONSE: $cleaned');
+    // print(
+    //     'SUCCESS: ${response.statusCode == 200 && cleaned.isNotEmpty && cleaned.toLowerCase() != 'fail'}');
+    // print('===================================\n');
     return response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
   } catch (_) {
+    // print('\n========== UPDATE ADDRESS ERROR ==========');
+    // print('ERROR: $e');
+    // print('STACKTRACE: $s');
+    // print('==========================================\n');
     return false;
   }
 }
@@ -182,10 +209,10 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
         'UserID': userId,
       },
     );
-    print("Check Radius URL => $uri");
+    // print("Check Radius URL => $uri");
     final response = await http.get(uri);
-    print("Check Radius Status => ${response.statusCode}");
-    print("Check Radius Raw => ${response.body}");
+    // print("Check Radius Status => ${response.statusCode}");
+    // print("Check Radius Raw => ${response.body}");
     if (response.statusCode != 200) {
       return const OrderRadiusCheckResult(
         allowed: false,
@@ -193,9 +220,9 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
       );
     }
     final cleaned = _cleanResponse(response.body);
-    print(
-        "----WebService.asmx/CheckOrderRadius--AddressID----$addressId--UserID----$userId");
-    print(cleaned);
+    // print(
+    //     "----WebService.asmx/CheckOrderRadius--AddressID----$addressId--UserID----$userId");
+    // print(cleaned);
     if (cleaned.toLowerCase() == 'success') {
       return OrderRadiusCheckResult(allowed: true, rawResponse: cleaned);
     }
@@ -205,7 +232,7 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
           parts.length > 1 ? double.tryParse(parts[1].trim()) : null;
       final currentDistanceMeters =
           parts.length > 2 ? double.tryParse(parts[2].trim()) : null;
-      print(currentDistanceMeters);
+      // print(currentDistanceMeters);
       return OrderRadiusCheckResult(
         allowed: false,
         rawResponse: cleaned,
@@ -215,7 +242,7 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
     }
     return OrderRadiusCheckResult(allowed: false, rawResponse: cleaned);
   } catch (e) {
-    print("Check Radius Error => $e");
+    // print("Check Radius Error => $e");
     return const OrderRadiusCheckResult(
       allowed: false,
       rawResponse: 'Network error',

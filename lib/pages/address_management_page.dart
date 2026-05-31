@@ -81,11 +81,13 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
       MaterialPageRoute(
         builder: (_) => AddressFormPage(
           userId: _userId!,
-          onSaved: () => _loadUserAndAddresses(),
+          // onSaved: () => _loadUserAndAddresses(),
         ),
       ),
     );
-    if (result == true && mounted) await _loadUserAndAddresses();
+    if (result == true && mounted) {
+      await _loadUserAndAddresses();
+    }
   }
 
   Future<void> _openEditAddress(AddressModel address) async {
@@ -94,36 +96,36 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
         builder: (_) => AddressFormPage(
           userId: _userId ?? address.userID,
           address: address,
-          onSaved: () => _loadUserAndAddresses(),
+          // onSaved: () => _loadUserAndAddresses(),
         ),
       ),
     );
     if (result == true && mounted) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final updatedList = await getAddressByUser(_userId!);
-      final selected = await SelectedAddressStorage.instance.load();
+      // await Future.delayed(const Duration(milliseconds: 300));
+      // final updatedList = await getAddressByUser(_userId!);
+      // final selected = await SelectedAddressStorage.instance.load();
 
-      if (selected != null) {
-        try {
-          final updatedSelected = updatedList.firstWhere(
-            (a) => a.id == selected.id,
-          );
+      // if (selected != null) {
+      //   try {
+      //     final updatedSelected = updatedList.firstWhere(
+      //       (a) => a.id == selected.id,
+      //     );
 
-          await SelectedAddressStorage.instance.save(updatedSelected);
-        } catch (_) {
-          if (updatedList.isNotEmpty) {
-            await SelectedAddressStorage.instance.save(updatedList.first);
-            setState(() {
-              _selectedAddressId = updatedList.first.id.toString();
-            });
-          } else {
-            await SelectedAddressStorage.instance.clear();
-            setState(() {
-              _selectedAddressId = null;
-            });
-          }
-        }
-      }
+      //     await SelectedAddressStorage.instance.save(updatedSelected);
+      //   } catch (_) {
+      //     if (updatedList.isNotEmpty) {
+      //       await SelectedAddressStorage.instance.save(updatedList.first);
+      //       setState(() {
+      //         _selectedAddressId = updatedList.first.id.toString();
+      //       });
+      //     } else {
+      //       await SelectedAddressStorage.instance.clear();
+      //       setState(() {
+      //         _selectedAddressId = null;
+      //       });
+      //     }
+      //   }
+      // }
       await _loadUserAndAddresses();
     }
   }
@@ -278,7 +280,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                               });
 
                               ToastMessage.success(
-                                context: context,
+                                context: this.context,
                                 msg: 'Selected delivery address updated',
                               );
                             },
@@ -414,13 +416,13 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
 class AddressFormPage extends StatefulWidget {
   final String userId;
   final AddressModel? address;
-  final VoidCallback? onSaved;
+  // final VoidCallback? onSaved;
 
   const AddressFormPage({
     super.key,
     required this.userId,
     this.address,
-    this.onSaved,
+    // this.onSaved,
   });
 
   @override

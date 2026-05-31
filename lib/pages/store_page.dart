@@ -35,7 +35,7 @@ class StorePage extends StatefulWidget {
 class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late Future<List<Category>> _categoriesFuture;
-  late Future<List<Vendor>> _vendorsFuture;
+  // late Future<List<Vendor>> _vendorsFuture;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -733,18 +733,18 @@ Future<List<Vendor>> fetchVendorsByCategory(String category,
   try {
     final url =
         'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?categoryid=${Uri.encodeComponent(category)}&lang=${Uri.encodeComponent(lang)}';
-    print("_________________________________");
-    print("URL=> $url");
-    print("_________________________________");
+    // print("_________________________________");
+    // print("URL=> $url");
+    // print("_________________________________");
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) return [];
 
     /// Remove XML wrapper
     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-    print("______________-------------------___________________");
-    print("VENDOR API RAW => $cleaned");
-    print("______________-------------------___________________");
+    // print("______________-------------------___________________");
+    // print("VENDOR API RAW => $cleaned");
+    // print("______________-------------------___________________");
 
     /// 🚨 HANDLE NON JSON RESPONSES
     if (cleaned.isEmpty ||
@@ -768,7 +768,7 @@ Future<List<Vendor>> fetchVendorsByCategory(String category,
 
     return [];
   } catch (e) {
-    print("Vendor Parse Error => $e");
+    // print("Vendor Parse Error => $e");
     return [];
   }
 }

@@ -10,8 +10,8 @@ class CartApiService {
       final url = "$baseUrl/$endpoint";
       final response = await http.get(Uri.parse(url));
 
-      print(url);
-      print(response.body);
+      // print(url);
+      // print(response.body);
 
       if (response.statusCode == 200) {
         final body = response.body;
@@ -38,7 +38,7 @@ class CartApiService {
         throw Exception("API Error: ${response.statusCode}");
       }
     } catch (e) {
-      print("API ERROR: $e");
+      // print("API ERROR: $e");
       return null;
     }
   }

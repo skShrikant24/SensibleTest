@@ -152,9 +152,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               builder: (_) => AddressFormPage(
                 userId: _userId!,
                 // ===================== CHANGE =====================
-                onSaved: () async {
-                  await _loadAddressesAndSelection();
-                },
+                // onSaved: () async {
+                //   await _loadAddressesAndSelection();
+                // },
               ),
             ),
           );

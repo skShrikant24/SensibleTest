@@ -391,24 +391,24 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  void _onPinCodeChanged(String? code) {
-    setState(() => _otpCode = code ?? '');
-    for (int i = 0; i < 4; i++) {
-      if (i < (code?.length ?? 0)) {
-        _otpControllers[i].text = code![i];
-        if (_otpSlideControllers[i].value == 0) {
-          _otpSlideControllers[i].forward();
-        }
-      } else {
-        _otpControllers[i].clear();
-      }
-    }
-    if ((code?.length ?? 0) == 4) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted && !_isVerifying && !_isVerified) _verifyOtp();
-      });
-    }
-  }
+  // void _onPinCodeChanged(String? code) {
+  //   setState(() => _otpCode = code ?? '');
+  //   for (int i = 0; i < 4; i++) {
+  //     if (i < (code?.length ?? 0)) {
+  //       _otpControllers[i].text = code![i];
+  //       if (_otpSlideControllers[i].value == 0) {
+  //         _otpSlideControllers[i].forward();
+  //       }
+  //     } else {
+  //       _otpControllers[i].clear();
+  //     }
+  //   }
+  //   if ((code?.length ?? 0) == 4) {
+  //     Future.delayed(const Duration(milliseconds: 300), () {
+  //       if (mounted && !_isVerifying && !_isVerified) _verifyOtp();
+  //     });
+  //   }
+  // }
 
   @override
   void dispose() {

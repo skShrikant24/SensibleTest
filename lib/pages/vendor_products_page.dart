@@ -49,9 +49,9 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
     try {
       final url =
           "https://grabitt.in/webservice.asmx/GetProductsByVendor?vendorid=$vendorId&categoryid=$catergoryId&lang=${Uri.encodeComponent(lang)}";
-      print("+++++++++++++++++++++");
-      print(url);
-      print("__________________________");
+      // print("+++++++++++++++++++++");
+      // print(url);
+      // print("__________________________");
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) return [];
       final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
@@ -61,9 +61,9 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
         return [];
       }
       final decoded = json.decode(cleaned);
-      print("+++++++++decoded++++++++++++");
-      print(decoded);
-      print("__________________________");
+      // print("+++++++++decoded++++++++++++");
+      // print(decoded);
+      // print("__________________________");
       if (decoded is List) {
         return decoded
             .map<VendorProduct>(

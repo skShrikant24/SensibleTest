@@ -43,7 +43,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       return;
     }
     final list = await getOrderHistoryByUser(uid);
-    print(list);
+    // print(list);
     if (!mounted) return;
     setState(() {
       _userId = uid;
@@ -432,7 +432,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(order.status);
-    print("ORDER STATUS => ${order.status}");
+    // print("ORDER STATUS => ${order.status}");
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
