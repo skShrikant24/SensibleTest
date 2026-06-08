@@ -6,15 +6,15 @@ const String _baseUrl = 'https://grabitt.in';
 const String _keyUser = 'grabitt_logged_in_user';
 const String _keyIsLoggedIn = 'grabitt_is_logged_in';
 
-// class LoginResult {
-//   final bool success;
-//   final String? message;
+class LoginResult {
+  final bool success;
+  final String? message;
 
-//   const LoginResult({
-//     required this.success,
-//     this.message,
-//   });
-// }
+  const LoginResult({
+    required this.success,
+    this.message,
+  });
+}
 
 /// Result of GetUserByPhone. [user] is null when response is "Fail".
 class GetUserByPhoneResult {
@@ -64,7 +64,8 @@ class AuthService {
 
   /// GET /webservice.asmx/SendOtp?mobileNumber=string&generatedOtp=string
   /// [generatedOtp] is the OTP we generate; server sends it via SMS.
-  Future<SendOtpResult> sendOtp(String mobileNumber, String generatedOtp) async {
+  Future<SendOtpResult> sendOtp(
+      String mobileNumber, String generatedOtp) async {
     final uri = Uri.parse('$_baseUrl/webservice.asmx/SendOtp').replace(
       queryParameters: {
         'mobileNumber': mobileNumber,
@@ -100,54 +101,54 @@ class AuthService {
   }
 
   /// GET /Webservice.asmx/UserLogin?phoneno=string&Password=string
-  // Future<LoginResult> userLogin({
-  //   required String phoneno,
-  //   required String password,
-  // }) async {
-  //   final uri = Uri.parse('$_baseUrl/Webservice.asmx/UserLogin').replace(
-  //     queryParameters: {
-  //       'phoneno': phoneno,
-  //       'Password': password,
-  //     },
-  //   );
+  Future<LoginResult> userLogin({
+    required String phoneno,
+    required String password,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/Webservice.asmx/UserLogin').replace(
+      queryParameters: {
+        'phoneno': phoneno,
+        'Password': password,
+      },
+    );
 
-  //   try {
-  //     final response = await http.get(uri);
+    try {
+      final response = await http.get(uri);
 
-  //     if (response.statusCode != 200) {
-  //       return const LoginResult(
-  //         success: false,
-  //         message: 'Server error',
-  //       );
-  //     }
+      if (response.statusCode != 200) {
+        return const LoginResult(
+          success: false,
+          message: 'Server error',
+        );
+      }
 
-  //     final raw = response.body.trim();
+      final raw = response.body.trim();
 
-  //     final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+      final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
 
-  //     if (cleaned.isEmpty) {
-  //       return const LoginResult(
-  //         success: false,
-  //         message: 'Something went wrong',
-  //       );
-  //     }
+      if (cleaned.isEmpty) {
+        return const LoginResult(
+          success: false,
+          message: 'Something went wrong',
+        );
+      }
 
-  //     final map = json.decode(cleaned) as Map<String, dynamic>;
+      final map = json.decode(cleaned) as Map<String, dynamic>;
 
-  //     final status = map['Status']?.toString() ?? '';
-  //     final message = map['Message']?.toString() ?? '';
+      final status = map['Status']?.toString() ?? '';
+      final message = map['Message']?.toString() ?? '';
 
-  //     return LoginResult(
-  //       success: status.toLowerCase() == 'success',
-  //       message: message,
-  //     );
-  //   } catch (e) {
-  //     return LoginResult(
-  //       success: false,
-  //       message: e.toString(),
-  //     );
-  //   }
-  // }
+      return LoginResult(
+        success: status.toLowerCase() == 'success',
+        message: message,
+      );
+    } catch (e) {
+      return LoginResult(
+        success: false,
+        message: e.toString(),
+      );
+    }
+  }
 
   /// Save logged-in user and set isLoggedIn to true.
   Future<void> saveLoginUser(Map<String, dynamic> user) async {
