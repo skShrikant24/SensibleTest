@@ -173,7 +173,9 @@ class AuthService {
   /// Whether the user is considered logged in (has saved session).
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyIsLoggedIn) == true;
+    final isLoggedIn = prefs.getBool(_keyIsLoggedIn) == true;
+    final userData = prefs.getString(_keyUser);
+    return isLoggedIn && userData != null && userData.isNotEmpty;
   }
 
   /// Clear saved user and logout.
