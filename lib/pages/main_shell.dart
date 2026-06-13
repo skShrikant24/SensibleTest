@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:GraBiTT/utils/api_helper.dart';
 import 'package:GraBiTT/utils/constants.dart';
+import 'package:GraBiTT/widgets/home_banner_slider.dart';
 import 'package:GraBiTT/widgets/update_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,29 +27,130 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   bool _hideBottomBar = false;
 
   bool _isDialogShowing = false;
+  bool _isBannerShowing = false;
+  static const String _bannerDateKey = "home_banner_last_seen";
+ 
+
   @override
   void initState() {
     super.initState();
-    // ✅ App lifecycle observer add
+    // App lifecycle observer add
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAppUpdate();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkAppUpdate();
+      if (!_isDialogShowing) {
+        await _checkHomeBanner();
+      }
     });
   }
 
   @override
   void dispose() {
-    // ✅ Remove observer
+    // Remove observer
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // ✅ Called when app resumes from background / Play Store
+  // Called when app resumes from background / Play Store
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkAppUpdate();
+      if (!_isDialogShowing) {
+        _checkHomeBanner();
+      }
     }
+  }
+
+  Future<void> _checkHomeBanner() async {
+    if (_isBannerShowing) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final today = DateTime.now().toIso8601String().split('T').first;
+
+      final lastSeen = prefs.getString(_bannerDateKey);
+
+      if (lastSeen == today) return;
+
+      final response = await http.get(
+        Uri.parse(
+          "https://grabitt.in/Webservice.asmx/GetHomeBanner",
+        ),
+      );
+
+      if (response.statusCode != 200) return;
+
+      final cleaned = response.body
+          .replaceAll(RegExp(r'<\?xml.*?\?>'), '')
+          .replaceAll(RegExp(r'<string[^>]*>'), '')
+          .replaceAll('</string>', '')
+          .trim();
+
+      final json = jsonDecode(cleaned);
+
+      if (json["status"] != "Success") return;
+
+      final data = json["data"];
+
+      if (data == null || data is! List || data.isEmpty) return;
+
+      final List<HomeBannerModel> banners = [];
+
+      for (final item in data) {
+        if (item == null) continue;
+        if (item["IsActive"] != true) continue;
+
+        final image = item["Image"]?.toString() ?? "";
+        if (image.isEmpty) continue;
+
+        banners.add(
+          HomeBannerModel(
+            imageUrl: ApiHelper.buildUrl(image) ?? '',
+            title: item["ImageTitle"]?.toString(),
+            description: item["ImageDescription"]?.toString(),
+          ),
+        );
+      }
+
+      if (banners.isEmpty) return;
+      if (!mounted) return;
+      _showBannerPopup(
+        banners,
+        today,
+      );
+    } catch (_) {}
+  }
+
+  void _showBannerPopup(
+    List<HomeBannerModel> banners,
+    String today,
+  ) {
+    _isBannerShowing = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => HomeBannerPopup(
+        banners: banners,
+        onClose: () async {
+          final prefs = await SharedPreferences.getInstance();
+
+          await prefs.setString(
+            _bannerDateKey,
+            today,
+          );
+
+          _isBannerShowing = false;
+
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    ).then((_) {
+      _isBannerShowing = false;
+    });
   }
 
   // ================= VERSION CHECK =================
@@ -125,9 +228,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           await _openPlayStore();
         },
       ),
-    ).then((_) {
+    ).then((_) async {
       // ✅ Reset only after popup closes
       _isDialogShowing = false;
+      await _checkHomeBanner(); // important
     });
   }
 

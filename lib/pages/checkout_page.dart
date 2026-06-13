@@ -405,18 +405,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: _cardStyle(),
-      child: Column(
-        children: [
-          _paymentTile("cod", Icons.home, "Cash On Delivery"),
-          _divider(),
+      child: RadioGroup<String>(
+        groupValue: paymentMethod,
+        onChanged: (String? value) {
+          if (value != null) {
+            setState(() => paymentMethod = value);
+          }
+        },
+        child: Column(
+          children: [
+            _paymentTile("cod", Icons.home, "Cash On Delivery"),
+            _divider(),
 
-          // 🚧 UPI (Coming Soon)
-          _disabledPaymentTile("upi", Icons.qr_code, "UPI"),
-          _divider(),
+            // 🚧 UPI (Coming Soon)
+            _disabledPaymentTile("upi", Icons.qr_code, "UPI"),
+            _divider(),
 
-          // 🚧 GrabPoints (Coming Soon)
-          _disabledPaymentTile("grabpoints", Icons.wallet, "Grab Points"),
-        ],
+            // 🚧 GrabPoints (Coming Soon)
+            _disabledPaymentTile("grabpoints", Icons.wallet, "Grab Points"),
+          ],
+        ),
       ),
     );
   }
@@ -424,8 +432,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _paymentTile(String value, IconData icon, String title) {
     return RadioListTile<String>(
       value: value,
-      groupValue: paymentMethod,
-      onChanged: (v) => setState(() => paymentMethod = v!),
       activeColor: StoreProfileTheme.accentPink,
       title: Row(
         children: [
@@ -1065,35 +1071,49 @@ class _AddressSelectorSheet extends StatelessWidget {
                 shrinkWrap: true,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
-                  ...addresses.map((a) => RadioListTile<AddressModel>(
-                        value: a,
-                        groupValue: selected,
-                        onChanged: (v) {
-                          if (v != null) Navigator.pop(context, v);
-                        },
-                        activeColor: StoreProfileTheme.accentPink,
-                        title: Text(
-                          a.addressType.isNotEmpty ? a.addressType : 'Address',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            a.displaySummary,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: StoreProfileTheme.textSecondary,
+                  RadioGroup<AddressModel>(
+                    groupValue: selected,
+                    onChanged: (AddressModel? value) {
+                      if (value != null) {
+                        Navigator.pop(context, value);
+                      }
+                    },
+                    child: Column(
+                      children: addresses
+                          .map(
+                            (a) => RadioListTile<AddressModel>(
+                              value: a,
+                              activeColor: StoreProfileTheme.accentPink,
+                              title: Text(
+                                a.addressType.isNotEmpty
+                                    ? a.addressType
+                                    : 'Address',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  a.displaySummary,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: StoreProfileTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      )),
+                          )
+                          .toList(),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ListTile(
-                    leading:
-                        Icon(Icons.add, color: StoreProfileTheme.accentPink),
+                    leading: Icon(
+                      Icons.add,
+                      color: StoreProfileTheme.accentPink,
+                    ),
                     title: Text(
                       'Add new address',
                       style: GoogleFonts.poppins(

@@ -5,8 +5,8 @@ class ApiHelper {
     final s = value.toString().trim();
     if (s.isEmpty) return null;
 
-    return s.startsWith('http')
-        ? s
-        : 'https://grabitt.in/$s';
+    if (s.startsWith('http')) return s;
+
+    return 'https://grabitt.in${s.startsWith('/') ? s : '/$s'}';
   }
 }

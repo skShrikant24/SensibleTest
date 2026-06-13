@@ -74,7 +74,8 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
       );
       return;
     }
-    final title = forPickup ? 'Select pickup address' : 'Select delivery address';
+    final title =
+        forPickup ? 'Select pickup address' : 'Select delivery address';
     final current = forPickup ? _pickup : _delivery;
     final picked = await showModalBottomSheet<AddressModel>(
       context: context,
@@ -135,7 +136,8 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
 
   Future<void> _placeOrder() async {
     if (_userId == null || _userId!.isEmpty) {
-      ToastMessage.warning(context: context, msg: 'Please log in to place an order');
+      ToastMessage.warning(
+          context: context, msg: 'Please log in to place an order');
       return;
     }
     if (_pickup == null || _delivery == null) {
@@ -214,7 +216,8 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: StoreProfileTheme.accentPink),
+              child: CircularProgressIndicator(
+                  color: StoreProfileTheme.accentPink),
             )
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -238,7 +241,8 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: _addAddress,
-                      icon: Icon(Icons.add, color: StoreProfileTheme.accentPink),
+                      icon:
+                          Icon(Icons.add, color: StoreProfileTheme.accentPink),
                       label: Text(
                         l10n.addAddress,
                         style: GoogleFonts.poppins(
@@ -269,7 +273,8 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
           Expanded(
             child: Text(
               AppLocalizations.of(context)!.pleaseLogInToManageAddresses,
-              style: GoogleFonts.poppins(fontSize: 14, color: StoreProfileTheme.textSecondary),
+              style: GoogleFonts.poppins(
+                  fontSize: 14, color: StoreProfileTheme.textSecondary),
             ),
           ),
         ],
@@ -305,12 +310,14 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: StoreProfileTheme.border.withValues(alpha: 0.6)),
+            border: Border.all(
+                color: StoreProfileTheme.border.withValues(alpha: 0.6)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.location_on_outlined, color: StoreProfileTheme.accentPink, size: 22),
+              Icon(Icons.location_on_outlined,
+                  color: StoreProfileTheme.accentPink, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -318,7 +325,9 @@ class _PickDeliverOrderPageState extends State<PickDeliverOrderPage> {
                   children: [
                     if (address != null) ...[
                       Text(
-                        address.addressType.isNotEmpty ? address.addressType : 'Address',
+                        address.addressType.isNotEmpty
+                            ? address.addressType
+                            : 'Address',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -411,34 +420,49 @@ class _AddressPickerSheet extends StatelessWidget {
                 shrinkWrap: true,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
-                  ...addresses.map((a) => RadioListTile<AddressModel>(
-                        value: a,
-                        groupValue: selected,
-                        onChanged: (v) {
-                          if (v != null) Navigator.pop(context, v);
-                        },
-                        activeColor: StoreProfileTheme.accentPink,
-                        title: Text(
-                          a.addressType.isNotEmpty ? a.addressType : 'Address',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            a.displaySummary,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: StoreProfileTheme.textSecondary,
+                  RadioGroup<AddressModel>(
+                    groupValue: selected,
+                    onChanged: (AddressModel? value) {
+                      if (value != null) {
+                        Navigator.pop(context, value);
+                      }
+                    },
+                    child: Column(
+                      children: addresses
+                          .map(
+                            (a) => RadioListTile<AddressModel>(
+                              value: a,
+                              activeColor: StoreProfileTheme.accentPink,
+                              title: Text(
+                                a.addressType.isNotEmpty
+                                    ? a.addressType
+                                    : 'Address',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  a.displaySummary,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: StoreProfileTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      )),
+                          )
+                          .toList(),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ListTile(
-                    leading: Icon(Icons.add, color: StoreProfileTheme.accentPink),
+                    leading: Icon(
+                      Icons.add,
+                      color: StoreProfileTheme.accentPink,
+                    ),
                     title: Text(
                       'Add new address',
                       style: GoogleFonts.poppins(
@@ -478,7 +502,8 @@ class _OrderSuccessDialog extends StatelessWidget {
                 color: Colors.green.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_rounded, size: 40, color: Colors.green),
+              child: const Icon(Icons.check_rounded,
+                  size: 40, color: Colors.green),
             ),
             const SizedBox(height: 16),
             Text(
@@ -518,7 +543,8 @@ class _OrderSuccessDialog extends StatelessWidget {
                 }
               },
               icon: const Icon(Icons.copy, size: 18),
-              label: Text('Copy code', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text('Copy code',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 12),
             SizedBox(

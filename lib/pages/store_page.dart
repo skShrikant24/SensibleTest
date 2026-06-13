@@ -9,7 +9,6 @@ import 'package:GraBiTT/app_State/locale_provider.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/components/header_pill.dart';
 import 'package:GraBiTT/pages/cart_page.dart';
-import 'package:GraBiTT/pages/pick_deliver_order_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category.dart';
@@ -46,7 +45,7 @@ class _StorePageState extends State<StorePage> {
   bool _bottomBarHidden = false;
 
   /// Approximate height of main_shell bottom bar (with padding) so buttons sit above it when visible.
-  static const double _bottomBarHeight = 72;
+  static const double _bottomBarHeight = 100.0;
 
   @override
   void initState() {
@@ -267,7 +266,7 @@ class _StorePageState extends State<StorePage> {
                   HeaderPill(
                     icon: Icons.monetization_on,
                     text: '25',
-                    onTap: () => widget.onSelectTab(1),
+                    // onTap: () => widget.onSelectTab(1),
                   ),
                   const SizedBox(width: 10),
 
@@ -426,21 +425,21 @@ class _StorePageState extends State<StorePage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: _ActionButton(
-              title: AppLocalizations.of(context)!.pickAndDeliver,
-              icon: Icons.local_shipping_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PickDeliverOrderPage(),
-                  ),
-                );
-              },
-            ),
-          ),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: _ActionButton(
+          //     title: AppLocalizations.of(context)!.pickAndDeliver,
+          //     icon: Icons.local_shipping_outlined,
+          //     onTap: () {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute<void>(
+          //           builder: (_) => const PickDeliverOrderPage(),
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
