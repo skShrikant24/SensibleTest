@@ -75,39 +75,39 @@ class ProfilePage extends StatefulWidget {
   }
 
   static Future<({Map<String, dynamic>? user, String address})>
-    _getUserWithAddress() async {
-  final user = await AuthService.instance.getSavedUser();
+      _getUserWithAddress() async {
+    final user = await AuthService.instance.getSavedUser();
 
-  String address = 'No address added';
+    String address = 'No address added';
 
-  try {
-    // First try loading selected address from local storage
-    final selectedAddress = await SelectedAddressStorage.instance.load();
+    try {
+      // First try loading selected address from local storage
+      final selectedAddress = await SelectedAddressStorage.instance.load();
 
-    if (selectedAddress != null) {
-      address = selectedAddress.displaySummary;
-    } else {
-      // Fallback: fetch address from API after app reinstall/data clear
-      final uid =
-          user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
+      if (selectedAddress != null) {
+        address = selectedAddress.displaySummary;
+      } else {
+        // Fallback: fetch address from API after app reinstall/data clear
+        final uid =
+            user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
 
-      if (uid.isNotEmpty) {
-        final addresses = await getAddressByUser(uid);
+        if (uid.isNotEmpty) {
+          final addresses = await getAddressByUser(uid);
 
-        if (addresses.isNotEmpty) {
-          final firstAddress = addresses.first;
+          if (addresses.isNotEmpty) {
+            final firstAddress = addresses.first;
 
-          // Save it locally so next time no API fallback is needed
-          await SelectedAddressStorage.instance.save(firstAddress);
+            // Save it locally so next time no API fallback is needed
+            await SelectedAddressStorage.instance.save(firstAddress);
 
-          address = firstAddress.displaySummary;
+            address = firstAddress.displaySummary;
+          }
         }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
 
-  return (user: user, address: address);
-}
+    return (user: user, address: address);
+  }
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -156,8 +156,12 @@ class ProfilePage extends StatefulWidget {
     );
   }
 
-  static SliverToBoxAdapter _buildListItem(String title,
-      {VoidCallback? onTap}) {
+  static SliverToBoxAdapter _buildListItem(
+    String title, {
+    VoidCallback? onTap,
+    Color? textColor,
+    Color? trailingColor,
+  }) {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -175,14 +179,14 @@ class ProfilePage extends StatefulWidget {
         child: ListTile(
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: textColor ?? Colors.black87,
             ),
           ),
           trailing: Icon(Icons.arrow_forward_ios,
-              size: 16, color: StoreProfileTheme.accentPink),
+              size: 16, color: trailingColor ?? StoreProfileTheme.accentPink),
           onTap: onTap,
         ),
       ),
@@ -207,6 +211,33 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _loadProfile();
     });
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteAccount),
+        content: Text(l10n.deleteAccountRequestSent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
+
+    await AuthService.instance.logout();
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   @override
@@ -340,6 +371,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         context: context, msg: "Logout Successfully..!");
                   }
                 },
+              ),
+              ProfilePage._buildListItem(
+                AppLocalizations.of(context)!.deleteAccount,
+                textColor: Colors.red.shade700,
+                trailingColor: Colors.red.shade700,
+                onTap: _handleDeleteAccount,
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],

@@ -814,8 +814,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    FutureBuilder<PackageInfo>(
+                   // const SizedBox(height: 24),
+ /*                   FutureBuilder<PackageInfo>(
                       future: PackageInfo.fromPlatform(),
                       builder: (context, snapshot) {
                         final version = snapshot.data?.version ?? '';
@@ -832,7 +832,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           ),
                         );
                       },
-                    ),
+                    ),*/
                   ],
                 ),
               ),

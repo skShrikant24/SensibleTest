@@ -170,6 +170,24 @@ abstract class AppLocalizations {
   /// **'Logout'**
   String get logout;
 
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account delete request was sent successfully. Your account will be deleted within 2-3 days.'**
+  String get deleteAccountRequestSent;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
   /// No description provided for @guest.
   ///
   /// In en, this message translates to:

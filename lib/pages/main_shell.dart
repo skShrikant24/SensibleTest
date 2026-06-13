@@ -10,7 +10,6 @@ import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/profile_page.dart';
 import 'package:GraBiTT/pages/store_page.dart';
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -29,7 +28,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   bool _isDialogShowing = false;
   bool _isBannerShowing = false;
   static const String _bannerDateKey = "home_banner_last_seen";
- 
 
   @override
   void initState() {
@@ -37,9 +35,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // App lifecycle observer add
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _checkAppUpdate();
+      //await _checkAppUpdate();
       if (!_isDialogShowing) {
-        await _checkHomeBanner();
+      //  await _checkHomeBanner();
       }
     });
   }
@@ -54,12 +52,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   // Called when app resumes from background / Play Store
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    /* if (state == AppLifecycleState.resumed) {
       _checkAppUpdate();
       if (!_isDialogShowing) {
         _checkHomeBanner();
       }
     }
+    }*/
   }
 
   Future<void> _checkHomeBanner() async {
@@ -154,7 +153,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   // ================= VERSION CHECK =================
-  Future<void> _checkAppUpdate() async {
+  /* Future<void> _checkAppUpdate() async {
     try {
       final info = await PackageInfo.fromPlatform();
       final currentBuild = int.tryParse(info.buildNumber) ?? 0;
@@ -198,10 +197,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint("Version check error: $e");
     }
-  }
+  }*/
 
   // ================= POPUP =================
 
+  // ignore: unused_element
   void _showUpdatePopup({
     required String latestVersion,
     required bool force,
@@ -231,7 +231,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     ).then((_) async {
       // ✅ Reset only after popup closes
       _isDialogShowing = false;
-      await _checkHomeBanner(); // important
+      //await _checkHomeBanner(); // important
     });
   }
 

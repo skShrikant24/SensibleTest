@@ -45,6 +45,16 @@ class AppLocalizationsKn extends AppLocalizations {
   String get logout => 'ಲಾಗ್ ಔಟ್';
 
   @override
+  String get deleteAccount => 'ಖಾತೆ ಅಳಿಸಿ';
+
+  @override
+  String get deleteAccountRequestSent =>
+      'ನಿಮ್ಮ ಖಾತೆ ಅಳಿಸುವ ವಿನಂತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ. ನಿಮ್ಮ ಖಾತೆಯನ್ನು 2-3 ದಿನಗಳಲ್ಲಿ ಅಳಿಸಲಾಗುತ್ತದೆ.';
+
+  @override
+  String get ok => 'ಸರಿ';
+
+  @override
   String get guest => 'ಅತಿಥಿ';
 
   @override

@@ -45,6 +45,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logout => 'Logout';
 
   @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountRequestSent =>
+      'Your account delete request was sent successfully. Your account will be deleted within 2-3 days.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
   String get guest => 'Guest';
 
   @override
