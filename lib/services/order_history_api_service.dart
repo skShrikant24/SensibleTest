@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/models/order_history_item.dart';
+import 'package:grabitt/models/order_history_item.dart';
 import 'package:http/http.dart' as http;
 
 const String _baseUrl = 'https://grabitt.in';

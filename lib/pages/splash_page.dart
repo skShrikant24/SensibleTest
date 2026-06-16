@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:GraBiTT/pages/main_shell.dart';
-import 'package:GraBiTT/pages/onboard_page.dart';
-import 'package:GraBiTT/services/auth_service.dart';
+import 'package:grabitt/pages/main_shell.dart';
+import 'package:grabitt/pages/onboard_page.dart';
+import 'package:grabitt/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class SplashPage extends StatefulWidget {

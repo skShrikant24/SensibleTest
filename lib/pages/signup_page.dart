@@ -1,10 +1,10 @@
-import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:grabitt/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:GraBiTT/services/user_api_service.dart';
-import 'package:GraBiTT/pages/login_page.dart';
+import 'package:grabitt/services/user_api_service.dart';
+import 'package:grabitt/pages/login_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});

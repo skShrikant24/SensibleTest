@@ -1,4 +1,4 @@
-import 'package:GraBiTT/models/vendor_product.dart';
+import 'package:grabitt/models/vendor_product.dart';
 class Product {
   final String id;
   final String name;

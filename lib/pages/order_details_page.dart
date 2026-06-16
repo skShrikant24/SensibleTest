@@ -1,6 +1,6 @@
-import 'package:GraBiTT/models/order_history_item.dart';
-import 'package:GraBiTT/services/order_history_api_service.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/models/order_history_item.dart';
+import 'package:grabitt/services/order_history_api_service.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

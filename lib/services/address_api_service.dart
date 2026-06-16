@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/models/address_model.dart';
+import 'package:grabitt/models/address_model.dart';
 import 'package:http/http.dart' as http;
 
 const String _baseUrl = 'https://grabitt.in';

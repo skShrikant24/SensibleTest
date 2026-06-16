@@ -1,14 +1,14 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/app_State/cart.dart';
-import 'package:GraBiTT/app_State/locale_provider.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/models/product.dart';
-import 'package:GraBiTT/models/vendor_product.dart';
-import 'package:GraBiTT/pages/cart_page.dart';
-import 'package:GraBiTT/pages/product_details_page.dart';
-import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:grabitt/app_State/cart.dart';
+import 'package:grabitt/app_State/locale_provider.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/models/product.dart';
+import 'package:grabitt/models/vendor_product.dart';
+import 'package:grabitt/pages/cart_page.dart';
+import 'package:grabitt/pages/product_details_page.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/utils/shared_classes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

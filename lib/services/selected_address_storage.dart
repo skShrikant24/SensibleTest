@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/models/address_model.dart';
+import 'package:grabitt/models/address_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _keySelectedAddress = 'grabitt_selected_address';

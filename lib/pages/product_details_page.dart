@@ -1,6 +1,6 @@
 import 'dart:math' as math;
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';

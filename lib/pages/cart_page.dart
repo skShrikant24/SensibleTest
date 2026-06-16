@@ -1,5 +1,5 @@
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/pages/checkout_page.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/pages/checkout_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

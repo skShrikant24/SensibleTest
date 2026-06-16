@@ -18,15 +18,6 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
     defaultConfig {
         applicationId = "com.infisoft.grabit"
         minSdk = flutter.minSdkVersion
@@ -42,6 +33,23 @@ android {
             isShrinkResources = false
         }
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+
+        // REQUIRED for flutter_local_notifications
+        isCoreLibraryDesugaringEnabled = true
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11.toString()
+    }
+}
+
+dependencies {
+    // Required for notifications (flutter_local_notifications)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

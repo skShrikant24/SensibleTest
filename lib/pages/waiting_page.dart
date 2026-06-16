@@ -30,7 +30,7 @@ class _WaitingPageState extends State<WaitingPage> {
   void initState() {
     super.initState();
     _determineCategory();
-    // TODO: Replace this temporary waiting UI with
+    // Replace this temporary waiting UI with
     // real backend order confirmation + live tracking flow.
     // Tracking page navigation is disabled for now because
     // current tracking screen shows mocked delivered states

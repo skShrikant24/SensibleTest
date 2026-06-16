@@ -1,14 +1,14 @@
-import 'package:GraBiTT/models/vender.dart';
-import 'package:GraBiTT/pages/category_vendors_page.dart';
+import 'package:grabitt/models/vender.dart';
+import 'package:grabitt/pages/category_vendors_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:GraBiTT/app_State/locale_provider.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/pages/components/header_pill.dart';
-import 'package:GraBiTT/pages/cart_page.dart';
+import 'package:grabitt/app_State/locale_provider.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/pages/components/header_pill.dart';
+import 'package:grabitt/pages/cart_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category.dart';
@@ -242,7 +242,7 @@ class _StorePageState extends State<StorePage> {
             children: [
               GestureDetector(
                 onTap: () {
-                  // TODO: Open location selector
+                  // Open location selector
                 },
                 child: Row(
                   children: [
@@ -818,7 +818,7 @@ class Restaurant {
 
 // 🌐 API Function for Restaurants (Production Ready)
 Future<List<Restaurant>> fetchRestaurantsByCategory(String category) async {
-  // TODO: Replace with actual API call when backend is ready
+  // Replace with actual API call when backend is ready
   // Example API endpoint: 'https://grabitt.in/webservice.asmx/GetRestaurantsByCategory?category=${Uri.encodeComponent(category)}'
 
   // For now, return dummy data based on category

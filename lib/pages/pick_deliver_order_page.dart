@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/models/address_model.dart';
-import 'package:GraBiTT/pages/address_management_page.dart';
-import 'package:GraBiTT/services/address_api_service.dart';
-import 'package:GraBiTT/services/auth_service.dart';
-import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/models/address_model.dart';
+import 'package:grabitt/pages/address_management_page.dart';
+import 'package:grabitt/services/address_api_service.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/utils/shared_classes.dart';
 
 /// Pick & Deliver: choose pickup and delivery addresses, place order, get handover code.
 class PickDeliverOrderPage extends StatefulWidget {

@@ -1,9 +1,9 @@
-import 'package:GraBiTT/app_State/locale_provider.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/models/vender.dart';
-import 'package:GraBiTT/pages/store_page.dart';
-import 'package:GraBiTT/pages/vendor_products_page.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/app_State/locale_provider.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/models/vender.dart';
+import 'package:grabitt/pages/store_page.dart';
+import 'package:grabitt/pages/vendor_products_page.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

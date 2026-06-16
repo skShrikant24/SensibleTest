@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 // import 'dart:math';
-import 'package:GraBiTT/services/auth_service.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GraBiTT/pages/main_shell.dart';
-import 'package:GraBiTT/pages/signup_page.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:grabitt/pages/main_shell.dart';
+import 'package:grabitt/pages/signup_page.dart';
 import '../utils/shared_classes.dart';
 
 enum LoginStep { phoneNumber, otp, success }

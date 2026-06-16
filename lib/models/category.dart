@@ -1,4 +1,4 @@
-import 'package:GraBiTT/utils/api_helper.dart';
+import 'package:grabitt/utils/api_helper.dart';
 
 class Category {
   final String id;

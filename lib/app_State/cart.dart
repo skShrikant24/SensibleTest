@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/models/product.dart';
-import 'package:GraBiTT/services/device_service.dart';
+import 'package:grabitt/models/product.dart';
+import 'package:grabitt/services/device_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

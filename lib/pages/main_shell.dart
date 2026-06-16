@@ -1,15 +1,16 @@
 import 'dart:convert';
 
-import 'package:GraBiTT/utils/api_helper.dart';
-import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/widgets/home_banner_slider.dart';
-import 'package:GraBiTT/widgets/update_popup.dart';
+import 'package:grabitt/utils/api_helper.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/widgets/home_banner_slider.dart';
+import 'package:grabitt/widgets/update_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/pages/profile_page.dart';
-import 'package:GraBiTT/pages/store_page.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/pages/profile_page.dart';
+import 'package:grabitt/pages/store_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -35,9 +36,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // App lifecycle observer add
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      //await _checkAppUpdate();
+      await _checkAppUpdate();
       if (!_isDialogShowing) {
-      //  await _checkHomeBanner();
+        await _checkHomeBanner();
       }
     });
   }
@@ -52,13 +53,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   // Called when app resumes from background / Play Store
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    /* if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed) {
       _checkAppUpdate();
       if (!_isDialogShowing) {
         _checkHomeBanner();
       }
     }
-    }*/
   }
 
   Future<void> _checkHomeBanner() async {
@@ -153,7 +153,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   // ================= VERSION CHECK =================
-  /* Future<void> _checkAppUpdate() async {
+  Future<void> _checkAppUpdate() async {
     try {
       final info = await PackageInfo.fromPlatform();
       final currentBuild = int.tryParse(info.buildNumber) ?? 0;
@@ -197,7 +197,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint("Version check error: $e");
     }
-  }*/
+  }
 
   // ================= POPUP =================
 

@@ -1,15 +1,15 @@
-import 'package:GraBiTT/services/address_api_service.dart';
-import 'package:GraBiTT/services/selected_address_storage.dart';
-import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:grabitt/services/address_api_service.dart';
+import 'package:grabitt/services/selected_address_storage.dart';
+import 'package:grabitt/utils/shared_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:GraBiTT/app_State/locale_provider.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/pages/address_management_page.dart';
-import 'package:GraBiTT/pages/login_page.dart';
-import 'package:GraBiTT/pages/order_history_page.dart';
-import 'package:GraBiTT/services/auth_service.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/app_State/locale_provider.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/pages/address_management_page.dart';
+import 'package:grabitt/pages/login_page.dart';
+import 'package:grabitt/pages/order_history_page.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {

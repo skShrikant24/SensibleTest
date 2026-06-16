@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:GraBiTT/pages/main_shell.dart';
-import 'package:GraBiTT/pages/login_page.dart';
-import 'package:GraBiTT/utils/constants.dart';
+import 'package:grabitt/pages/main_shell.dart';
+import 'package:grabitt/pages/login_page.dart';
+import 'package:grabitt/utils/constants.dart';
 import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {

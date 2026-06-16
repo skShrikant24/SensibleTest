@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:GraBiTT/app_State/locale_provider.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
+import 'package:grabitt/app_State/locale_provider.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'pages/splash_page.dart';
 

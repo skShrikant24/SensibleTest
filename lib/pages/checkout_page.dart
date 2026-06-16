@@ -5,18 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import 'package:GraBiTT/app_State/cart.dart';
-import 'package:GraBiTT/l10n/app_localizations.dart';
-import 'package:GraBiTT/models/address_model.dart';
-import 'package:GraBiTT/pages/address_management_page.dart';
-import 'package:GraBiTT/pages/waiting_page.dart';
-import 'package:GraBiTT/services/address_api_service.dart';
-import 'package:GraBiTT/services/auth_service.dart';
-import 'package:GraBiTT/services/payment_service.dart';
-import 'package:GraBiTT/services/razorpay_order_service.dart';
-import 'package:GraBiTT/services/selected_address_storage.dart';
-import 'package:GraBiTT/utils/constants.dart';
-import 'package:GraBiTT/utils/shared_classes.dart';
+import 'package:grabitt/app_State/cart.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/models/address_model.dart';
+import 'package:grabitt/pages/address_management_page.dart';
+import 'package:grabitt/pages/waiting_page.dart';
+import 'package:grabitt/services/address_api_service.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/services/payment_service.dart';
+import 'package:grabitt/services/razorpay_order_service.dart';
+import 'package:grabitt/services/selected_address_storage.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/utils/shared_classes.dart';
 
 import '../services/cart_api_service.dart';
 
