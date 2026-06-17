@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:grabitt/utils/api_helper.dart';
 import 'package:grabitt/utils/constants.dart';
@@ -174,15 +175,38 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       final jsonData = jsonDecode(cleanedBody);
 
       final data = jsonData["data"];
+      if (data == null) return;
 
-      final latestVersion = data["latest_version"].toString();
-      final forceUpdate = data["force_update"] ?? false;
+      // Platform-specific block
+      final platformData = Platform.isIOS ? data["ios"] : data["android"];
 
-      final serverBuild = int.tryParse(data["build"].toString()) ?? 0;
+      if (platformData == null) return;
+
+      final latestVersion = platformData["latest_version"].toString();
+      final forceUpdate = platformData["force_update"] ?? false;
+      final updateAvailable = platformData["update_available"] ?? false;
+
+      final serverBuild = int.tryParse(platformData["build"].toString()) ?? 0;
+
+      // Backend store URL, fallback hardcoded
+      final String marketUri = Platform.isAndroid
+          ? (platformData["market_uri"]?.toString().isNotEmpty == true
+              ? platformData["market_uri"].toString()
+              : "market://details?id=com.infisoft.grabit")
+          : "";
+
+      final String webUri = Platform.isAndroid
+          ? (platformData["web_uri"]?.toString().isNotEmpty == true
+              ? platformData["web_uri"].toString()
+              : "https://play.google.com/store/apps/details?id=com.infisoft.grabit")
+          : (platformData["app_store_url"]?.toString().isNotEmpty == true
+              ? platformData["app_store_url"].toString()
+              : "https://apps.apple.com/app/idYOUR_APP_ID");
+
       final prefs = await SharedPreferences.getInstance();
       final skippedVersion = prefs.getString("skipped_version");
 
-      final shouldUpdate = serverBuild > currentBuild;
+      final shouldUpdate = updateAvailable && serverBuild > currentBuild;
 
       if (!_isDialogShowing &&
           shouldUpdate &&
@@ -192,6 +216,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         _showUpdatePopup(
           latestVersion: latestVersion,
           force: forceUpdate,
+          marketUri: marketUri,
+          webUri: webUri,
         );
       }
     } catch (e) {
@@ -200,11 +226,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   // ================= POPUP =================
-
-  // ignore: unused_element
   void _showUpdatePopup({
     required String latestVersion,
     required bool force,
+    required String marketUri,
+    required String webUri,
   }) {
     showDialog(
       context: context,
@@ -212,26 +238,26 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       builder: (_) => UpdatePopup(
         latestVersion: latestVersion,
 
-        // ✅ Skip (only if not force)
+        // Skip (only if not force)
         onSkip: force
             ? null
             : () {
                 _handleSkip(latestVersion);
               },
 
-        // ✅ Update
+        // Update
         onUpdate: () async {
           if (mounted) {
             Navigator.pop(context);
           }
 
-          await _openPlayStore();
+          await _openStore(marketUri: marketUri, webUri: webUri);
         },
       ),
     ).then((_) async {
-      // ✅ Reset only after popup closes
+      // Reset only after popup closes
       _isDialogShowing = false;
-      //await _checkHomeBanner(); // important
+      await _checkHomeBanner();
     });
   }
 
@@ -243,24 +269,27 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (mounted) Navigator.pop(context);
   }
 
-  // ================= PLAY STORE =================
-
-  Future<void> _openPlayStore() async {
-    const packageName = "com.infisoft.grabit";
-
-    final Uri marketUri = Uri.parse("market://details?id=$packageName");
-    final Uri webUri = Uri.parse(
-      "https://play.google.com/store/apps/details?id=$packageName",
-    );
-
+  // ================= STORE REDIRECT =================
+  Future<void> _openStore({
+    required String marketUri,
+    required String webUri,
+  }) async {
     try {
-      if (await canLaunchUrl(marketUri)) {
-        await launchUrl(marketUri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      if (Platform.isAndroid) {
+        final Uri market = Uri.parse(marketUri);
+        final Uri web = Uri.parse(webUri);
+
+        if (await canLaunchUrl(market)) {
+          await launchUrl(market, mode: LaunchMode.externalApplication);
+        } else {
+          await launchUrl(web, mode: LaunchMode.externalApplication);
+        }
+      } else if (Platform.isIOS) {
+        final Uri appStore = Uri.parse(webUri);
+        await launchUrl(appStore, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      debugPrint("PlayStore launch error: $e");
+      debugPrint("Store launch error: $e");
     }
   }
 
