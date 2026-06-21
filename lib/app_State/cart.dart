@@ -52,8 +52,6 @@ class CartService extends ChangeNotifier {
 
   final List<CartItem> items = [];
 
-  // ===================== CHANGE =====================
-  // Prevent fast multiple taps issue
   final Set<String> _updatingProducts = {};
 
   bool _shouldAnimateCart = false;
@@ -116,7 +114,6 @@ class CartService extends ChangeNotifier {
 
   bool get shouldAnimateCart => _shouldAnimateCart;
 
-  // ===================== CHANGE =====================
   bool isProductUpdating(String productId) {
     return _updatingProducts.contains(productId);
   }
@@ -147,9 +144,7 @@ class CartService extends ChangeNotifier {
         }
       }
       notifyListeners();
-    } catch (_) {
-      // ignore storage errors
-    }
+    } catch (_) {}
   }
 
   Future<void> _saveToStorage() async {
@@ -169,33 +164,6 @@ class CartService extends ChangeNotifier {
     });
   }
 
-  // void addItem(Product product) async {
-  //   // final ctx = await getUserContext();
-  //   // await CartApiService.addToCart(
-  //   //   userId: ctx['userId']!,
-  //   //   macId: ctx['macId']!,
-  //   //   productId: product.id.toString(),
-  //   // );
-  //   final index = items.indexWhere((e) => e.product.id == product.id);
-  //   if (index >= 0) {
-  //     items[index].quantity++;
-  //   } else {
-  //     items.add(CartItem(product: product, quantity: 1));
-  //   }
-  //   final price = double.tryParse(product.discountPrice.toString()) ?? 0.0;
-
-  //   _cartTotal += price;
-  //   _finalTotal += price;
-  //   notifyListeners();
-  //   _saveToStorage();
-
-  //   await _syncAddToServer(product);
-  //   await syncCartFromServer();
-  // }
-
-  // ===================== CHANGE =====================
-// OLD: Future<void> addItem(Product product)
-// NEW: return backend response for UI toast
   Future<Map?> addItem(Product product) async {
     final id = product.id.toString();
     // prevent double tap
@@ -220,8 +188,6 @@ class CartService extends ChangeNotifier {
       notifyListeners();
       _saveToStorage();
 
-      // ===================== CHANGE =====================
-      // capture API response
       final response = await _syncAddToServer(product);
       await syncCartFromServer(
         addressId: _currentAddressId,
@@ -234,21 +200,6 @@ class CartService extends ChangeNotifier {
     }
   }
 
-  // Future<void> _syncAddToServer(Product product) async {
-  //   try {
-  //     final ctx = await getUserContext();
-
-  //     await CartApiService.addToCart(
-  //       userId: ctx['userId']!,
-  //       macId: ctx['macId']!,
-  //       productId: product.id.toString(),
-  //     );
-  //   } catch (_) {}
-  // }
-
-// ===================== CHANGE =====================
-// OLD: Future<void>
-// NEW: return Map response for toast message
   Future<Map<String, dynamic>?> _syncAddToServer(Product product) async {
     try {
       final ctx = await getUserContext();
@@ -275,21 +226,6 @@ class CartService extends ChangeNotifier {
     }
   }
 
-  // void increase(CartItem item) async {
-  //   // final apiId = item.cartId ?? item.product.id;
-  //   // await CartApiService.increaseQty(apiId);
-  //   item.quantity++;
-  //   final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
-  //   _cartTotal += price;
-  //   _finalTotal += price;
-  //   notifyListeners();
-  //   _saveToStorage();
-  //   _syncIncrease(item);
-  //   // await syncCartFromServer();
-  // }
-
-  // ===================== CHANGE =====================
-  // Added fast tap prevention for increase qty
   Future<void> increase(CartItem item) async {
     final id = item.product.id.toString();
 
@@ -332,33 +268,6 @@ class CartService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  // void decrease(CartItem item) async {
-  //   // final apiId = item.cartId ?? item.product.id;
-  //   // await CartApiService.decreaseQty(apiId);
-  //   final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
-  //   if (item.quantity > 1) {
-  //     item.quantity--;
-  //     _cartTotal -= price;
-  //     _finalTotal -= price;
-  //   } else {
-  //     _cartTotal -= price;
-  //     _finalTotal -= price;
-  //     items.remove(item);
-  //   }
-  //   if (_cartTotal < 0) {
-  //     _cartTotal = 0;
-  //   }
-  //   if (_finalTotal < 0) {
-  //     _finalTotal = 0;
-  //   }
-  //   notifyListeners();
-  //   _saveToStorage();
-  //   _syncDecrease(item);
-  //   // await syncCartFromServer();
-  // }
-
-  // ===================== CHANGE =====================
-  // Added fast tap prevention for decrease qty
   Future<void> decrease(CartItem item) async {
     final id = item.product.id.toString();
 
@@ -415,8 +324,6 @@ class CartService extends ChangeNotifier {
   }
 
   Future<void> remove(CartItem item) async {
-    // final apiId = item.cartId ?? item.product.id;
-    // await CartApiService.removeItem(apiId);
     final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
     _cartTotal -= (price * item.quantity);
     _finalTotal -= (price * item.quantity);
@@ -429,8 +336,7 @@ class CartService extends ChangeNotifier {
     items.remove(item);
     notifyListeners();
     _saveToStorage();
-   await _syncRemove(item);
-    // await syncCartFromServer();
+    await _syncRemove(item);
   }
 
   Future<void> _syncRemove(CartItem item) async {
@@ -462,7 +368,6 @@ class CartService extends ChangeNotifier {
     notifyListeners();
     try {
       final ctx = await getUserContext();
-      // optional safety only (no early return)
       final userId = ctx['userId'] ?? '';
       final macId = ctx['macId'] ?? '';
 
