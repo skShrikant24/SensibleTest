@@ -1,12 +1,11 @@
 import 'dart:convert';
 
-import 'package:grabitt/models/product.dart';
-import 'package:grabitt/services/device_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:grabitt/models/product.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/services/cart_api_service.dart';
+import 'package:grabitt/services/device_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../services/auth_service.dart';
-import '../services/cart_api_service.dart';
 
 const String _cartStorageKey = 'grabbit_cart';
 
@@ -52,41 +51,43 @@ class CartService extends ChangeNotifier {
 
   final List<CartItem> items = [];
 
+  // Prevents fast multiple taps from firing duplicate API calls.
   final Set<String> _updatingProducts = {};
 
   bool _shouldAnimateCart = false;
+
+  // Server-authoritative totals. Only set by syncCartFromServer().
+  // Never manually incremented/decremented on local mutations.
   double _cartTotal = 0.0;
   double _deliveryCharge = 0.0;
-
   double _gst = 0.0;
   int _gstPercent = 0;
-
   bool _isNewUserDiscountApplied = false;
   int _newUserDiscountPercent = 0;
   double _newUserDiscountAmount = 0.0;
-
   bool _isEvenOrderDiscountApplied = false;
   int _evenOrderDiscountPercent = 0;
   double _evenOrderDiscountAmount = 0.0;
-
   double _serviceFee = 0.0;
-
   bool _isHandlingFeeApplied = false;
   double _handlingFee = 0.0;
-  String _handlingFeeText = "";
-
+  String _handlingFeeText = '';
   double _packagingFee = 0.0;
-
   double _finalTotal = 0.0;
   bool _isSyncingCart = false;
-  // NEW
   String? _currentAddressId;
 
+  // ---------------------------------------------------------------------------
+  // Getters
+  // ---------------------------------------------------------------------------
+
+  /// Before the first server sync, falls back to a live local calculation so
+  /// the UI always shows a reasonable value.
   double get subtotal => _cartTotal > 0
       ? _cartTotal
       : items.fold(0.0, (sum, item) => sum + item.total);
-  double get deliveryCharge => _deliveryCharge;
 
+  double get deliveryCharge => _deliveryCharge;
   double get gst => _gst;
   int get gstPercent => _gstPercent;
 
@@ -106,29 +107,34 @@ class CartService extends ChangeNotifier {
 
   double get packagingFee => _packagingFee;
 
+  /// Falls back to subtotal until the server returns a FinalTotal.
   double get finalTotal => _finalTotal > 0 ? _finalTotal : subtotal;
 
   bool get isSyncingCart => _isSyncingCart;
-
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
-
   bool get shouldAnimateCart => _shouldAnimateCart;
 
-  bool isProductUpdating(String productId) {
-    return _updatingProducts.contains(productId);
-  }
+  bool isProductUpdating(String productId) =>
+      _updatingProducts.contains(productId);
+
+  // ---------------------------------------------------------------------------
+  // User context
+  // ---------------------------------------------------------------------------
 
   Future<Map<String, String>> getUserContext() async {
     final user = await AuthService.instance.getSavedUser();
     final deviceId = await DeviceService.instance.getDeviceId();
-
     return {
-      "userId": user?['ID']?.toString() ?? '',
-      "macId": deviceId,
+      'userId': user?['ID']?.toString() ?? '',
+      'macId': deviceId,
     };
   }
 
-  /// Call once at app start to restore cart from storage.
+  // ---------------------------------------------------------------------------
+  // Local storage
+  // ---------------------------------------------------------------------------
+
+  /// Call once at app start to restore cart from local storage.
   Future<void> loadFromStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -144,16 +150,24 @@ class CartService extends ChangeNotifier {
         }
       }
       notifyListeners();
-    } catch (_) {}
+    } catch (_) {
+      // Storage errors are non-fatal; cart starts empty.
+    }
   }
 
   Future<void> _saveToStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final list = items.map((e) => e.toJson()).toList();
-      await prefs.setString(_cartStorageKey, jsonEncode(list));
+      await prefs.setString(
+        _cartStorageKey,
+        jsonEncode(items.map((e) => e.toJson()).toList()),
+      );
     } catch (_) {}
   }
+
+  // ---------------------------------------------------------------------------
+  // Animation
+  // ---------------------------------------------------------------------------
 
   void triggerCartAnimation() {
     _shouldAnimateCart = true;
@@ -164,86 +178,51 @@ class CartService extends ChangeNotifier {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Cart mutations
+  //
+  // Pattern: optimistic update on `items` list only → notify UI → sync server.
+  // Totals (_cartTotal, _finalTotal, etc.) are NEVER touched here;
+  // syncCartFromServer() is the single place that sets them.
+  // The `subtotal` getter provides a live local fallback until server responds.
+  // ---------------------------------------------------------------------------
+
+  /// Adds [product] to cart. Returns the backend response so the UI can show
+  /// a toast (e.g. a server message or confirmation).
   Future<Map?> addItem(Product product) async {
     final id = product.id.toString();
-    // prevent double tap
     if (_updatingProducts.contains(id)) return null;
     _updatingProducts.add(id);
-    // notifyListeners();
 
     try {
       final index = items.indexWhere((e) => e.product.id == product.id);
-
       if (index >= 0) {
         items[index].quantity++;
       } else {
-        items.add(CartItem(product: product, quantity: 1));
+        items.add(CartItem(product: product));
       }
-
-      final price = double.tryParse(product.discountPrice.toString()) ?? 0.0;
-
-      _cartTotal += price;
-      _finalTotal += price;
 
       notifyListeners();
       _saveToStorage();
 
       final response = await _syncAddToServer(product);
-      await syncCartFromServer(
-        addressId: _currentAddressId,
-      );
-
-      return response; // <-- UI ke liye message return
+      await syncCartFromServer(addressId: _currentAddressId);
+      return response;
     } finally {
       _updatingProducts.remove(id);
       notifyListeners();
     }
   }
 
-  Future<Map<String, dynamic>?> _syncAddToServer(Product product) async {
-    try {
-      final ctx = await getUserContext();
-
-      final res = await CartApiService.addToCart(
-        userId: ctx['userId']!,
-        macId: ctx['macId']!,
-        productId: product.id.toString(),
-      );
-
-      if (res is Map<String, dynamic>) return res;
-
-      if (res is String) {
-        try {
-          return jsonDecode(res);
-        } catch (_) {
-          return {"status": "error", "message": res};
-        }
-      }
-
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> increase(CartItem item) async {
     final id = item.product.id.toString();
-
     if (_updatingProducts.contains(id)) return;
     _updatingProducts.add(id);
 
     try {
       item.quantity++;
-
-      final price =
-          double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
-
-      _cartTotal += price;
-      _finalTotal += price;
-
       notifyListeners();
       _saveToStorage();
-
       await _syncIncrease(item);
     } finally {
       _updatingProducts.remove(id);
@@ -251,54 +230,19 @@ class CartService extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncIncrease(CartItem item) async {
-    try {
-      if (item.cartId == null) {
-        await syncCartFromServer(
-          addressId: _currentAddressId,
-        );
-      }
-      final apiId = item.cartId;
-      if (apiId == null) return;
-      await CartApiService.increaseQty(apiId);
-      // NEW
-      await syncCartFromServer(
-        addressId: _currentAddressId,
-      );
-    } catch (_) {}
-  }
-
   Future<void> decrease(CartItem item) async {
     final id = item.product.id.toString();
-
     if (_updatingProducts.contains(id)) return;
     _updatingProducts.add(id);
 
     try {
-      final price =
-          double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
-
       if (item.quantity > 1) {
         item.quantity--;
-        _cartTotal -= price;
-        _finalTotal -= price;
       } else {
-        _cartTotal -= price;
-        _finalTotal -= price;
         items.remove(item);
       }
-
-      if (_cartTotal < 0) {
-        _cartTotal = 0;
-      }
-
-      if (_finalTotal < 0) {
-        _finalTotal = 0;
-      }
-
       notifyListeners();
       _saveToStorage();
-
       await _syncDecrease(item);
     } finally {
       _updatingProducts.remove(id);
@@ -306,134 +250,90 @@ class CartService extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncDecrease(CartItem item) async {
-    try {
-      if (item.cartId == null) {
-        await syncCartFromServer(
-          addressId: _currentAddressId,
-        );
-      }
-      final apiId = item.cartId;
-      if (apiId == null) return;
-      await CartApiService.decreaseQty(apiId);
-      // NEW
-      await syncCartFromServer(
-        addressId: _currentAddressId,
-      );
-    } catch (_) {}
-  }
-
   Future<void> remove(CartItem item) async {
-    final price = double.tryParse(item.product.discountPrice.toString()) ?? 0.0;
-    _cartTotal -= (price * item.quantity);
-    _finalTotal -= (price * item.quantity);
-    if (_cartTotal < 0) {
-      _cartTotal = 0;
-    }
-    if (_finalTotal < 0) {
-      _finalTotal = 0;
-    }
     items.remove(item);
     notifyListeners();
     _saveToStorage();
     await _syncRemove(item);
   }
 
-  Future<void> _syncRemove(CartItem item) async {
-    try {
-      if (item.cartId == null) {
-        await syncCartFromServer(
-          addressId: _currentAddressId,
-        );
-      }
-      final apiId = item.cartId;
-      if (apiId == null) return;
-      await CartApiService.removeItem(apiId);
-      // NEW
-      await syncCartFromServer(
-        addressId: _currentAddressId,
-      );
-    } catch (_) {}
+  /// Clears all cart data and persists the empty state.
+  void clearCart() {
+    items.clear();
+    _resetTotals();
+    notifyListeners();
+    _saveToStorage();
   }
 
-  Future<void> syncCartFromServer({
-    String? addressId,
-  }) async {
-    // set address safely
+  // ---------------------------------------------------------------------------
+  // Server sync
+  // ---------------------------------------------------------------------------
+
+  Future<void> syncCartFromServer({String? addressId}) async {
     if (addressId != null && addressId.isNotEmpty) {
       _currentAddressId = addressId;
     }
 
     _isSyncingCart = true;
     notifyListeners();
+
     try {
       final ctx = await getUserContext();
       final userId = ctx['userId'] ?? '';
       final macId = ctx['macId'] ?? '';
+      if (userId.isEmpty || macId.isEmpty) return;
 
-      if (userId.isEmpty || macId.isEmpty) {
-        return;
-      }
       final response = await CartApiService.getCart(
         userId: userId,
         macId: macId,
-        lang: "en",
+        lang: 'en',
         addressId: _currentAddressId ?? '',
       );
-
       if (response == null) return;
 
       items.clear();
 
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
-
       _gst = _toDouble(response['GST']);
       _gstPercent =
           int.tryParse(response['GSTPercent']?.toString() ?? '0') ?? 0;
 
-      _isNewUserDiscountApplied = response['IsNewUserDiscountApplied'] == true;
-
-      _newUserDiscountPercent =
-          int.tryParse(response['NewUserDiscountPercent']?.toString() ?? '0') ??
-              0;
-
+      _isNewUserDiscountApplied =
+          response['IsNewUserDiscountApplied'] == true;
+      _newUserDiscountPercent = int.tryParse(
+              response['NewUserDiscountPercent']?.toString() ?? '0') ??
+          0;
       _newUserDiscountAmount = _toDouble(response['NewUserDiscountAmount']);
 
       _isEvenOrderDiscountApplied =
           response['IsEvenOrderDiscountApplied'] == true;
-
       _evenOrderDiscountPercent = int.tryParse(
               response['EvenOrderDiscountPercent']?.toString() ?? '0') ??
           0;
-
-      _evenOrderDiscountAmount = _toDouble(response['EvenOrderDiscountAmount']);
+      _evenOrderDiscountAmount =
+          _toDouble(response['EvenOrderDiscountAmount']);
 
       _serviceFee = _toDouble(response['ServiceFee']);
-
       _isHandlingFeeApplied = response['IsHandlingFeeApplied'] == true;
-
       _handlingFee = _toDouble(response['HandlingFee']);
-
-      _handlingFeeText = response['HandlingFeeText']?.toString() ?? "";
-
+      _handlingFeeText = response['HandlingFeeText']?.toString() ?? '';
       _packagingFee = _toDouble(response['PackagingFee']);
-
       _finalTotal = _toDouble(response['FinalTotal']);
 
       final rawItems = response['CartItems'];
       if (rawItems is List) {
         for (final rawItem in rawItems) {
           if (rawItem is! Map) continue;
-          final item = Map<String, dynamic>.from(rawItem);
+          final map = Map<String, dynamic>.from(rawItem);
           final product = Product.fromJson({
-            'ProductID': item['ProductID']?.toString() ?? '',
-            'ProductName': item['ProductName']?.toString() ?? '',
-            'CategoryName': item['CategoryName']?.toString() ?? '',
-            'OriginalPrice': item['OriginalPrice']?.toString() ?? '0',
-            'DiscountPrice': item['DiscountPrice']?.toString() ?? '0',
-            'ProductImage':
-                CartApiService.resolveImageUrl(item['Image']?.toString() ?? ''),
+            'ProductID': map['ProductID']?.toString() ?? '',
+            'ProductName': map['ProductName']?.toString() ?? '',
+            'CategoryName': map['CategoryName']?.toString() ?? '',
+            'OriginalPrice': map['OriginalPrice']?.toString() ?? '0',
+            'DiscountPrice': map['DiscountPrice']?.toString() ?? '0',
+            'ProductImage': CartApiService.resolveImageUrl(
+                map['Image']?.toString() ?? ''),
             'Image1': '',
             'Image2': '',
             'Image3': '',
@@ -441,50 +341,102 @@ class CartService extends ChangeNotifier {
             'Image5': '',
           });
 
-          items.add(
-            CartItem(
-              product: product,
-              quantity: int.tryParse(item['Quantity']?.toString() ?? '1') ?? 1,
-              cartId: item['ID']?.toString(),
-            ),
-          );
+          items.add(CartItem(
+            product: product,
+            quantity:
+                int.tryParse(map['Quantity']?.toString() ?? '1') ?? 1,
+            cartId: map['ID']?.toString(),
+          ));
         }
       }
     } finally {
       _isSyncingCart = false;
       notifyListeners();
     }
+
     _saveToStorage();
   }
 
-  /// Clears cart and persists (e.g. after order placed).
-  void clearCart() {
-    items.clear();
+  // ---------------------------------------------------------------------------
+  // Private — server sync helpers
+  // ---------------------------------------------------------------------------
+
+  Future<Map<String, dynamic>?> _syncAddToServer(Product product) async {
+    try {
+      final ctx = await getUserContext();
+      final res = await CartApiService.addToCart(
+        userId: ctx['userId']!,
+        macId: ctx['macId']!,
+        productId: product.id.toString(),
+      );
+      if (res is Map<String, dynamic>) return res;
+      if (res is String) {
+        try {
+          return jsonDecode(res);
+        } catch (_) {
+          return {'status': 'error', 'message': res};
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _syncIncrease(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer(addressId: _currentAddressId);
+        return;
+      }
+      await CartApiService.increaseQty(item.cartId!);
+      await syncCartFromServer(addressId: _currentAddressId);
+    } catch (_) {}
+  }
+
+  Future<void> _syncDecrease(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer(addressId: _currentAddressId);
+        return;
+      }
+      await CartApiService.decreaseQty(item.cartId!);
+      await syncCartFromServer(addressId: _currentAddressId);
+    } catch (_) {}
+  }
+
+  Future<void> _syncRemove(CartItem item) async {
+    try {
+      if (item.cartId == null) {
+        await syncCartFromServer(addressId: _currentAddressId);
+        return;
+      }
+      await CartApiService.removeItem(item.cartId!);
+      await syncCartFromServer(addressId: _currentAddressId);
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Utilities
+  // ---------------------------------------------------------------------------
+
+  void _resetTotals() {
     _cartTotal = 0.0;
     _deliveryCharge = 0.0;
-
     _gst = 0.0;
     _gstPercent = 0;
-
     _isNewUserDiscountApplied = false;
     _newUserDiscountPercent = 0;
     _newUserDiscountAmount = 0.0;
-
     _isEvenOrderDiscountApplied = false;
     _evenOrderDiscountPercent = 0;
     _evenOrderDiscountAmount = 0.0;
-
     _serviceFee = 0.0;
-
     _isHandlingFeeApplied = false;
     _handlingFee = 0.0;
-    _handlingFeeText = "";
-
+    _handlingFeeText = '';
     _packagingFee = 0.0;
-
     _finalTotal = 0.0;
-    notifyListeners();
-    _saveToStorage();
   }
 
   double _toDouble(dynamic value) {
