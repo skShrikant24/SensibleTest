@@ -5,8 +5,10 @@ import 'package:grabitt/models/product.dart';
 import 'package:grabitt/services/auth_service.dart';
 import 'package:grabitt/services/cart_api_service.dart';
 import 'package:grabitt/services/device_service.dart';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String _tag = 'CartService';
 const String _cartStorageKey = 'grabbit_cart';
 
 class CartItem {
@@ -150,7 +152,8 @@ class CartService extends ChangeNotifier {
         }
       }
       notifyListeners();
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e(_tag, 'loadFromStorage failed', e, st);
       // Storage errors are non-fatal; cart starts empty.
     }
   }
@@ -162,7 +165,9 @@ class CartService extends ChangeNotifier {
         _cartStorageKey,
         jsonEncode(items.map((e) => e.toJson()).toList()),
       );
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.e(_tag, '_saveToStorage failed', e, st);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -281,7 +286,10 @@ class CartService extends ChangeNotifier {
       final ctx = await getUserContext();
       final userId = ctx['userId'] ?? '';
       final macId = ctx['macId'] ?? '';
-      if (userId.isEmpty || macId.isEmpty) return;
+      if (userId.isEmpty || macId.isEmpty) {
+        AppLogger.w(_tag, 'syncCartFromServer: userId or macId is empty — skipping sync');
+        return;
+      }
 
       final response = await CartApiService.getCart(
         userId: userId,
@@ -289,7 +297,10 @@ class CartService extends ChangeNotifier {
         lang: 'en',
         addressId: _currentAddressId ?? '',
       );
-      if (response == null) return;
+      if (response == null) {
+        AppLogger.w(_tag, 'syncCartFromServer: server returned null');
+        return;
+      }
 
       items.clear();
 
@@ -378,7 +389,8 @@ class CartService extends ChangeNotifier {
         }
       }
       return null;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e(_tag, '_syncAddToServer failed for product ${product.id}', e, st);
       return null;
     }
   }
@@ -386,34 +398,43 @@ class CartService extends ChangeNotifier {
   Future<void> _syncIncrease(CartItem item) async {
     try {
       if (item.cartId == null) {
+        AppLogger.w(_tag, '_syncIncrease: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
       await CartApiService.increaseQty(item.cartId!);
       await syncCartFromServer(addressId: _currentAddressId);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.e(_tag, '_syncIncrease failed for cartId ${item.cartId}', e, st);
+    }
   }
 
   Future<void> _syncDecrease(CartItem item) async {
     try {
       if (item.cartId == null) {
+        AppLogger.w(_tag, '_syncDecrease: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
       await CartApiService.decreaseQty(item.cartId!);
       await syncCartFromServer(addressId: _currentAddressId);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.e(_tag, '_syncDecrease failed for cartId ${item.cartId}', e, st);
+    }
   }
 
   Future<void> _syncRemove(CartItem item) async {
     try {
       if (item.cartId == null) {
+        AppLogger.w(_tag, '_syncRemove: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
       await CartApiService.removeItem(item.cartId!);
       await syncCartFromServer(addressId: _currentAddressId);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.e(_tag, '_syncRemove failed for cartId ${item.cartId}', e, st);
+    }
   }
 
   // ---------------------------------------------------------------------------

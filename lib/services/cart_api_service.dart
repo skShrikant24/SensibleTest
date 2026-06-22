@@ -1,44 +1,37 @@
 import 'dart:convert';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:http/http.dart' as http;
+
+const String _tag = 'CartApiService';
 
 class CartApiService {
   static const String baseUrl = "https://grabitt.in/webservice.asmx";
   static const String _imageBaseUrl = "https://grabitt.in";
 
   static Future<dynamic> _get(String endpoint) async {
+    final url = '$baseUrl/$endpoint';
     try {
-      final url = "$baseUrl/$endpoint";
       final response = await http.get(Uri.parse(url));
 
-      // print(url);
-      // print(response.body);
-
-      if (response.statusCode == 200) {
-        final body = response.body;
-
-     // ===================== CHANGE =====================
-      // OLD: only string "Success"
-      // NEW: handle JSON inside XML response safely
-        if (body.contains("<string")) {
-          final cleaned = body
-              .replaceAll(RegExp(r'<[^>]*>'), '') // remove XML tags
-              .trim();
-
-          try {
-            final decoded = jsonDecode(cleaned);
-            return decoded; // <-- Map return hoga
-          } catch (_) {
-            return cleaned; // fallback string
-          }
-        }
-
-        // fallback JSON (if any API returns JSON)
-        return jsonDecode(body);
-      } else {
-        throw Exception("API Error: ${response.statusCode}");
+      if (response.statusCode != 200) {
+        AppLogger.w(_tag, '_get: HTTP ${response.statusCode} — $url');
+        return null;
       }
-    } catch (e) {
-      // print("API ERROR: $e");
+
+      final body = response.body;
+
+      if (body.contains('<string')) {
+        final cleaned = body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+        try {
+          return jsonDecode(cleaned);
+        } catch (_) {
+          return cleaned; // fallback: return raw string
+        }
+      }
+
+      return jsonDecode(body);
+    } catch (e, st) {
+      AppLogger.e(_tag, '_get failed — $url', e, st);
       return null;
     }
   }
@@ -60,27 +53,29 @@ class CartApiService {
     String? addressId,
   }) async {
     final response = await _get(
-    "GetCart?UserID=$userId&MacID=$macId&lang=$lang&AddressID=$addressId",
-  );
+      "GetCart?UserID=$userId&MacID=$macId&lang=$lang&AddressID=$addressId",
+    );
     if (response == null) return null;
 
-    if (response is Map<String, dynamic>) {
-      return response;
-    }
+    if (response is Map<String, dynamic>) return response;
 
     if (response is String) {
       final trimmed = response.trim();
+      AppLogger.d(_tag, 'getCart: raw string response → "$trimmed"');
       if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
       if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
         try {
           final decoded = jsonDecode(trimmed);
           if (decoded is Map<String, dynamic>) return decoded;
-        } catch (_) {
+        } catch (e, st) {
+          AppLogger.e(_tag, 'getCart: failed to parse string response', e, st);
           return null;
         }
       }
     }
 
+    AppLogger.w(
+        _tag, 'getCart: unexpected response type — ${response.runtimeType}');
     return null;
   }
 

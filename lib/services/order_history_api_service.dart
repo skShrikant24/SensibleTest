@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:grabitt/models/order_history_item.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/app_logger.dart';
+
+const String _tag = 'OrderHistoryApiService';
 const String _baseUrl = 'https://grabitt.in';
 
 String _cleanResponse(String body) {
@@ -16,16 +19,24 @@ Future<List<OrderHistoryItem>> getOrderHistoryByUser(String userId) async {
       queryParameters: {'UserID': userId},
     );
     final response = await http.get(uri);
-    if (response.statusCode != 200) return [];
+    if (response.statusCode != 200) {
+      AppLogger.w(_tag, 'getOrderHistoryByUser: HTTP ${response.statusCode}');
+      return [];
+    }
     final cleaned = _cleanResponse(response.body);
     if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
     final decoded = json.decode(cleaned);
     // print(decoded);
-    if (decoded is! List) return [];
+    if (decoded is! List) {
+      AppLogger.w(_tag, 'getOrderHistoryByUser: unexpected response type');
+      return [];
+    }
     return decoded
         .map((e) => OrderHistoryItem.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-  } catch (_) {
+  } catch (e, st) {
+    AppLogger.e(
+        _tag, 'getOrderHistoryByUser: failed to fetch order history', e, st);
     return [];
   }
 }
@@ -44,23 +55,26 @@ Future<OrderHistoryItem?> getOrderDetails(String orderId) async {
 
     final response = await http.get(uri);
 
-    if (response.statusCode != 200) return null;
+    if (response.statusCode != 200) {
+      AppLogger.w(_tag, 'getOrderDetails: HTTP ${response.statusCode}');
+      return null;
+    }
 
     final cleaned = _cleanResponse(response.body);
 
-    if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') {
-      return null;
-    }
+    if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return null;
 
     final decoded = json.decode(cleaned);
 
     // API returns single object
     if (decoded is! Map<String, dynamic>) {
+      AppLogger.w(_tag, 'getOrderDetails: unexpected response type');
       return null;
     }
 
     return OrderHistoryItem.fromJson(decoded);
-  } catch (_) {
+  } catch (e, st) {
+    AppLogger.e(_tag, 'getOrderDetails failed', e, st);
     return null;
   }
 }
@@ -81,10 +95,18 @@ Future<bool> submitRiderRating({
       },
     );
     final response = await http.get(uri);
-    if (response.statusCode != 200) return false;
+    if (response.statusCode != 200) {
+      AppLogger.w(_tag, 'submitRiderRating: HTTP ${response.statusCode}');
+      return false;
+    }
     final cleaned = _cleanResponse(response.body);
-    return cleaned.toLowerCase() == 'success';
-  } catch (_) {
+    final success = cleaned.toLowerCase() == 'success';
+    if (!success) {
+      AppLogger.w(_tag, 'submitRiderRating: unexpected response: $cleaned');
+    }
+    return success;
+  } catch (e, st) {
+    AppLogger.e(_tag, 'submitRiderRating failed', e, st);
     return false;
   }
 }

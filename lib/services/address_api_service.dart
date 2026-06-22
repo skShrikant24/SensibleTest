@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:grabitt/models/address_model.dart';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:http/http.dart' as http;
 
+const String _tag = 'AddressApiService';
 const String _baseUrl = 'https://grabitt.in';
 
 /// Cleans XML-wrapped response and returns inner string (e.g. JSON array).
@@ -19,17 +21,22 @@ Future<List<AddressModel>> getAddressByUser(String userID) async {
       queryParameters: {'UserID': userID},
     );
     final response = await http.get(uri);
-    if (response.statusCode != 200) return [];
+    if (response.statusCode != 200) {
+      AppLogger.w(_tag, 'getAddressByUser: HTTP ${response.statusCode}');
+      return [];
+    }
     final cleaned = _cleanResponse(response.body);
-    // print("--------adress----GetAddressByUser--");
-    // print(cleaned);
     if (cleaned.isEmpty || cleaned.toLowerCase() == 'fail') return [];
     final decoded = json.decode(cleaned);
-    if (decoded is! List) return [];
+    if (decoded is! List) {
+      AppLogger.w(_tag, 'getAddressByUser: unexpected response type');
+      return [];
+    }
     return decoded
         .map((e) => AddressModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-  } catch (_) {
+  } catch (e, st) {
+    AppLogger.e(_tag, 'getAddressByUser: failed to fetch addresses', e, st);
     return [];
   }
 }
@@ -68,26 +75,19 @@ Future<bool> addAddress({
         'lan': lan,
       },
     );
-    // print('\n========== ADD ADDRESS ==========');
-    // print('REQUEST URL: ${uri.toString()}');
 
     final response = await http.get(uri);
-    // print('STATUS CODE: ${response.statusCode}');
-    // print('HEADERS: ${response.headers}');
-    // print('RAW RESPONSE: ${response.body}');
     final cleaned = _cleanResponse(response.body);
-    // print('CLEANED RESPONSE: $cleaned');
-    // print(
-    //     'SUCCESS: ${response.statusCode == 200 && cleaned.isNotEmpty && cleaned.toLowerCase() != 'fail'}');
-    // print('================================\n');
-    return response.statusCode == 200 &&
+    final success = response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
-  } catch (_) {
-    // print('\n========== ADD ADDRESS ERROR ==========');
-    // print('ERROR: $e');
-    // print('STACKTRACE: $s');
-    // print('=======================================\n');
+    if (!success) {
+      AppLogger.w(_tag,
+          'addAddress: failed — HTTP ${response.statusCode}, body: $cleaned');
+    }
+    return success;
+  } catch (e, st) {
+    AppLogger.e(_tag, 'addAddress failed', e, st);
     return false;
   }
 }
@@ -126,25 +126,19 @@ Future<bool> updateAddress({
         'lan': lan,
       },
     );
-    // print('\n========== UPDATE ADDRESS ==========');
-    // print('REQUEST URL: ${uri.toString()}');
+
     final response = await http.get(uri);
-    // print('STATUS CODE: ${response.statusCode}');
-    // print('HEADERS: ${response.headers}');
-    // print('RAW RESPONSE: ${response.body}');
     final cleaned = _cleanResponse(response.body);
-    // print('CLEANED RESPONSE: $cleaned');
-    // print(
-    //     'SUCCESS: ${response.statusCode == 200 && cleaned.isNotEmpty && cleaned.toLowerCase() != 'fail'}');
-    // print('===================================\n');
-    return response.statusCode == 200 &&
+    final success = response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
-  } catch (_) {
-    // print('\n========== UPDATE ADDRESS ERROR ==========');
-    // print('ERROR: $e');
-    // print('STACKTRACE: $s');
-    // print('==========================================\n');
+    if (!success) {
+      AppLogger.w(_tag,
+          'updateAddress: failed — HTTP ${response.statusCode}, body: $cleaned');
+    }
+    return success;
+  } catch (e, st) {
+    AppLogger.e(_tag, 'updateAddress failed', e, st);
     return false;
   }
 }
@@ -158,10 +152,16 @@ Future<bool> deleteAddress(String id) async {
     );
     final response = await http.get(uri);
     final cleaned = _cleanResponse(response.body);
-    return response.statusCode == 200 &&
+    final success = response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
-  } catch (_) {
+    if (!success) {
+      AppLogger.w(_tag,
+          'deleteAddress: failed — HTTP ${response.statusCode}, body: $cleaned');
+    }
+    return success;
+  } catch (e, st) {
+    AppLogger.e(_tag, 'deleteAddress failed', e, st);
     return false;
   }
 }
@@ -209,20 +209,16 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
         'UserID': userId,
       },
     );
-    // print("Check Radius URL => $uri");
     final response = await http.get(uri);
-    // print("Check Radius Status => ${response.statusCode}");
-    // print("Check Radius Raw => ${response.body}");
     if (response.statusCode != 200) {
+      AppLogger.w(_tag, 'checkOrderRadius: HTTP ${response.statusCode}');
       return const OrderRadiusCheckResult(
         allowed: false,
         rawResponse: 'HTTP error',
       );
     }
     final cleaned = _cleanResponse(response.body);
-    // print(
-    //     "----WebService.asmx/CheckOrderRadius--AddressID----$addressId--UserID----$userId");
-    // print(cleaned);
+
     if (cleaned.toLowerCase() == 'success') {
       return OrderRadiusCheckResult(allowed: true, rawResponse: cleaned);
     }
@@ -240,9 +236,10 @@ Future<OrderRadiusCheckResult> checkOrderRadius(
         currentDistanceMeters: currentDistanceMeters,
       );
     }
+    AppLogger.w(_tag, 'checkOrderRadius: unexpected response: $cleaned');
     return OrderRadiusCheckResult(allowed: false, rawResponse: cleaned);
-  } catch (e) {
-    // print("Check Radius Error => $e");
+  } catch (e, st) {
+    AppLogger.e(_tag, 'checkOrderRadius failed', e, st);
     return const OrderRadiusCheckResult(
       allowed: false,
       rawResponse: 'Network error',

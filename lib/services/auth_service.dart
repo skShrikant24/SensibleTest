@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String _tag = 'AuthService';
 const String _baseUrl = 'https://grabitt.in';
 const String _keyUser = 'grabitt_logged_in_user';
 const String _keyIsLoggedIn = 'grabitt_is_logged_in';
@@ -48,6 +50,7 @@ class AuthService {
     try {
       final response = await http.get(uri);
       if (response.statusCode != 200) {
+        AppLogger.w(_tag, 'getUserByPhone: HTTP ${response.statusCode}');
         return const GetUserByPhoneResult(found: false);
       }
       final raw = response.body.trim();
@@ -57,7 +60,8 @@ class AuthService {
       }
       final user = json.decode(cleaned) as Map<String, dynamic>?;
       return GetUserByPhoneResult(found: true, user: user);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e(_tag, 'getUserByPhone failed', e, st);
       return const GetUserByPhoneResult(found: false);
     }
   }
@@ -75,6 +79,7 @@ class AuthService {
     try {
       final response = await http.get(uri);
       if (response.statusCode != 200) {
+        AppLogger.w(_tag, 'sendOtp: HTTP ${response.statusCode}');
         return SendOtpResult(success: false, message: 'Server error');
       }
       final raw = response.body.trim();
@@ -92,10 +97,12 @@ class AuthService {
           message: msg,
           otp: otp,
         );
-      } catch (_) {
+      } catch (e, st) {
+        AppLogger.e(_tag, 'sendOtp: failed to parse JSON response', e, st);
         return SendOtpResult(success: false, message: cleaned);
       }
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e(_tag, 'sendOtp failed', e, st);
       return SendOtpResult(success: false, message: e.toString());
     }
   }
@@ -116,21 +123,17 @@ class AuthService {
       final response = await http.get(uri);
 
       if (response.statusCode != 200) {
-        return const LoginResult(
-          success: false,
-          message: 'Server error',
-        );
+        AppLogger.w(_tag, 'userLogin: HTTP ${response.statusCode}');
+        return const LoginResult(success: false, message: 'Server error');
       }
 
       final raw = response.body.trim();
-
       final cleaned = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
 
       if (cleaned.isEmpty) {
+        AppLogger.w(_tag, 'userLogin: empty response body');
         return const LoginResult(
-          success: false,
-          message: 'Something went wrong',
-        );
+            success: false, message: 'Something went wrong');
       }
 
       final map = json.decode(cleaned) as Map<String, dynamic>;
@@ -142,11 +145,9 @@ class AuthService {
         success: status.toLowerCase() == 'success',
         message: message,
       );
-    } catch (e) {
-      return LoginResult(
-        success: false,
-        message: e.toString(),
-      );
+    } catch (e, st) {
+      AppLogger.e(_tag, 'userLogin failed', e, st);
+      return LoginResult(success: false, message: e.toString());
     }
   }
 
@@ -165,7 +166,8 @@ class AuthService {
     if (jsonStr == null || jsonStr.isEmpty) return null;
     try {
       return json.decode(jsonStr) as Map<String, dynamic>?;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e(_tag, 'getSavedUser: failed to decode stored user', e, st);
       return null;
     }
   }
