@@ -10,8 +10,20 @@ class ToastMessage {
     String? actionText,
     VoidCallback? onActionTap,
   }) {
-    final overlay = Overlay.of(context);
+    // Guard: if the context has no overlay (e.g. called during dispose), skip.
+    final overlayState = Overlay.of(context, rootOverlay: true);
     late OverlayEntry overlayEntry;
+    bool removed = false;
+
+    void safeRemove() {
+      // Prevent double-remove — both the timer and action tap call onDismiss.
+      if (removed) return;
+      removed = true;
+      // overlayEntry.mounted is true only while inserted into an overlay.
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    }
 
     overlayEntry = OverlayEntry(
       builder: (context) => _BottomToastWidget(
@@ -21,11 +33,11 @@ class ToastMessage {
         textColor: textColor,
         actionText: actionText,
         onActionTap: onActionTap,
-        onDismiss: () => overlayEntry.remove(),
+        onDismiss: safeRemove,
       ),
     );
 
-    overlay.insert(overlayEntry);
+    overlayState.insert(overlayEntry);
   }
 
   /// ✅ Success
@@ -106,6 +118,7 @@ class _BottomToastWidget extends StatefulWidget {
   final VoidCallback onDismiss;
   final String? actionText;
   final VoidCallback? onActionTap;
+
   const _BottomToastWidget({
     required this.msg,
     required this.backgroundColor,
@@ -151,9 +164,20 @@ class _BottomToastWidgetState extends State<_BottomToastWidget>
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 4), () async {
+      // Widget may have been disposed by the time delay fires.
+      if (!mounted) {
+        widget.onDismiss();
+        return;
+      }
       await _controller.reverse();
       widget.onDismiss();
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -204,6 +228,7 @@ class _BottomToastWidgetState extends State<_BottomToastWidget>
                       child: InkWell(
                         borderRadius: BorderRadius.circular(6),
                         onTap: () async {
+                          if (!mounted) return;
                           await _controller.reverse();
                           widget.onDismiss();
                           widget.onActionTap?.call();
