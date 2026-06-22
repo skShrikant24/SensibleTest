@@ -61,8 +61,11 @@ class CartApiService {
 
     if (response is String) {
       final trimmed = response.trim();
-      AppLogger.d(_tag, 'getCart: raw string response → "$trimmed"');
-      if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+      if (trimmed.isEmpty ||
+          trimmed.toLowerCase() == 'null' ||
+          trimmed.toLowerCase() == 'cart empty') {
+        return null;
+      }
       if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
         try {
           final decoded = jsonDecode(trimmed);

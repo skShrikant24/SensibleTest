@@ -287,7 +287,8 @@ class CartService extends ChangeNotifier {
       final userId = ctx['userId'] ?? '';
       final macId = ctx['macId'] ?? '';
       if (userId.isEmpty || macId.isEmpty) {
-        AppLogger.w(_tag, 'syncCartFromServer: userId or macId is empty — skipping sync');
+        AppLogger.w(_tag,
+            'syncCartFromServer: userId or macId is empty — skipping sync');
         return;
       }
 
@@ -298,7 +299,10 @@ class CartService extends ChangeNotifier {
         addressId: _currentAddressId ?? '',
       );
       if (response == null) {
-        AppLogger.w(_tag, 'syncCartFromServer: server returned null');
+        // AppLogger.w(_tag, 'syncCartFromServer: server returned null');
+        // null = "Cart Empty" from server — clear local state silently.
+        items.clear();
+        _resetTotals();
         return;
       }
 
@@ -310,11 +314,10 @@ class CartService extends ChangeNotifier {
       _gstPercent =
           int.tryParse(response['GSTPercent']?.toString() ?? '0') ?? 0;
 
-      _isNewUserDiscountApplied =
-          response['IsNewUserDiscountApplied'] == true;
-      _newUserDiscountPercent = int.tryParse(
-              response['NewUserDiscountPercent']?.toString() ?? '0') ??
-          0;
+      _isNewUserDiscountApplied = response['IsNewUserDiscountApplied'] == true;
+      _newUserDiscountPercent =
+          int.tryParse(response['NewUserDiscountPercent']?.toString() ?? '0') ??
+              0;
       _newUserDiscountAmount = _toDouble(response['NewUserDiscountAmount']);
 
       _isEvenOrderDiscountApplied =
@@ -322,8 +325,7 @@ class CartService extends ChangeNotifier {
       _evenOrderDiscountPercent = int.tryParse(
               response['EvenOrderDiscountPercent']?.toString() ?? '0') ??
           0;
-      _evenOrderDiscountAmount =
-          _toDouble(response['EvenOrderDiscountAmount']);
+      _evenOrderDiscountAmount = _toDouble(response['EvenOrderDiscountAmount']);
 
       _serviceFee = _toDouble(response['ServiceFee']);
       _isHandlingFeeApplied = response['IsHandlingFeeApplied'] == true;
@@ -343,8 +345,8 @@ class CartService extends ChangeNotifier {
             'CategoryName': map['CategoryName']?.toString() ?? '',
             'OriginalPrice': map['OriginalPrice']?.toString() ?? '0',
             'DiscountPrice': map['DiscountPrice']?.toString() ?? '0',
-            'ProductImage': CartApiService.resolveImageUrl(
-                map['Image']?.toString() ?? ''),
+            'ProductImage':
+                CartApiService.resolveImageUrl(map['Image']?.toString() ?? ''),
             'Image1': '',
             'Image2': '',
             'Image3': '',
@@ -354,8 +356,7 @@ class CartService extends ChangeNotifier {
 
           items.add(CartItem(
             product: product,
-            quantity:
-                int.tryParse(map['Quantity']?.toString() ?? '1') ?? 1,
+            quantity: int.tryParse(map['Quantity']?.toString() ?? '1') ?? 1,
             cartId: map['ID']?.toString(),
           ));
         }
@@ -390,7 +391,8 @@ class CartService extends ChangeNotifier {
       }
       return null;
     } catch (e, st) {
-      AppLogger.e(_tag, '_syncAddToServer failed for product ${product.id}', e, st);
+      AppLogger.e(
+          _tag, '_syncAddToServer failed for product ${product.id}', e, st);
       return null;
     }
   }
@@ -398,35 +400,40 @@ class CartService extends ChangeNotifier {
   Future<void> _syncIncrease(CartItem item) async {
     try {
       if (item.cartId == null) {
-        AppLogger.w(_tag, '_syncIncrease: cartId is null — falling back to full sync');
+        AppLogger.w(
+            _tag, '_syncIncrease: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
       await CartApiService.increaseQty(item.cartId!);
       await syncCartFromServer(addressId: _currentAddressId);
     } catch (e, st) {
-      AppLogger.e(_tag, '_syncIncrease failed for cartId ${item.cartId}', e, st);
+      AppLogger.e(
+          _tag, '_syncIncrease failed for cartId ${item.cartId}', e, st);
     }
   }
 
   Future<void> _syncDecrease(CartItem item) async {
     try {
       if (item.cartId == null) {
-        AppLogger.w(_tag, '_syncDecrease: cartId is null — falling back to full sync');
+        AppLogger.w(
+            _tag, '_syncDecrease: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
       await CartApiService.decreaseQty(item.cartId!);
       await syncCartFromServer(addressId: _currentAddressId);
     } catch (e, st) {
-      AppLogger.e(_tag, '_syncDecrease failed for cartId ${item.cartId}', e, st);
+      AppLogger.e(
+          _tag, '_syncDecrease failed for cartId ${item.cartId}', e, st);
     }
   }
 
   Future<void> _syncRemove(CartItem item) async {
     try {
       if (item.cartId == null) {
-        AppLogger.w(_tag, '_syncRemove: cartId is null — falling back to full sync');
+        AppLogger.w(
+            _tag, '_syncRemove: cartId is null — falling back to full sync');
         await syncCartFromServer(addressId: _currentAddressId);
         return;
       }
