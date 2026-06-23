@@ -45,7 +45,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logout => 'Logout';
 
   @override
+  String get logoutConfirmation => 'Are you sure you want to logout?';
+
+  @override
   String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'Are you sure you want to request account deletion and logout?';
 
   @override
   String get deleteAccountRequestSent =>
@@ -53,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get cancel => 'Cancel';
 
   @override
   String get guest => 'Guest';

@@ -45,7 +45,14 @@ class AppLocalizationsKn extends AppLocalizations {
   String get logout => 'ಲಾಗ್ ಔಟ್';
 
   @override
+  String get logoutConfirmation => 'ನೀವು ಖಚಿತವಾಗಿ ಲಾಗ್ ಔಟ್ ಆಗಲು ಬಯಸುವಿರಾ?';
+
+  @override
   String get deleteAccount => 'ಖಾತೆ ಅಳಿಸಿ';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'ಖಾತೆ ಅಳಿಸುವ ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸಿ ಲಾಗ್ ಔಟ್ ಆಗಲು ನೀವು ಖಚಿತವಾಗಿರುವಿರಾ?';
 
   @override
   String get deleteAccountRequestSent =>
@@ -53,6 +60,9 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get ok => 'ಸರಿ';
+
+  @override
+  String get cancel => 'ರದ್ದುಮಾಡಿ';
 
   @override
   String get guest => 'ಅತಿಥಿ';

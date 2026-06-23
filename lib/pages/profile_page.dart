@@ -214,31 +214,97 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    final l10n = AppLocalizations.of(context)!;
+  final l10n = AppLocalizations.of(context)!;
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
+  final shouldProceed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => PopScope(
+      canPop: false, // Prevent Android back button dismissal
+      child: AlertDialog(
         title: Text(l10n.deleteAccount),
-        content: Text(l10n.deleteAccountRequestSent),
+        content: Text(l10n.deleteAccountConfirmation),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
             child: Text(l10n.ok),
           ),
         ],
       ),
-    );
+    ),
+  );
 
-    await AuthService.instance.logout();
-    if (!mounted) return;
+  // User cancelled or dismissed
+  if (shouldProceed != true) return;
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
-    );
-  }
+  await AuthService.instance.logout();
+
+  if (!mounted) return;
+
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+    (route) => false,
+  );
+
+   ToastMessage.error(
+    context: context,
+    msg: "Your account delete request was sent successfully. Your account will be deleted within 2-3 days.",
+  );
+}
+
+Future<void> _handleLogout() async {
+  final l10n = AppLocalizations.of(context)!;
+
+  final shouldLogout = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => PopScope(
+      canPop: false,
+      child: AlertDialog(
+        title: Text(l10n.logout),
+        content: Text(l10n.logoutConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
+            child: Text(l10n.logout),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  if (shouldLogout != true) return;
+
+  await AuthService.instance.logout();
+
+  if (!mounted) return;
+
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+    (route) => false,
+  );
+
+  ToastMessage.error(
+    context: context,
+    msg: "Logout Successfully..!",
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -360,17 +426,18 @@ class _ProfilePageState extends State<ProfilePage> {
               // 🔹 Settings Section
               ProfilePage._buildListItem(
                 AppLocalizations.of(context)!.logout,
-                onTap: () async {
-                  await AuthService.instance.logout();
-                  if (context.mounted) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                      (route) => false,
-                    );
-                    ToastMessage.error(
-                        context: context, msg: "Logout Successfully..!");
-                  }
-                },
+                onTap: _handleLogout,
+                // onTap: () async {
+                //   await AuthService.instance.logout();
+                //   if (context.mounted) {
+                //     Navigator.of(context).pushAndRemoveUntil(
+                //       MaterialPageRoute(builder: (_) => const LoginPage()),
+                //       (route) => false,
+                //     );
+                //     ToastMessage.error(
+                //         context: context, msg: "Logout Successfully..!");
+                //   }
+                // },
               ),
               ProfilePage._buildListItem(
                 AppLocalizations.of(context)!.deleteAccount,
