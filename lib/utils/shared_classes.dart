@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:grabitt/utils/constants.dart';
 
 class ToastMessage {
   static void _showToast({
@@ -254,4 +255,20 @@ class _BottomToastWidgetState extends State<_BottomToastWidget>
       ),
     );
   }
+}
+
+/// Shared card decoration used across checkout widgets.
+BoxDecoration checkoutCardDecoration() {
+  return BoxDecoration(
+    color: StoreProfileTheme.surface,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: StoreProfileTheme.border, width: 0.5),
+    boxShadow: [
+      BoxShadow(
+        color: StoreProfileTheme.border.withValues(alpha: 0.12),
+        blurRadius: 10,
+        offset: const Offset(0, 5),
+      ),
+    ],
+  );
 }
