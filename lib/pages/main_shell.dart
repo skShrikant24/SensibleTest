@@ -1,308 +1,153 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:grabitt/utils/api_helper.dart';
-import 'package:grabitt/utils/constants.dart';
-import 'package:grabitt/widgets/home_banner_slider.dart';
-import 'package:grabitt/widgets/update_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:grabitt/l10n/app_localizations.dart';
 import 'package:grabitt/pages/profile_page.dart';
 import 'package:grabitt/pages/store_page.dart';
-import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:grabitt/services/app_update_service.dart';
+import 'package:grabitt/services/home_banner_service.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/widgets/home_banner_slider.dart';
+import 'package:grabitt/widgets/update_popup.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _index = 0;
-
-  /// On Store page: hide bottom bar when scrolling down, show when scrolling up.
   bool _hideBottomBar = false;
-
   bool _isDialogShowing = false;
   bool _isBannerShowing = false;
-  static const String _bannerDateKey = "home_banner_last_seen";
 
   @override
   void initState() {
     super.initState();
-    // App lifecycle observer add
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _checkAppUpdate();
-      if (!_isDialogShowing) {
-        await _checkHomeBanner();
-      }
+      await _runStartupChecks();
     });
   }
 
   @override
   void dispose() {
-    // Remove observer
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // Called when app resumes from background / Play Store
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkAppUpdate();
-      if (!_isDialogShowing) {
-        _checkHomeBanner();
-      }
-    }
+    if (state == AppLifecycleState.resumed) _runStartupChecks();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Startup checks — orchestration only, no HTTP here
+  // ---------------------------------------------------------------------------
+
+  Future<void> _runStartupChecks() async {
+    await _checkAppUpdate();
+    if (!_isDialogShowing) await _checkHomeBanner();
+  }
+
+  Future<void> _checkAppUpdate() async {
+    final update = await AppUpdateService.instance.checkForUpdate();
+    if (update == null || !mounted || _isDialogShowing) return;
+    _isDialogShowing = true;
+    _showUpdateDialog(update);
   }
 
   Future<void> _checkHomeBanner() async {
     if (_isBannerShowing) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      final today = DateTime.now().toIso8601String().split('T').first;
-
-      final lastSeen = prefs.getString(_bannerDateKey);
-
-      if (lastSeen == today) return;
-
-      final response = await http.get(
-        Uri.parse(
-          "https://grabitt.in/Webservice.asmx/GetHomeBanner",
-        ),
-      );
-
-      if (response.statusCode != 200) return;
-
-      final cleaned = response.body
-          .replaceAll(RegExp(r'<\?xml.*?\?>'), '')
-          .replaceAll(RegExp(r'<string[^>]*>'), '')
-          .replaceAll('</string>', '')
-          .trim();
-
-      final json = jsonDecode(cleaned);
-
-      if (json["status"] != "Success") return;
-
-      final data = json["data"];
-
-      if (data == null || data is! List || data.isEmpty) return;
-
-      final List<HomeBannerModel> banners = [];
-
-      for (final item in data) {
-        if (item == null) continue;
-        if (item["IsActive"] != true) continue;
-
-        final image = item["Image"]?.toString() ?? "";
-        if (image.isEmpty) continue;
-
-        banners.add(
-          HomeBannerModel(
-            imageUrl: ApiHelper.buildUrl(image) ?? '',
-            title: item["ImageTitle"]?.toString(),
-            description: item["ImageDescription"]?.toString(),
-          ),
-        );
-      }
-
-      if (banners.isEmpty) return;
-      if (!mounted) return;
-      _showBannerPopup(
-        banners,
-        today,
-      );
-    } catch (_) {}
+    final banners = await HomeBannerService.instance.fetchIfDue();
+    if (banners == null || !mounted) return;
+    _showBannerDialog(banners);
   }
 
-  void _showBannerPopup(
-    List<HomeBannerModel> banners,
-    String today,
-  ) {
-    _isBannerShowing = true;
+  // ---------------------------------------------------------------------------
+  // Dialogs
+  // ---------------------------------------------------------------------------
 
+  void _showUpdateDialog(AppUpdateInfo update) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => UpdatePopup(
+        latestVersion: update.latestVersion,
+        onSkip: update.forceUpdate
+            ? null
+            : () async {
+                await AppUpdateService.instance
+                    .markSkipped(update.latestVersion);
+                if (mounted) Navigator.pop(context);
+              },
+        onUpdate: () async {
+          if (mounted) Navigator.pop(context);
+          await _openStore(marketUri: update.marketUri, webUri: update.webUri);
+        },
+      ),
+    ).then((_) async {
+      _isDialogShowing = false;
+      await _checkHomeBanner();
+    });
+  }
+
+  void _showBannerDialog(List<HomeBannerModel> banners) {
+    _isBannerShowing = true;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => HomeBannerPopup(
         banners: banners,
         onClose: () async {
-          final prefs = await SharedPreferences.getInstance();
-
-          await prefs.setString(
-            _bannerDateKey,
-            today,
-          );
-
+          await HomeBannerService.instance.markSeenToday();
           _isBannerShowing = false;
-
-          if (mounted) {
-            Navigator.pop(context);
-          }
+          if (mounted) Navigator.pop(context);
         },
       ),
-    ).then((_) {
-      _isBannerShowing = false;
-    });
+    ).then((_) => _isBannerShowing = false);
   }
 
-  // ================= VERSION CHECK =================
-  Future<void> _checkAppUpdate() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
+  // ---------------------------------------------------------------------------
+  // Store redirect
+  // ---------------------------------------------------------------------------
 
-      final res = await http.get(
-        Uri.parse("https://grabitt.in/Webservice.asmx/GetCustomerAppVersion"),
-      );
-      if (res.statusCode != 200) return;
-
-      final cleanedBody = res.body
-          .replaceAll(RegExp(r'<\?xml.*?\?>'), '')
-          .replaceAll(RegExp(r'<string[^>]*>'), '')
-          .replaceAll('</string>', '')
-          .trim();
-
-      debugPrint("Version API Response => $cleanedBody");
-
-      final jsonData = jsonDecode(cleanedBody);
-
-      final data = jsonData["data"];
-      if (data == null) return;
-
-      // Platform-specific block
-      final platformData = Platform.isIOS ? data["ios"] : data["android"];
-
-      if (platformData == null) return;
-
-      final latestVersion = platformData["latest_version"].toString();
-      final forceUpdate = platformData["force_update"] ?? false;
-      final updateAvailable = platformData["update_available"] ?? false;
-
-      final serverBuild = int.tryParse(platformData["build"].toString()) ?? 0;
-
-      // Backend store URL, fallback hardcoded
-      final String marketUri = Platform.isAndroid
-          ? (platformData["market_uri"]?.toString().isNotEmpty == true
-              ? platformData["market_uri"].toString()
-              : "market://details?id=com.infisoft.grabit")
-          : "";
-
-      final String webUri = Platform.isAndroid
-          ? (platformData["web_uri"]?.toString().isNotEmpty == true
-              ? platformData["web_uri"].toString()
-              : "https://play.google.com/store/apps/details?id=com.infisoft.grabit")
-          : (platformData["app_store_url"]?.toString().isNotEmpty == true
-              ? platformData["app_store_url"].toString()
-              : "https://apps.apple.com/app/idYOUR_APP_ID");
-
-      final prefs = await SharedPreferences.getInstance();
-      final skippedVersion = prefs.getString("skipped_version");
-
-      final shouldUpdate = updateAvailable && serverBuild > currentBuild;
-
-      if (!_isDialogShowing &&
-          shouldUpdate &&
-          skippedVersion != latestVersion) {
-        _isDialogShowing = true;
-
-        _showUpdatePopup(
-          latestVersion: latestVersion,
-          force: forceUpdate,
-          marketUri: marketUri,
-          webUri: webUri,
-        );
-      }
-    } catch (e) {
-      debugPrint("Version check error: $e");
-    }
-  }
-
-  // ================= POPUP =================
-  void _showUpdatePopup({
-    required String latestVersion,
-    required bool force,
-    required String marketUri,
-    required String webUri,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => UpdatePopup(
-        latestVersion: latestVersion,
-
-        // Skip (only if not force)
-        onSkip: force
-            ? null
-            : () {
-                _handleSkip(latestVersion);
-              },
-
-        // Update
-        onUpdate: () async {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-
-          await _openStore(marketUri: marketUri, webUri: webUri);
-        },
-      ),
-    ).then((_) async {
-      // Reset only after popup closes
-      _isDialogShowing = false;
-      await _checkHomeBanner();
-    });
-  }
-
-  // ================= SKIP =================
-  Future<void> _handleSkip(String latestVersion) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("skipped_version", latestVersion);
-
-    if (mounted) Navigator.pop(context);
-  }
-
-  // ================= STORE REDIRECT =================
   Future<void> _openStore({
     required String marketUri,
     required String webUri,
   }) async {
     try {
       if (Platform.isAndroid) {
-        final Uri market = Uri.parse(marketUri);
-        final Uri web = Uri.parse(webUri);
-
+        final market = Uri.parse(marketUri);
+        final web = Uri.parse(webUri);
         if (await canLaunchUrl(market)) {
           await launchUrl(market, mode: LaunchMode.externalApplication);
         } else {
           await launchUrl(web, mode: LaunchMode.externalApplication);
         }
       } else if (Platform.isIOS) {
-        final Uri appStore = Uri.parse(webUri);
-        await launchUrl(appStore, mode: LaunchMode.externalApplication);
+        await launchUrl(Uri.parse(webUri),
+            mode: LaunchMode.externalApplication);
       }
-    } catch (e) {
-      debugPrint("Store launch error: $e");
-    }
+    } catch (_) {}
   }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
         return StorePage(
           onSelectTab: (i) => setState(() => _index = i),
-          onScrollDirection: (scrollingDown) {
-            setState(() => _hideBottomBar = scrollingDown);
-          },
+          onScrollDirection: (scrollingDown) =>
+              setState(() => _hideBottomBar = scrollingDown),
         );
-      case 2:
       default:
         return ProfilePage(
           onSelectTab: (i) => setState(() => _index = i),
@@ -313,7 +158,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final showBottomBar = _index != 0 || !_hideBottomBar;
-
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFF4F5F7),
@@ -346,8 +190,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Bottom bar — pure UI, no logic
+// ---------------------------------------------------------------------------
+
 class _BottomBar extends StatelessWidget {
   const _BottomBar({required this.index, required this.onChanged});
+
   final int index;
   final ValueChanged<int> onChanged;
 
@@ -396,15 +245,18 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _BarItem {
+  const _BarItem(
+      {required this.icon, required this.inactive, required this.label});
+
   final IconData icon;
   final IconData inactive;
   final String label;
-  _BarItem({required this.icon, required this.inactive, required this.label});
 }
 
 class _BottomBarButton extends StatelessWidget {
   const _BottomBarButton(
       {required this.item, required this.selected, required this.onTap});
+
   final _BarItem item;
   final bool selected;
   final VoidCallback onTap;
