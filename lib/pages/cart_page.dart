@@ -1,8 +1,8 @@
-import 'package:grabitt/l10n/app_localizations.dart';
-import 'package:grabitt/pages/checkout_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/pages/checkout_page.dart';
 
 import '../app_State/cart.dart';
 import '../utils/constants.dart';
@@ -59,11 +59,12 @@ class _CartPageState extends State<CartPage> {
                       children: [
                         Expanded(
                           child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: cart.items.length,
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            itemCount: cart.items.length + 1,
                             itemBuilder: (context, index) {
-                              final item = cart.items[index];
-                              return _cartItem(item);
+                              // index 0 = vendor banner
+                              if (index == 0) return _vendorBanner();
+                              return _cartItem(cart.items[index - 1]);
                             },
                           ),
                         ),
@@ -74,6 +75,79 @@ class _CartPageState extends State<CartPage> {
       },
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Vendor banner
+  // ---------------------------------------------------------------------------
+
+  Widget _vendorBanner() {
+    final name = cart.vendorName;
+    final category = cart.vendorCategory;
+
+    // If backend hasn't returned vendor info yet, show nothing.
+    if (name.isEmpty) return const SizedBox(height: 4);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: StoreProfileTheme.accentPink.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: StoreProfileTheme.accentPink.withValues(alpha: 0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: StoreProfileTheme.accentPink.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.storefront_rounded,
+              color: StoreProfileTheme.accentPink,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                if (category.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    category,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cart item
+  // ---------------------------------------------------------------------------
 
   Widget _cartItem(CartItem item) {
     final isLoading = cart.isProductUpdating(item.product.id.toString());
@@ -106,41 +180,10 @@ class _CartPageState extends State<CartPage> {
                     fadeInDuration: const Duration(milliseconds: 150),
                     memCacheWidth: 300,
                     maxWidthDiskCache: 400,
-                    placeholder: (context, url) {
-                      return Container(
-                        width: 70,
-                        height: 70,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    errorWidget: (context, url, error) {
-                      return Container(
-                        width: 70,
-                        height: 70,
-                        color: Colors.grey[200],
-                        child: const Icon(
-                          Icons.broken_image_outlined,
-                        ),
-                      );
-                    },
+                    placeholder: (_, __) => _imagePlaceholder(),
+                    errorWidget: (_, __, ___) => _imageError(),
                   )
-                : Container(
-                    width: 70,
-                    height: 70,
-                    color: Colors.grey[200],
-                    child: const Icon(
-                      Icons.image_not_supported_outlined,
-                    ),
-                  ),
+                : _imageError(),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -154,13 +197,26 @@ class _CartPageState extends State<CartPage> {
                   style: GoogleFonts.poppins(
                       fontSize: 14, fontWeight: FontWeight.w600),
                 ),
+                // Product category (from GetCart CategoryName per item)
+                if (item.product.categoryName.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      item.product.categoryName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 4),
                 Text(
-                  "${AppConstants.currencySymbol}${item.product.discountPrice}",
+                  '${AppConstants.currencySymbol}${item.product.discountPrice}',
                   style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: StoreProfileTheme.accentPink),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: StoreProfileTheme.accentPink,
+                  ),
                 ),
               ],
             ),
@@ -169,10 +225,8 @@ class _CartPageState extends State<CartPage> {
             children: [
               Row(
                 children: [
-                  _qtyButton(Icons.remove, () {
-                    // setState(() => cart.decrease(item));
-                    cart.decrease(item);
-                  }, isLoading),
+                  _qtyButton(
+                      Icons.remove, () => cart.decrease(item), isLoading),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: isLoading
@@ -189,34 +243,22 @@ class _CartPageState extends State<CartPage> {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                   ),
-                  _qtyButton(Icons.add, () {
-                    // setState(() => cart.increase(item));
-                    cart.increase(item);
-                  }, isLoading),
+                  _qtyButton(Icons.add, () => cart.increase(item), isLoading),
                 ],
               ),
               IconButton(
                 icon: Icon(Icons.delete_outline,
                     color: StoreProfileTheme.accentPink),
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        // setState(() => cart.remove(item));
-                        cart.remove(item);
-                      },
+                onPressed: isLoading ? null : () => cart.remove(item),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _qtyButton(
-    IconData icon,
-    VoidCallback onTap,
-    bool isLoading,
-  ) {
+  Widget _qtyButton(IconData icon, VoidCallback onTap, bool isLoading) {
     return InkWell(
       onTap: isLoading ? null : onTap,
       child: Container(
@@ -229,6 +271,10 @@ class _CartPageState extends State<CartPage> {
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Checkout bar
+  // ---------------------------------------------------------------------------
 
   Widget _checkoutBar() {
     return Container(
@@ -250,18 +296,21 @@ class _CartPageState extends State<CartPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppLocalizations.of(context)!.subtotal,
-                  style: GoogleFonts.poppins(
-                      fontSize: 13, color: Colors.grey.shade600)),
               Text(
-                "${AppConstants.currencySymbol}${cart.finalTotal.toStringAsFixed(0)}",
+                AppLocalizations.of(context)!.subtotal,
                 style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: StoreProfileTheme.accentPink),
+                    fontSize: 13, color: Colors.grey.shade600),
               ),
               Text(
-                "Items: ${AppConstants.currencySymbol}${cart.subtotal.toStringAsFixed(0)}",
+                '${AppConstants.currencySymbol}${cart.finalTotal.toStringAsFixed(0)}',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: StoreProfileTheme.accentPink,
+                ),
+              ),
+              Text(
+                'Items: ${AppConstants.currencySymbol}${cart.subtotal.toStringAsFixed(0)}',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -275,20 +324,15 @@ class _CartPageState extends State<CartPage> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+                  borderRadius: BorderRadius.circular(14)),
               elevation: 0,
             ),
             onPressed: cart.items.isEmpty
                 ? null
-                : () {
-                    Navigator.push(
+                : () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const CheckoutPage(),
-                      ),
-                    );
-                  },
+                      MaterialPageRoute(builder: (_) => const CheckoutPage()),
+                    ),
             child: Text(
               AppLocalizations.of(context)!.checkout,
               style: const TextStyle(color: Colors.white),
@@ -299,6 +343,10 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Empty state
+  // ---------------------------------------------------------------------------
+
   Widget _emptyCart() {
     return Center(
       child: Column(
@@ -308,13 +356,34 @@ class _CartPageState extends State<CartPage> {
               size: 90, color: StoreProfileTheme.border),
           const SizedBox(height: 12),
           Text(
-            "Your cart is empty",
+            'Your cart is empty',
             style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: StoreProfileTheme.accentPink.withValues(alpha: 0.8)),
+              fontSize: 16,
+              color: StoreProfileTheme.accentPink.withValues(alpha: 0.8),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _imagePlaceholder() => Container(
+        width: 70,
+        height: 70,
+        color: Colors.grey[200],
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+
+  Widget _imageError() => Container(
+        width: 70,
+        height: 70,
+        color: Colors.grey[200],
+        child: const Icon(Icons.broken_image_outlined),
+      );
 }

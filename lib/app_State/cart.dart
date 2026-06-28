@@ -79,6 +79,11 @@ class CartService extends ChangeNotifier {
   bool _isSyncingCart = false;
   String? _currentAddressId;
 
+  // Vendor info — set by syncCartFromServer(), cleared by clearCart().
+  String _vendorId = '';
+  String _vendorName = '';
+  String _vendorCategory = '';
+
   // ---------------------------------------------------------------------------
   // Getters
   // ---------------------------------------------------------------------------
@@ -115,6 +120,10 @@ class CartService extends ChangeNotifier {
   bool get isSyncingCart => _isSyncingCart;
   int get count => items.fold(0, (sum, item) => sum + item.quantity);
   bool get shouldAnimateCart => _shouldAnimateCart;
+
+  String get vendorId => _vendorId;
+  String get vendorName => _vendorName;
+  String get vendorCategory => _vendorCategory;
 
   bool isProductUpdating(String productId) =>
       _updatingProducts.contains(productId);
@@ -308,6 +317,9 @@ class CartService extends ChangeNotifier {
 
       items.clear();
 
+      _vendorId = response['VendorID']?.toString() ?? '';
+      _vendorName = response['VendorName']?.toString() ?? '';
+      _vendorCategory = response['VendorCategory']?.toString() ?? '';
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
       _gst = _toDouble(response['GST']);
@@ -465,6 +477,9 @@ class CartService extends ChangeNotifier {
     _handlingFeeText = '';
     _packagingFee = 0.0;
     _finalTotal = 0.0;
+    _vendorId = '';
+    _vendorName = '';
+    _vendorCategory = '';
   }
 
   double _toDouble(dynamic value) {
