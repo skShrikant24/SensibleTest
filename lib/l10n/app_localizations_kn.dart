@@ -165,5 +165,5 @@ class AppLocalizationsKn extends AppLocalizations {
   String get searchForGroceryStores => 'ಕಿರಾಣಿ ಅಂಗಡಿಗಳನ್ನು ಹುಡುಕಿ';
 
   @override
-  String get searchForMedicalStores => 'ಮೆಡಿಕಲ್ ಅಂಗಡಿಗಳನ್ನು ಹುಡುಕಿ';
+  String get searchForMedicalStores => 'ಅಂಗಡಿಗಳನ್ನು ಹುಡುಕಿ';
 }

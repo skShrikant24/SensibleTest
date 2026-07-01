@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../app_State/cart.dart';
 import '../services/sound_service.dart';
+import '../utils/auth_guard.dart';
 import 'cart_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
@@ -120,6 +121,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   }
 
   void _startPaperPlaneAnimation() async {
+    final allowed = await AuthGuard.requireLogin(
+      context,
+      message: 'Please login to add items to cart.',
+    );
+    if (!allowed) return;
+
     // Wait for layout so both image and cart icon positions are available
     await Future.delayed(const Duration(milliseconds: 100));
     if (!mounted) return;
@@ -231,7 +238,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                         key: _cartIconKey,
                         icon: const Icon(Icons.shopping_cart_outlined,
                             color: Colors.pinkAccent),
-                        onPressed: () {
+                        onPressed: () async {
+                          final allowed = await AuthGuard.requireLogin(
+                            context,
+                            message: 'Please login to view your cart.',
+                          );
+                          if (!context.mounted) return;
+                          if (!allowed) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const CartPage()),

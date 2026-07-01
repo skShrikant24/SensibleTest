@@ -407,7 +407,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchForMedicalStores.
   ///
   /// In en, this message translates to:
-  /// **'Search for Medical Stores'**
+  /// **'Search for Stores'**
   String get searchForMedicalStores;
 }
 

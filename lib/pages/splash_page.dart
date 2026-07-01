@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:GraBiTT/pages/main_shell.dart';
-import 'package:GraBiTT/pages/onboard_page.dart';
-import 'package:GraBiTT/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class SplashPage extends StatefulWidget {
@@ -53,20 +51,8 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
 
-    // Navigate after splash: if already logged in go to main app, else onboarding
+    // Navigate directly to browsing. Login is requested only for account actions.
     _navigateAfterSplash();
-    // Timer(const Duration(seconds: 3), () async {
-    //   if (!context.mounted) return;
-    //   final loggedIn = await AuthService.instance.isLoggedIn();
-    //   if (!context.mounted) return;
-    //   Navigator.pushReplacement(
-    //     context,
-    //     MaterialPageRoute(
-    //       builder: (_) =>
-    //           loggedIn ? const MainShell() : const OnboardingScreen(),
-    //     ),
-    //   );
-    // });
   }
 
   Future<void> _navigateAfterSplash() async {
@@ -74,15 +60,9 @@ class _SplashPageState extends State<SplashPage>
 
     if (!mounted) return;
 
-    final loggedIn = await AuthService.instance.isLoggedIn();
-
-    if (!mounted) return;
-
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => loggedIn ? const MainShell() : const OnboardingScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const MainShell()),
     );
   }
 

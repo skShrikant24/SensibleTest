@@ -18,41 +18,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   Timer? _autoSlideTimer;
 
-  // Restaurant, Grocery, Medical, Chaats and Snacks, Pesticides, Pick & Deliver and last Login Page.
+  // Restaurant, Grocery, Chaats and Snacks, Pesticides, Pick & Deliver and last Login Page.
   final List<OnboardingData> _pages = [
     OnboardingData(
       image: 'assets/images/slide1.jpg',
-      lottieAsset:"assets/animations/Delivery.json",
+      lottieAsset: "assets/animations/Delivery.json",
       title: 'Food Delivery',
       description: 'Order your favourite food from your preferred restaurant',
     ),
     OnboardingData(
       image: 'assets/images/slide2.jpg',
-      lottieAsset:"assets/animations/Grocery.json",
+      lottieAsset: "assets/animations/Grocery.json",
       title: 'Grocery Delivery',
       description: 'Daily groceries delivered from trusted local stores',
     ),
     OnboardingData(
       image: 'assets/images/slide3.jpg',
-      lottieAsset:"assets/animations/Doctor.json",
-      title: 'Medicine Delivery',
-      description: 'Fast, safe & reliable pharmacy delivery',
-    ),
-    OnboardingData(
-      image: 'assets/images/slide3.jpg',
-      lottieAsset:"assets/animations/Food.json",
+      lottieAsset: "assets/animations/Food.json",
       title: 'Chaat Items',
       description: 'Delivery of your favorite chaat items across the city',
     ),
     OnboardingData(
       image: 'assets/images/slide3.jpg',
-      lottieAsset:"assets/animations/Seed.json",
+      lottieAsset: "assets/animations/Seed.json",
       title: 'Farmer Supplies',
       description: 'Pesticides, seeds & fertilizers delivered to farms.',
       // isLastPage: true,
-    ),OnboardingData(
+    ),
+    OnboardingData(
       image: 'assets/images/slide3.jpg',
-      lottieAsset:"assets/animations/DeliveryLast.json",
+      lottieAsset: "assets/animations/DeliveryLast.json",
       title: 'Express Pick & Deliver',
       description: 'Send your important items anywhere in town.',
       isLastPage: true,
@@ -141,7 +136,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-
   Widget _buildPage(OnboardingData data) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -153,21 +147,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.center,
               children: [
                 // ...data.decorativeIcons.map((icon) => _buildDecorativeIcon(icon)),
-                  Center(
-                    child: data.lottieAsset != null
-                        ? Lottie.asset(
-                            data.lottieAsset!,
-                            height: 280,
-                            fit: BoxFit.contain,
-                            repeat: true,
-                            animate: true,
-                          )
-                        : Image.asset(
-                            data.image,
-                            height: 280,
-                            fit: BoxFit.contain,
-                          ),
-                  ),
+                Center(
+                  child: data.lottieAsset != null
+                      ? Lottie.asset(
+                          data.lottieAsset!,
+                          height: 280,
+                          fit: BoxFit.contain,
+                          repeat: true,
+                          animate: true,
+                        )
+                      : Image.asset(
+                          data.image,
+                          height: 280,
+                          fit: BoxFit.contain,
+                        ),
+                ),
               ],
             ),
           ),
@@ -197,7 +191,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
-
 
   Widget _buildBottomSection() {
     final isLastPage = _currentPage == _pages.length - 1;
@@ -230,7 +223,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       height: 8,
       width: isActive ? 24 : 8,
       decoration: BoxDecoration(
-        color: isActive ? StoreProfileTheme.accentPink : StoreProfileTheme.border.withValues(alpha: 0.6),
+        color: isActive
+            ? StoreProfileTheme.accentPink
+            : StoreProfileTheme.border.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -240,7 +235,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return GestureDetector(
       onTap: () {
         if (_currentPage < _pages.length - 1) {
-          _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+          _pageController.nextPage(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut);
         } else {
           // On last page, navigate based on button
           if (text == 'Login') {
@@ -259,7 +256,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: isFilled ? StoreProfileTheme.accentPink : StoreProfileTheme.surface,
+          color: isFilled
+              ? StoreProfileTheme.accentPink
+              : StoreProfileTheme.surface,
           border: Border.all(color: StoreProfileTheme.accentPink, width: 2),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isFilled
@@ -288,17 +287,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class OnboardingData {
   final String image;
-  final String? lottieAsset; // Path to Lottie JSON file (e.g., 'assets/animations/animation.json')
+  final String?
+      lottieAsset; // Path to Lottie JSON file (e.g., 'assets/animations/animation.json')
   final String title;
   final String description;
   final bool isLastPage;
 
-  OnboardingData({
-    required this.image,
-    this.lottieAsset,
-    required this.title,
-    required this.description,
-    this.isLastPage = false
-  });
+  OnboardingData(
+      {required this.image,
+      this.lottieAsset,
+      required this.title,
+      required this.description,
+      this.isLastPage = false});
 }
-

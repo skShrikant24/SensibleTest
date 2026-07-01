@@ -7,6 +7,7 @@ import 'package:GraBiTT/models/product.dart';
 import 'package:GraBiTT/models/vendor_product.dart';
 import 'package:GraBiTT/pages/cart_page.dart';
 import 'package:GraBiTT/pages/product_details_page.dart';
+import 'package:GraBiTT/utils/auth_guard.dart';
 import 'package:GraBiTT/utils/constants.dart';
 import 'package:GraBiTT/utils/shared_classes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -305,6 +306,12 @@ class _ProductCard extends StatelessWidget {
                           isLoading:
                               cart.isProductUpdating(product.id.toString()),
                           onPressed: () async {
+                            final allowed = await AuthGuard.requireLogin(
+                              context,
+                              message: 'Please login to add items to cart.',
+                            );
+                            if (!allowed) return;
+
                             final res = await cart.addItem(product);
                             if (!context.mounted) return;
 

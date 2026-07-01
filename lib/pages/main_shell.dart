@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/pages/profile_page.dart';
 import 'package:GraBiTT/pages/store_page.dart';
+import 'package:GraBiTT/utils/auth_guard.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,7 +38,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       //await _checkAppUpdate();
       if (!_isDialogShowing) {
-      //  await _checkHomeBanner();
+        //  await _checkHomeBanner();
       }
     });
   }
@@ -303,10 +304,19 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: _BottomBar(
                   index: _index,
-                  onChanged: (i) => setState(() {
-                    _index = i;
-                    _hideBottomBar = false;
-                  }),
+                  onChanged: (i) async {
+                    if (i == 1) {
+                      final allowed = await AuthGuard.requireLogin(
+                        context,
+                        message: 'Please login to view your profile.',
+                      );
+                      if (!allowed) return;
+                    }
+                    setState(() {
+                      _index = i;
+                      _hideBottomBar = false;
+                    });
+                  },
                 ),
               ),
             ),

@@ -164,5 +164,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchForGroceryStores => 'Search for Grocery Stores';
 
   @override
-  String get searchForMedicalStores => 'Search for Medical Stores';
+  String get searchForMedicalStores => 'Search for Stores';
 }

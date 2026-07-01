@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:GraBiTT/l10n/app_localizations.dart';
 import 'package:GraBiTT/models/address_model.dart';
@@ -505,17 +504,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
   Future<void> _getCurrentLocation() async {
     setState(() => _loadingLocation = true);
     try {
-      final status = await Permission.location.request();
-      if (!status.isGranted) {
-        if (mounted) {
-          ToastMessage.warning(
-            context: context,
-            msg: 'Location permission denied',
-          );
-        }
-        setState(() => _loadingLocation = false);
-        return;
-      }
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
@@ -524,9 +512,35 @@ class _AddressFormPageState extends State<AddressFormPage> {
             msg: 'Location services are disabled',
           );
         }
-        setState(() => _loadingLocation = false);
         return;
       }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ToastMessage.warning(
+            context: context,
+            msg:
+                'Location permission is permanently denied. Enable it in Settings.',
+          );
+        }
+        return;
+      }
+
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          ToastMessage.warning(
+            context: context,
+            msg: 'Location permission denied',
+          );
+        }
+        return;
+      }
+
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,

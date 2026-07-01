@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category.dart';
 import '../app_State/cart.dart';
+import '../utils/auth_guard.dart';
 import '../utils/constants.dart';
 
 class StorePage extends StatefulWidget {
@@ -278,7 +279,13 @@ class _StorePageState extends State<StorePage> {
                         icon: Icons.shopping_cart_outlined,
                         badgeCount: CartService.instance.count,
                         shouldAnimate: CartService.instance.shouldAnimateCart,
-                        onTap: () {
+                        onTap: () async {
+                          final allowed = await AuthGuard.requireLogin(
+                            context,
+                            message: 'Please login to view your cart.',
+                          );
+                          if (!context.mounted) return;
+                          if (!allowed) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const CartPage()),
@@ -444,10 +451,16 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: _ActionButton(
-              title: "Medicine, Grocery or\nPesticides prescription",
+              title: "Grocery or\nPesticides list",
               icon: Icons.flash_on,
-              onTap: () {
-                _showQuickOrderDisclaimer(context);
+              onTap: () async {
+                final allowed = await AuthGuard.requireLogin(
+                  context,
+                  message: 'Please login to place a quick order.',
+                );
+                if (!mounted) return;
+                if (!allowed) return;
+                _showQuickOrderDisclaimer();
               },
             ),
           ),
@@ -456,7 +469,7 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  void _showQuickOrderDisclaimer(BuildContext context) {
+  void _showQuickOrderDisclaimer() {
     showDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -492,7 +505,7 @@ class _StorePageState extends State<StorePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "GraB iTT! is a medicine delivery service platform. We do not provide medical advice, diagnosis, or treatment. All medicines are delivered based on valid prescriptions from licensed medical practitioners. Please consult with a qualified healthcare professional before using any medication. We are not responsible for any adverse effects or complications arising from the use of medicines ordered through our platform. Also, Pesticides for lawful use only. Follow label instructions. Keep away from children. GraB iTT! is not responsible for any misuse.",
+                  "Pesticides are for lawful use only. Follow label instructions and keep away from children. GraB iTT! is not responsible for any misuse.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -529,7 +542,7 @@ class _StorePageState extends State<StorePage> {
 
   Future<void> _openQuickOrderWhatsApp(BuildContext context) async {
     const message =
-        "Hi GraB iTT!, I want to place a Quick Order. I will share my prescription or grocery list.";
+        "Hi GraB iTT!, I want to place a Quick Order. I will share my grocery or pesticides list.";
     final whatsappUri = Uri.parse(
       "https://wa.me/916360974868?text=${Uri.encodeComponent(message)}",
       // "https://wa.me/919764658896?text=${Uri.encodeComponent(message)}",
@@ -721,10 +734,28 @@ Future<List<Category>> fetchCategories([String lang = 'en']) async {
   if (response.statusCode == 200) {
     final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
     final List data = json.decode(jsonString);
-    return data.map((e) => Category.fromJson(e)).toList();
+    return data
+        .map((e) => Category.fromJson(e))
+        .where((category) => !_isMedicineCategory(category))
+        .toList();
   } else {
     throw Exception('Failed to load categories');
   }
+}
+
+bool _isMedicineCategory(Category category) {
+  final haystack = '${category.id} ${category.name}'.toLowerCase();
+  const medicineKeywords = [
+    'medicine',
+    'medical',
+    'pharmacy',
+    'pharma',
+    'chemist',
+    'drug',
+    'prescription',
+  ];
+
+  return medicineKeywords.any(haystack.contains);
 }
 
 Future<List<Vendor>> fetchVendorsByCategory(String category,
@@ -891,16 +922,6 @@ List<Restaurant> _getDummyRestaurants(String category) {
               name: 'Grocery Store ${index + 1}',
               category: 'Grocery',
               rating: 4.2 + (index * 0.1),
-            ));
-  } else if (categoryLower.contains('medical') ||
-      categoryLower.contains('pharmacy')) {
-    return List.generate(
-        3,
-        (index) => Restaurant(
-              id: 'medical_${index + 1}',
-              name: 'Medical Store ${index + 1}',
-              category: 'Medical',
-              rating: 4.5 + (index * 0.1),
             ));
   } else {
     // Default: return restaurants for any other category
