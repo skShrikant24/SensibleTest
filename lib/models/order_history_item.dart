@@ -7,6 +7,11 @@ class OrderHistoryItem {
   final String bikeNumber;
   final String shopName;
 
+  /// True once the user has submitted a rating for the delivery rider on
+  /// this order. Backend field: "IsRiderRated". Used to permanently hide
+  /// the "Rate rider" button across app restarts (not just in-session).
+  final bool isRiderRated;
+
   final List<OrderHistoryProductItem> items;
 
   // ================= INVOICE FIELDS =================
@@ -42,6 +47,7 @@ class OrderHistoryItem {
     required this.riderMobile,
     required this.bikeNumber,
     required this.shopName,
+    required this.isRiderRated,
     required this.items,
     required this.subtotal,
     required this.gst,
@@ -87,6 +93,7 @@ class OrderHistoryItem {
       riderMobile: str(json['RiderMobile']),
       bikeNumber: str(json['BikeNumber']),
       shopName: str(json['ShopName']),
+      isRiderRated: boolValue(json['IsRiderRated']),
 
       items: (json['Items'] is List)
           ? (json['Items'] as List)

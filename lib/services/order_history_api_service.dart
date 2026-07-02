@@ -86,17 +86,23 @@ Future<bool> submitRiderRating({
 }) async {
   if (orderId.trim().isEmpty || rating.trim().isEmpty) return false;
   try {
+    final trimmedNote = note.trim();
     final uri =
         Uri.parse('$_baseUrl/WebService.asmx/SubmitRiderRating').replace(
       queryParameters: {
         'OrderID': orderId.trim(),
         'Rating': rating.trim(),
-        'Note': note.trim(),
+        // Server throws "Missing parameter: Note" on a truly empty value
+        // for some ASMX configurations. Send a single space as a safe
+        // non-empty placeholder when the user leaves the note blank.
+        'Note': trimmedNote.isEmpty ? ' ' : trimmedNote,
       },
     );
+    AppLogger.d(_tag, 'submitRiderRating: GET $uri');
     final response = await http.get(uri);
     if (response.statusCode != 200) {
-      AppLogger.w(_tag, 'submitRiderRating: HTTP ${response.statusCode}');
+      AppLogger.w(_tag,
+          'submitRiderRating: HTTP ${response.statusCode} — body: ${response.body}');
       return false;
     }
     final cleaned = _cleanResponse(response.body);

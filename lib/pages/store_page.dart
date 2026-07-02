@@ -240,35 +240,40 @@ class _StorePageState extends State<StorePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              GestureDetector(
-                onTap: () {
-                  // Open location selector
-                },
-                child: Row(
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.location,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios,
-                        size: 12, color: Colors.grey),
-                  ],
-                ),
-              ),
+              // GRABIIT REVIEW: location selector commented out (not wired
+              // to a real location picker yet) — kept for client, not
+              // removed, can be re-enabled when ready.
+              // GestureDetector(
+              //   onTap: () {
+              //     // Open location selector
+              //   },
+              //   child: Row(
+              //     children: [
+              //       Text(
+              //         AppLocalizations.of(context)!.location,
+              //         style: GoogleFonts.poppins(
+              //           fontSize: 13,
+              //           color: Colors.grey[700],
+              //         ),
+              //       ),
+              //       const Icon(Icons.arrow_forward_ios,
+              //           size: 12, color: Colors.grey),
+              //     ],
+              //   ),
+              // ),
+              const SizedBox.shrink(),
 
               // Icons: Profile, Cart, Notification
               Row(
                 children: [
-                  // Profile tab
-                  HeaderPill(
-                    icon: Icons.monetization_on,
-                    text: '25',
-                    // onTap: () => widget.onSelectTab(1),
-                  ),
-                  const SizedBox(width: 10),
+                  // GRABIIT REVIEW: Grab Points pill commented out —
+                  // backend for the points system isn't ready yet.
+                  // HeaderPill(
+                  //   icon: Icons.monetization_on,
+                  //   text: '25',
+                  //   // onTap: () => widget.onSelectTab(1),
+                  // ),
+                  // const SizedBox(width: 10),
 
                   // Cart Icon
                   AnimatedBuilder(
@@ -732,18 +737,12 @@ Future<List<Vendor>> fetchVendorsByCategory(String category,
   try {
     final url =
         'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?categoryid=${Uri.encodeComponent(category)}&lang=${Uri.encodeComponent(lang)}';
-    // print("_________________________________");
-    // print("URL=> $url");
-    // print("_________________________________");
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) return [];
 
     /// Remove XML wrapper
     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-    // print("______________-------------------___________________");
-    // print("VENDOR API RAW => $cleaned");
-    // print("______________-------------------___________________");
 
     /// 🚨 HANDLE NON JSON RESPONSES
     if (cleaned.isEmpty ||
@@ -767,7 +766,6 @@ Future<List<Vendor>> fetchVendorsByCategory(String category,
 
     return [];
   } catch (e) {
-    // print("Vendor Parse Error => $e");
     return [];
   }
 }
@@ -819,52 +817,13 @@ class Restaurant {
 // 🌐 API Function for Restaurants (Production Ready)
 Future<List<Restaurant>> fetchRestaurantsByCategory(String category) async {
   // Replace with actual API call when backend is ready
-  // Example API endpoint: 'https://grabitt.in/webservice.asmx/GetRestaurantsByCategory?category=${Uri.encodeComponent(category)}'
-
-  // For now, return dummy data based on category
   return _getDummyRestaurants(category);
-
-  /* 
-  // Uncomment when API is ready:
-  try {
-    final url = category == 'All' || category.isEmpty
-        ? 'https://grabitt.in/webservice.asmx/GetRestaurantsByCategory?category=ALL'
-        : 'https://grabitt.in/webservice.asmx/GetRestaurantsByCategory?category=${Uri.encodeComponent(category)}';
-
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-
-      if (cleaned.toLowerCase() == 'fail' || cleaned.isEmpty) {
-        return [];
-      }
-
-      try {
-        final List data = json.decode(cleaned);
-        return data.map((e) => Restaurant.fromJson(e)).toList();
-      } catch (e) {
-        // If JSON parsing fails, return empty list
-        return [];
-      }
-    } else {
-      return [];
-    }
-  } catch (e) {
-    // Handle network errors gracefully
-    return [];
-  }
-  */
 }
 
 // 📦 Dummy Data Generator (Replace with API call)
 List<Restaurant> _getDummyRestaurants(String category) {
-  // Simulate API delay
-  // In production, this will be replaced by actual API call
-
   final categoryLower = category.toLowerCase();
 
-  // Generate dummy restaurants based on category
   if (categoryLower == 'all' || categoryLower.isEmpty) {
     return List.generate(
         4,
@@ -903,7 +862,6 @@ List<Restaurant> _getDummyRestaurants(String category) {
               rating: 4.5 + (index * 0.1),
             ));
   } else {
-    // Default: return restaurants for any other category
     return List.generate(
         2,
         (index) => Restaurant(

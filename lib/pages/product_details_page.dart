@@ -67,31 +67,34 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
       ),
     );
 
-    _flyController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _removeOverlay();
-      }
-    });
+    _flyController.addStatusListener(_onFlyStatusChanged);
+  }
+
+  void _onFlyStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _removeOverlay();
+    }
   }
 
   @override
   void dispose() {
+    _flyController.removeStatusListener(_onFlyStatusChanged);
     _overlayEntry?.remove();
     _overlayEntry = null;
     _flyController.dispose();
     _quoteController.dispose();
-    // _removeOverlay();
     super.dispose();
   }
 
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
-    if (mounted) {
-      setState(() {
-        _showQuote = false;
-      });
-    }
+    // GRABIIT REVIEW: guard kept, just reordered after removing overlay so
+    // overlay cleanup always happens even if mounted is false.
+    if (!mounted) return;
+    setState(() {
+      _showQuote = false;
+    });
   }
 
   Offset _getCartIconPosition() {
@@ -120,6 +123,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
   }
 
   void _startPaperPlaneAnimation() async {
+    CartService.instance.addItem(widget.product);
+    CartService.instance.triggerCartAnimation();
+
     // Wait for layout so both image and cart icon positions are available
     await Future.delayed(const Duration(milliseconds: 100));
     if (!mounted) return;
@@ -131,8 +137,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     _quoteController.reset();
 
     if (startPos == Offset.zero) {
-      CartService.instance.addItem(widget.product);
-      CartService.instance.triggerCartAnimation();
       return;
     }
 
@@ -163,12 +167,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
     Overlay.of(context).insert(_overlayEntry!);
     SoundService.instance.playWhoosh();
     _quoteController.forward();
-    _flyController.forward().then((_) {
-      if (mounted) {
-        CartService.instance.addItem(widget.product);
-        CartService.instance.triggerCartAnimation();
-      }
-    });
+    _flyController.forward();
   }
 
   @override
@@ -232,6 +231,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage>
                         icon: const Icon(Icons.shopping_cart_outlined,
                             color: Colors.pinkAccent),
                         onPressed: () {
+                          // GRABIIT REVIEW: clear the in-flight overlay
+                          // animation before navigating, otherwise it stays
+                          // visible on top of CartPage until it finishes
+                          // (the overlay belongs to the root Navigator, not
+                          // this page, so it renders above any pushed route).
+                          if (_overlayEntry != null) {
+                            _flyController.stop();
+                            _removeOverlay();
+                          }
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const CartPage()),
@@ -516,36 +524,6 @@ class _PaperPlaneOverlay extends StatelessWidget {
                     ),
                   ),
                 ),
-
-              // Quote: "Fast as a flight."
-              // if (showQuote && t < 0.8)
-              //   Positioned(
-              //     left: currentPos.dx - 60,
-              //     top: currentPos.dy - 80,
-              //     child: FadeTransition(
-              //       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-              //         CurvedAnimation(
-              //           parent: quoteController,
-              //           curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-              //         ),
-              //       ),
-              //       child: Container(
-              //         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              //         decoration: BoxDecoration(
-              //           color: Colors.black87,
-              //           borderRadius: BorderRadius.circular(8),
-              //         ),
-              //         child: Text(
-              //           '"Fast as a flight."',
-              //           style: GoogleFonts.poppins(
-              //             color: Colors.white,
-              //             fontSize: 12,
-              //             fontWeight: FontWeight.w500,
-              //           ),
-              //         ),
-              //       ),
-              //     ),
-              //   ),
             ],
           ),
         );

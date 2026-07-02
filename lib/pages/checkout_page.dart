@@ -6,6 +6,7 @@ import 'package:grabitt/widgets/address_selector_sheet.dart';
 import 'package:grabitt/widgets/checkout_address_card.dart';
 import 'package:grabitt/widgets/checkout_order_summary.dart';
 import 'package:grabitt/widgets/checkout_payment_card.dart';
+import 'package:grabitt/widgets/vendor_banner.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:grabitt/app_State/cart.dart';
@@ -237,14 +238,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final email = user?['Email']?.toString();
 
     if (orderId == null || orderId.isEmpty) {
-      AppLogger.w(_tag, 'Razorpay order API failed — using amount-based fallback');
+      AppLogger.w(
+          _tag, 'Razorpay order API failed — using amount-based fallback');
       _activeRazorpayOrderId = null;
       _paymentService.onPaymentSuccess = _navigateToWaiting;
       _paymentService.onPaymentError = _onPaymentFailed;
       _paymentService.onPaymentSuccessData = null;
       _paymentService.onPaymentErrorData = null;
       ToastMessage.warning(
-          context: context, msg: 'Order API unavailable. Opening fallback checkout.');
+          context: context,
+          msg: 'Order API unavailable. Opening fallback checkout.');
       _paymentService.openCheckout(
           amount: _cart.finalTotal, contact: contact, email: email);
       return;
@@ -282,14 +285,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
             .trim();
         raw = jsonDecode(cleaned) as Map<String, dynamic>;
       } else {
-        throw FormatException('Unexpected response type: ${response.runtimeType}');
+        throw FormatException(
+            'Unexpected response type: ${response.runtimeType}');
       }
 
       final normalized = {
-        for (final e in raw.entries)
-          e.key.toLowerCase(): e.value,
+        for (final e in raw.entries) e.key.toLowerCase(): e.value,
       };
-      final status = normalized['status']?.toString().trim().toLowerCase() ?? '';
+      final status =
+          normalized['status']?.toString().trim().toLowerCase() ?? '';
       final message = normalized['message']?.toString().trim() ?? '';
 
       if (status == 'success') {
@@ -304,7 +308,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           context: context,
           msg: message.isNotEmpty
               ? message
-              : (status == 'fail' ? 'Shop is currently closed' : 'Unable to process order'),
+              : (status == 'fail'
+                  ? 'Shop is currently closed'
+                  : 'Unable to process order'),
         );
       }
     } catch (e, st) {
@@ -376,6 +382,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            VendorBanner(
+              vendorName: _cart.vendorName,
+              vendorCategory: _cart.vendorCategory,
+            ),
             _SectionTitle(l10n.shippingAddress),
             CheckoutAddressCard(
               isLoading: _loadingAddresses,
@@ -472,16 +482,14 @@ class _PlaceOrderBar extends StatelessWidget {
                 _isDisabled ? Colors.grey : StoreProfileTheme.accentPink,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: _isDisabled ? _onDisabledTap(context) : onPlaceOrder,
           child: Text(
             _label(l10n),
             style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white),
+                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
           ),
         ),
       ),

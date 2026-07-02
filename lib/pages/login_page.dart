@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-// import 'dart:math';
 import 'package:grabitt/services/auth_service.dart';
 import 'package:grabitt/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +24,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   LoginStep _currentStep = LoginStep.phoneNumber;
   LoginMethod _loginMethod = LoginMethod.otp;
 
-  // Phone number input
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   final FocusNode _phoneFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
 
   AnimationController? _pulseController;
   Animation<double>? _pulseAnimation;
@@ -38,7 +36,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isPhoneValid = false;
   bool _isPasswordVisible = false;
 
-  // OTP input (used with PinFieldAutoFill for SMS autofill)
   String _otpCode = '';
   String? _storedOtp;
   Map<String, dynamic>? _loggedInUser;
@@ -46,28 +43,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isSendingOtp = false;
   bool _isResendingOtp = false;
 
-  // Legacy 4-box OTP (kept for manual entry fallback / animation)
   final List<TextEditingController> _otpControllers =
       List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(4, (_) => FocusNode());
   final List<AnimationController> _otpSlideControllers = [];
   final List<Animation<Offset>> _otpSlideAnimations = [];
 
-  // Verification success
   AnimationController? _successController;
   Animation<double>? _rotationAnimation;
   Animation<double>? _scaleAnimation;
   bool _isVerifying = false;
   bool _isVerified = false;
 
-  // ================= TIMER ADDED =================
   Timer? _resendTimer;
   int _resendSeconds = 90;
   bool _canResendOtp = false;
-
-  // SMS read (readotp) for OTP autofill – commented out for now; manual OTP input only
-  // ReadOtp? _readOtp;
-  // StreamSubscription? _smsSubscription;
 
   @override
   void initState() {
@@ -83,11 +73,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut),
     );
-
     _jumpAnimation = Tween<double>(begin: 0.0, end: -8.0).animate(
       CurvedAnimation(parent: _pulseController!, curve: Curves.elasticOut),
     );
@@ -100,7 +88,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 600),
       );
       _otpSlideControllers.add(controller);
-
       final animation = Tween<Offset>(
         begin: const Offset(0, 0.5),
         end: Offset.zero,
@@ -117,14 +104,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-
     _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _successController!,
         curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
       ),
     );
-
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
         parent: _successController!,
@@ -136,11 +121,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void _onPhoneChanged() {
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
     final isValid = phone.length >= 10;
-
     if (isValid != _isPhoneValid) {
-      setState(() {
-        _isPhoneValid = isValid;
-      });
+      setState(() => _isPhoneValid = isValid);
     }
   }
 
@@ -150,18 +132,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     });
   }
 
-  // ================= TIMER START =================
   void _startResendTimer() {
     _resendTimer?.cancel();
-
     setState(() {
       _resendSeconds = 90;
       _canResendOtp = false;
     });
-
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-
       if (_resendSeconds > 0) {
         setState(() => _resendSeconds--);
       } else {
@@ -171,7 +149,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     });
   }
 
-  /// Check user by phone -> if not found show alert and go to signup; else send OTP and go to OTP step.
   Future<void> _sendOtp() async {
     if (!_isPhoneValid) return;
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
@@ -187,13 +164,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       return;
     }
 
-    late String otp;
-
-    if (phone == "9158724772") {
-      otp = "5555";
-    } else {
-      otp = '${1000 + Random().nextInt(9000)}';
-    }
+    final otp =
+        phone == '9158724772' ? '5555' : '${1000 + Random().nextInt(9000)}';
 
     setState(() => _isSendingOtp = true);
     final sendResult = await AuthService.instance.sendOtp(phone, otp);
@@ -216,32 +188,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       c.clear();
     }
     setState(() => _currentStep = LoginStep.otp);
-    _startResendTimer(); // ✅ TIMER START
-    try {
-      // await SmsAutoFill().listenForCode();
-    } catch (_) {}
-    // _startSmsListener();
+    _startResendTimer();
   }
 
   Future<void> _login() async {
     if (!_isPhoneValid) return;
-
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-
     final password = _passwordController.text.trim();
 
     if (password.isEmpty) {
-      ToastMessage.error(
-        context: context,
-        msg: 'Please enter password',
-      );
+      ToastMessage.error(context: context, msg: 'Please enter password');
       return;
     }
 
     setState(() => _isCheckingUser = true);
-
     final userResult = await AuthService.instance.getUserByPhone(phone);
-
     if (!mounted) return;
 
     if (!userResult.found || userResult.user == null) {
@@ -254,68 +215,26 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       phoneno: phone,
       password: password,
     );
-
     if (!mounted) return;
 
     setState(() => _isCheckingUser = false);
 
     if (!loginResult.success) {
       ToastMessage.error(
-        context: context,
-        msg: loginResult.message ?? 'Login failed',
-      );
+          context: context, msg: loginResult.message ?? 'Login failed');
       return;
     }
 
-    await AuthService.instance.saveLoginUser(
-      userResult.user!,
-    );
-
+    await AuthService.instance.saveLoginUser(userResult.user!);
     _passwordController.clear();
-
     if (!mounted) return;
 
     ToastMessage.success(
-      context: context,
-      msg: loginResult.message ?? 'Login successful',
-    );
-
+        context: context, msg: loginResult.message ?? 'Login successful');
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const MainShell(),
-      ),
+      MaterialPageRoute(builder: (_) => const MainShell()),
     );
   }
-
-  /// Request SMS permission and start listening for incoming SMS to auto-fill OTP.
-  // void _startSmsListener() async {
-  //   try {
-  //     final status = await Permission.sms.request();
-  //     if (!mounted || status != PermissionStatus.granted) return;
-  //     _readOtp?.dispose();
-  //     _readOtp = ReadOtp();
-  //     _readOtp!.start();
-  //     if (!mounted) return;
-  //     _smsSubscription?.cancel();
-  //     _smsSubscription = _readOtp!.smsStream.listen((sms) {
-  //       final body = sms.body;
-  //       final match = RegExp(r'\d{4}').firstMatch(body);
-  //       if (match != null && mounted && _currentStep == LoginStep.otp && !_isVerified) {
-  //         final code = match.group(0)!;
-  //         WidgetsBinding.instance.addPostFrameCallback((_) {
-  //           if (mounted && _currentStep == LoginStep.otp) _onPinCodeChanged(code);
-  //         });
-  //       }
-  //     });
-  //   } catch (_) {}
-  // }
-  //
-  // void _stopSmsListener() {
-  //   _smsSubscription?.cancel();
-  //   _smsSubscription = null;
-  //   _readOtp?.dispose();
-  //   _readOtp = null;
-  // }
 
   void _showUserNotFoundAndNavigateToSignup() {
     showDialog<void>(
@@ -349,29 +268,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  /// Resend OTP: generate new OTP, call API, update _storedOtp.
   Future<void> _resendOtp() async {
     final phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-
     if (phone.isEmpty || _loggedInUser == null) return;
 
     setState(() => _isResendingOtp = true);
-    late String otp;
-
-    if (phone == "9158724772") {
-      otp = "5555";
-    } else {
-      otp = '${1000 + Random().nextInt(9000)}';
-    }
+    final otp =
+        phone == '9158724772' ? '5555' : '${1000 + Random().nextInt(9000)}';
 
     final result = await AuthService.instance.sendOtp(phone, otp);
-
     if (!mounted) return;
 
     setState(() => _isResendingOtp = false);
     if (result.success) {
       _storedOtp = otp;
-      _startResendTimer(); // reset timer
+      _startResendTimer();
       ToastMessage.success(context: context, msg: 'OTP resent successfully');
     } else {
       ToastMessage.error(
@@ -379,8 +290,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  /// Verify entered OTP with stored OTP; on match save user and navigate to main app.
   Future<void> _verifyOtp() async {
+    if (_isVerifying || _isVerified) return; // guard double tap
     final entered = _otpCode.length == 4
         ? _otpCode
         : _otpControllers.map((c) => c.text).join();
@@ -407,48 +318,26 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const MainShell(),
-      ),
+      MaterialPageRoute(builder: (_) => const MainShell()),
     );
   }
 
-  // void _onPinCodeChanged(String? code) {
-  //   setState(() => _otpCode = code ?? '');
-  //   for (int i = 0; i < 4; i++) {
-  //     if (i < (code?.length ?? 0)) {
-  //       _otpControllers[i].text = code![i];
-  //       if (_otpSlideControllers[i].value == 0) {
-  //         _otpSlideControllers[i].forward();
-  //       }
-  //     } else {
-  //       _otpControllers[i].clear();
-  //     }
-  //   }
-  //   if ((code?.length ?? 0) == 4) {
-  //     Future.delayed(const Duration(milliseconds: 300), () {
-  //       if (mounted && !_isVerifying && !_isVerified) _verifyOtp();
-  //     });
-  //   }
-  // }
-
   @override
   void dispose() {
-    _resendTimer?.cancel(); // IMPORTANT
-    // _stopSmsListener();
-    // SmsAutoFill().unregisterListener();
+    _resendTimer?.cancel();
     _phoneController.dispose();
     _passwordController.dispose();
     _phoneFocusNode.dispose();
+    _passwordFocusNode.dispose();
     _pulseController?.dispose();
-    for (var controller in _otpControllers) {
-      controller.dispose();
+    for (var c in _otpControllers) {
+      c.dispose();
     }
-    for (var node in _otpFocusNodes) {
-      node.dispose();
+    for (var n in _otpFocusNodes) {
+      n.dispose();
     }
-    for (var controller in _otpSlideControllers) {
-      controller.dispose();
+    for (var c in _otpSlideControllers) {
+      c.dispose();
     }
     _successController?.dispose();
     super.dispose();
@@ -458,9 +347,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // body: SafeArea(
-      //   child: _buildPhoneNumberStep(),
-      // ),
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 400),
@@ -475,9 +361,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       case LoginStep.phoneNumber:
         return _buildPhoneNumberStep();
       case LoginStep.otp:
-        return _buildOtpStep();
       case LoginStep.success:
-        return _buildOtpStep(); // Show OTP step with transformed button
+        return _buildOtpStep();
     }
   }
 
@@ -489,9 +374,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: IntrinsicHeight(
               child: Padding(
                 key: const ValueKey('phone'),
@@ -499,7 +382,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo
                     Image.asset(
                       'assets/images/newlogo2.png',
                       width: 200,
@@ -507,10 +389,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 30),
-
-                    // Title
                     Text(
-                      "Welcome to GraB iTT!",
+                      'Welcome to GraB iTT!',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 24,
@@ -520,15 +400,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Enter your phone number to continue',
+                      _loginMethod == LoginMethod.otp
+                          ? 'Enter your phone number to continue'
+                          : 'Enter your phone number and password to continue',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                          fontSize: 16, color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
 
+                    // Login method toggle
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -537,74 +418,31 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       ),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _loginMethod = LoginMethod.otp;
-                                  _passwordController.clear();
-                                });
-                              },
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: _loginMethod == LoginMethod.otp
-                                      ? StoreProfileTheme.accentPink
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  "Login with OTP",
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    color: _loginMethod == LoginMethod.otp
-                                        ? Colors.white
-                                        : Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          _LoginMethodTab(
+                            label: 'Login with OTP',
+                            selected: _loginMethod == LoginMethod.otp,
+                            onTap: () => setState(() {
+                              _loginMethod = LoginMethod.otp;
+                              _passwordController.clear();
+                            }),
                           ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _loginMethod = LoginMethod.password;
-                                  for (var c in _otpControllers) {
-                                    c.clear();
-                                  }
-                                  _otpCode = '';
-                                });
-                              },
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: _loginMethod == LoginMethod.password
-                                      ? StoreProfileTheme.accentPink
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  "Password Login",
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    color: _loginMethod == LoginMethod.password
-                                        ? Colors.white
-                                        : Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          _LoginMethodTab(
+                            label: 'Password Login',
+                            selected: _loginMethod == LoginMethod.password,
+                            onTap: () => setState(() {
+                              _loginMethod = LoginMethod.password;
+                              for (var c in _otpControllers) {
+                                c.clear();
+                              }
+                              _otpCode = '';
+                            }),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Phone input with pulse animation
+
+                    // Phone field
                     AnimatedBuilder(
                       animation: _pulseController!,
                       builder: (context, child) {
@@ -618,7 +456,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.blue.withValues(
-                                      alpha: (_pulseController!.value * 0.3),
+                                      alpha: _pulseController!.value * 0.3,
                                     ),
                                     blurRadius: 20,
                                     spreadRadius: 2,
@@ -629,49 +467,52 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 controller: _phoneController,
                                 focusNode: _phoneFocusNode,
                                 keyboardType: TextInputType.phone,
+                                textInputAction:
+                                    _loginMethod == LoginMethod.password
+                                        ? TextInputAction.next
+                                        : TextInputAction.done,
+                                onSubmitted: (_) {
+                                  if (_loginMethod == LoginMethod.password) {
+                                    FocusScope.of(context)
+                                        .requestFocus(_passwordFocusNode);
+                                  } else {
+                                    FocusScope.of(context).unfocus();
+                                  }
+                                },
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                   LengthLimitingTextInputFormatter(10),
                                 ],
                                 onChanged: (_) => _onPhoneDigitTyped(),
                                 style: GoogleFonts.inter(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  letterSpacing: 2,
+                                  letterSpacing: 1,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Phone Number',
-                                  hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey[400],
-                                    fontSize: 18,
-                                  ),
-                                  prefixIcon: const Icon(Icons.phone,
-                                      color: Colors.grey),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey[300]!,
-                                      width: 2,
+                                    hintText: 'Phone Number',
+                                    hintStyle: GoogleFonts.inter(
+                                      color: Colors.grey[400],
+                                      fontSize: 16,
                                     ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(
-                                      color: Colors.blue,
-                                      width: 3,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 20,
-                                  ),
-                                ),
+                                    prefixIcon: const Icon(Icons.phone,
+                                        color: Colors.grey),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none),
+                                    enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide(
+                                            color: Colors.grey.shade300,
+                                            width: 2)),
+                                    focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: const BorderSide(
+                                            color: Colors.blue, width: 3)),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 18)),
                               ),
                             ),
                           ),
@@ -683,61 +524,48 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     if (_loginMethod == LoginMethod.password) ...[
                       TextField(
                         controller: _passwordController,
+                        focusNode: _passwordFocusNode,
                         obscureText: !_isPasswordVisible,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) {
-                          if (_isPhoneValid && !_isCheckingUser) {
-                            _login();
-                          }
+                          if (_isPhoneValid && !_isCheckingUser) _login();
                         },
                         style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            fontSize: 18, fontWeight: FontWeight.w500),
                         decoration: InputDecoration(
-                          hintText: 'Password',
-                          hintStyle: GoogleFonts.inter(
-                            color: Colors.grey[400],
-                          ),
-                          prefixIcon:
-                              const Icon(Icons.lock, color: Colors.grey),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
+                            hintText: 'Password',
+                            hintStyle:
+                                GoogleFonts.inter(color: Colors.grey[400]),
+                            prefixIcon:
+                                const Icon(Icons.lock, color: Colors.grey),
+                            suffixIcon: IconButton(
+                              icon: Icon(_isPasswordVisible
                                   ? Icons.visibility
-                                  : Icons.visibility_off,
+                                  : Icons.visibility_off),
+                              onPressed: () => setState(() =>
+                                  _isPasswordVisible = !_isPasswordVisible),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: Colors.grey[300]!,
-                              width: 2,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Colors.blue,
-                              width: 3,
-                            ),
-                          ),
-                        ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                    color: Colors.grey.shade300, width: 2)),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                    color: Colors.blue, width: 3)),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 18,
+                            )),
                       ),
                       const SizedBox(height: 16),
                     ],
-                    // Continue button
+
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -757,8 +585,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           backgroundColor: StoreProfileTheme.accentPink,
                           disabledBackgroundColor: Colors.grey[300],
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                              borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
                         ),
                         child: _isCheckingUser || _isSendingOtp
@@ -766,12 +593,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white)),
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
                               )
                             : Text(
-                                // 'Continue',
                                 _loginMethod == LoginMethod.otp
                                     ? 'Send OTP'
                                     : 'Login',
@@ -790,17 +617,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         Text(
                           "Don't have an account? ",
                           style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
+                              fontSize: 14, color: Colors.grey[600]),
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const SignupPage(),
-                              ),
-                            );
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => const SignupPage()));
                           },
                           child: Text(
                             'Sign up',
@@ -813,25 +635,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                   // const SizedBox(height: 24),
- /*                   FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (context, snapshot) {
-                        final version = snapshot.data?.version ?? '';
-                        final build = snapshot.data?.buildNumber ?? '';
-                        final text = version.isEmpty
-                            ? ''
-                            : 'Version $version${build.isNotEmpty ? ' ($build)' : ''}';
-                        if (text.isEmpty) return const SizedBox.shrink();
-                        return Text(
-                          text,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey[500],
-                          ),
-                        );
-                      },
-                    ),*/
                   ],
                 ),
               ),
@@ -848,16 +651,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         key: const ValueKey('otp'),
         padding: const EdgeInsets.symmetric(horizontal: 32.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Back button
             Align(
               alignment: Alignment.topLeft,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black87),
                 onPressed: () {
-                  // _stopSmsListener();
                   setState(() {
                     _currentStep = LoginStep.phoneNumber;
                     _isVerifying = false;
@@ -874,28 +674,22 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Title
             Text(
               'Enter OTP',
               style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87),
             ),
             const SizedBox(height: 12),
             Text(
               'We sent a code to\n${_phoneController.text}',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 80),
 
-            // Manual OTP input (SMS autofill / readotp commented out for now)
+            // OTP boxes
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(4, (index) {
@@ -908,14 +702,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     textAlign: TextAlign.center,
                     keyboardType: TextInputType.number,
                     maxLength: 1,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87),
                     decoration: InputDecoration(
                       counterText: '',
                       filled: true,
@@ -957,7 +748,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 56),
 
-            // Verify button with transformation animation
+            // Verify button
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -967,11 +758,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   final isTransforming =
                       _isVerified && _successController!.value > 0;
                   final buttonColor = isTransforming
-                      ? Color.lerp(
-                          StoreProfileTheme.accentPink,
-                          Colors.green,
-                          _successController!.value,
-                        )!
+                      ? Color.lerp(StoreProfileTheme.accentPink, Colors.green,
+                          _successController!.value)!
                       : StoreProfileTheme.accentPink;
 
                   return Transform.rotate(
@@ -986,18 +774,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         backgroundColor: buttonColor,
                         disabledBackgroundColor: buttonColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                            borderRadius: BorderRadius.circular(16)),
                         elevation: isTransforming ? 8 : 0,
                       ),
                       child: isTransforming
                           ? Transform.scale(
                               scale: _scaleAnimation!.value,
-                              child: const Icon(
-                                Icons.home,
-                                color: Colors.white,
-                                size: 28,
-                              ),
+                              child: const Icon(Icons.home,
+                                  color: Colors.white, size: 28),
                             )
                           : _isVerifying
                               ? const SizedBox(
@@ -1048,6 +832,43 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Small stateless tab widget extracted to reduce build() nesting
+class _LoginMethodTab extends StatelessWidget {
+  const _LoginMethodTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? StoreProfileTheme.accentPink : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: selected ? Colors.white : Colors.black,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );

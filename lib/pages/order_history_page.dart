@@ -20,7 +20,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   String? _userId;
   List<OrderHistoryItem> _orders = [];
   final Set<String> _ratingSubmittingOrders = <String>{};
-  final Set<String> _ratedOrders = <String>{};
 
   @override
   void initState() {
@@ -53,7 +52,12 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   Future<void> _openRatingSheet(OrderHistoryItem order) async {
+    // Defensive guard — UI already hides the button when rated, but this
+    // protects against stale callbacks or future entry points.
+    if (order.isRiderRated) return;
+
     int selectedRating = 5;
+    bool isSubmitting = false; // prevents double-tap on submit button
     final noteController = TextEditingController();
     final submitted = await showModalBottomSheet<bool>(
       context: context,
@@ -162,6 +166,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                               ),
                             ),
                             onPressed: () async {
+                              if (isSubmitting) return;
+                              setLocalState(() => isSubmitting = true);
                               final note = noteController.text.trim();
                               Navigator.pop(ctx, true);
                               Future.microtask(() async {
@@ -209,7 +215,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     if (!mounted) return;
     setState(() {
       _ratingSubmittingOrders.remove(orderId);
-      if (ok) _ratedOrders.add(orderId);
     });
     if (ok) {
       ToastMessage.success(
@@ -270,7 +275,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                               order: order,
                               isRatingSubmitting: _ratingSubmittingOrders
                                   .contains(order.orderId),
-                              isRated: _ratedOrders.contains(order.orderId),
+                              isRated: order.isRiderRated,
                               onTapRateRider: () => _openRatingSheet(order),
                             ),
                           );

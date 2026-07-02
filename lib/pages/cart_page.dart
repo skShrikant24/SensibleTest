@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:grabitt/l10n/app_localizations.dart';
 import 'package:grabitt/pages/checkout_page.dart';
+import 'package:grabitt/widgets/vendor_banner.dart';
 
 import '../app_State/cart.dart';
 import '../utils/constants.dart';
@@ -63,7 +64,11 @@ class _CartPageState extends State<CartPage> {
                             itemCount: cart.items.length + 1,
                             itemBuilder: (context, index) {
                               // index 0 = vendor banner
-                              if (index == 0) return _vendorBanner();
+                              if (index == 0) {
+                                return VendorBanner(
+                                    vendorName: cart.vendorName,
+                                    vendorCategory: cart.vendorCategory);
+                              }
                               return _cartItem(cart.items[index - 1]);
                             },
                           ),
@@ -73,75 +78,6 @@ class _CartPageState extends State<CartPage> {
                     ),
         );
       },
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Vendor banner
-  // ---------------------------------------------------------------------------
-
-  Widget _vendorBanner() {
-    final name = cart.vendorName;
-    final category = cart.vendorCategory;
-
-    // If backend hasn't returned vendor info yet, show nothing.
-    if (name.isEmpty) return const SizedBox(height: 4);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: StoreProfileTheme.accentPink.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: StoreProfileTheme.accentPink.withValues(alpha: 0.25),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: StoreProfileTheme.accentPink.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.storefront_rounded,
-              color: StoreProfileTheme.accentPink,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                if (category.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    category,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
