@@ -59,31 +59,35 @@ Future<bool> addAddress({
 }) async {
   if (userID.isEmpty) return false;
   try {
-    final uri = Uri.parse('$_baseUrl/webservice.asmx/AddAddress').replace(
-      queryParameters: {
-        'UserID': userID,
-        'AddressType': addressType,
-        'AddressLine1': addressLine1,
-        'AddressLine2': addressLine2,
-        'Landmark': landmark,
-        'Area': area,
-        'City': city,
-        'District': district,
-        'State': state,
-        'Pincode': pincode,
-        'lon': lon,
-        'lan': lan,
-      },
+    final uri = Uri.parse(
+      '$_baseUrl/webservice.asmx/AddAddress'
+      '?UserID=${Uri.encodeQueryComponent(userID)}'
+      '&AddressType=${Uri.encodeQueryComponent(addressType)}'
+      '&AddressLine1=${Uri.encodeQueryComponent(addressLine1)}'
+      '&AddressLine2=${Uri.encodeQueryComponent(addressLine2)}'
+      '&Landmark=${Uri.encodeQueryComponent(landmark)}'
+      '&Area=${Uri.encodeQueryComponent(area)}'
+      '&City=${Uri.encodeQueryComponent(city)}'
+      '&District=${Uri.encodeQueryComponent(district)}'
+      '&State=${Uri.encodeQueryComponent(state)}'
+      '&Pincode=${Uri.encodeQueryComponent(pincode)}'
+      '&lon=${Uri.encodeQueryComponent(lon)}'
+      '&lan=${Uri.encodeQueryComponent(lan)}',
     );
-
+    AppLogger.w(_tag, 'AddAddress URL: $uri');
     final response = await http.get(uri);
     final cleaned = _cleanResponse(response.body);
     final success = response.statusCode == 200 &&
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
     if (!success) {
-      AppLogger.w(_tag,
-          'addAddress: failed — HTTP ${response.statusCode}, body: $cleaned');
+      AppLogger.w(
+        _tag,
+        'addAddress failed\n'
+        'URL: $uri\n'
+        'HTTP: ${response.statusCode}\n'
+        'Body: $cleaned',
+      );
     }
     return success;
   } catch (e, st) {
@@ -110,22 +114,23 @@ Future<bool> updateAddress({
 }) async {
   if (id.isEmpty) return false;
   try {
-    final uri = Uri.parse('$_baseUrl/webservice.asmx/UpdateAddress').replace(
-      queryParameters: {
-        'ID': id,
-        'AddressType': addressType,
-        'AddressLine1': addressLine1,
-        'AddressLine2': addressLine2,
-        'Landmark': landmark,
-        'Area': area,
-        'City': city,
-        'District': district,
-        'State': state,
-        'Pincode': pincode,
-        'lon': lon,
-        'lan': lan,
-      },
+    final uri = Uri.parse(
+      '$_baseUrl/webservice.asmx/UpdateAddress'
+      '?ID=${Uri.encodeQueryComponent(id)}'
+      '&AddressType=${Uri.encodeQueryComponent(addressType)}'
+      '&AddressLine1=${Uri.encodeQueryComponent(addressLine1)}'
+      '&AddressLine2=${Uri.encodeQueryComponent(addressLine2)}'
+      '&Landmark=${Uri.encodeQueryComponent(landmark)}'
+      '&Area=${Uri.encodeQueryComponent(area)}'
+      '&City=${Uri.encodeQueryComponent(city)}'
+      '&District=${Uri.encodeQueryComponent(district)}'
+      '&State=${Uri.encodeQueryComponent(state)}'
+      '&Pincode=${Uri.encodeQueryComponent(pincode)}'
+      '&lon=${Uri.encodeQueryComponent(lon)}'
+      '&lan=${Uri.encodeQueryComponent(lan)}',
     );
+
+    AppLogger.w(_tag, 'UpdateAddress URL: $uri');
 
     final response = await http.get(uri);
     final cleaned = _cleanResponse(response.body);
@@ -133,8 +138,13 @@ Future<bool> updateAddress({
         cleaned.isNotEmpty &&
         cleaned.toLowerCase() != 'fail';
     if (!success) {
-      AppLogger.w(_tag,
-          'updateAddress: failed — HTTP ${response.statusCode}, body: $cleaned');
+      AppLogger.w(
+        _tag,
+        'updateAddress failed\n'
+        'URL: $uri\n'
+        'HTTP: ${response.statusCode}\n'
+        'Body: $cleaned',
+      );
     }
     return success;
   } catch (e, st) {

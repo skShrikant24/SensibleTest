@@ -53,9 +53,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
       selectedId = saved.id.toString();
     } else if (list.isNotEmpty) {
       final first = list.first;
-
       await SelectedAddressStorage.instance.save(first);
-
       selectedId = first.id.toString();
     } else {
       await SelectedAddressStorage.instance.clear();
@@ -79,10 +77,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
     }
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => AddressFormPage(
-          userId: _userId!,
-          // onSaved: () => _loadUserAndAddresses(),
-        ),
+        builder: (_) => AddressFormPage(userId: _userId!),
       ),
     );
     if (result == true && mounted) {
@@ -96,36 +91,10 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
         builder: (_) => AddressFormPage(
           userId: _userId ?? address.userID,
           address: address,
-          // onSaved: () => _loadUserAndAddresses(),
         ),
       ),
     );
     if (result == true && mounted) {
-      // await Future.delayed(const Duration(milliseconds: 300));
-      // final updatedList = await getAddressByUser(_userId!);
-      // final selected = await SelectedAddressStorage.instance.load();
-
-      // if (selected != null) {
-      //   try {
-      //     final updatedSelected = updatedList.firstWhere(
-      //       (a) => a.id == selected.id,
-      //     );
-
-      //     await SelectedAddressStorage.instance.save(updatedSelected);
-      //   } catch (_) {
-      //     if (updatedList.isNotEmpty) {
-      //       await SelectedAddressStorage.instance.save(updatedList.first);
-      //       setState(() {
-      //         _selectedAddressId = updatedList.first.id.toString();
-      //       });
-      //     } else {
-      //       await SelectedAddressStorage.instance.clear();
-      //       setState(() {
-      //         _selectedAddressId = null;
-      //       });
-      //     }
-      //   }
-      // }
       await _loadUserAndAddresses();
     }
   }
@@ -135,9 +104,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Address'),
-        content: Text(
-          'Delete this address?\n${address.displaySummary}',
-        ),
+        content: Text('Delete this address?\n${address.displaySummary}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -156,21 +123,16 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
     if (!mounted) return;
     if (success) {
       final selected = await SelectedAddressStorage.instance.load();
-
       if (selected != null && selected.id == address.id) {
         await Future.delayed(const Duration(milliseconds: 300));
         final updatedAddresses = await getAddressByUser(_userId!);
-
         if (updatedAddresses.isNotEmpty) {
           await SelectedAddressStorage.instance.save(updatedAddresses.first);
-          setState(() {
-            _selectedAddressId = updatedAddresses.first.id.toString();
-          });
+          setState(
+              () => _selectedAddressId = updatedAddresses.first.id.toString());
         } else {
           await SelectedAddressStorage.instance.clear();
-          setState(() {
-            _selectedAddressId = null;
-          });
+          setState(() => _selectedAddressId = null);
         }
       }
       if (!mounted) return;
@@ -267,18 +229,15 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                         itemCount: _addresses.length,
                         itemBuilder: (context, index) {
                           final a = _addresses[index];
-                          final isSelected = a.id == _selectedAddressId;
+                          final isSelected =
+                              a.id.toString() == _selectedAddressId;
                           return InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () async {
                               await SelectedAddressStorage.instance.save(a);
-
                               if (!mounted) return;
-
-                              setState(() {
-                                _selectedAddressId = a.id.toString();
-                              });
-
+                              setState(
+                                  () => _selectedAddressId = a.id.toString());
                               ToastMessage.success(
                                 context: this.context,
                                 msg: 'Selected delivery address updated',
@@ -315,11 +274,8 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                                         ? StoreProfileTheme.accentPink
                                         : Colors.grey.shade300,
                                     child: isSelected
-                                        ? const Icon(
-                                            Icons.check,
-                                            color: Colors.white,
-                                            size: 16,
-                                          )
+                                        ? const Icon(Icons.check,
+                                            color: Colors.white, size: 16)
                                         : null,
                                   ),
                                   title: Row(
@@ -340,9 +296,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                                       if (isSelected)
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
+                                              horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: StoreProfileTheme.accentPink,
                                             borderRadius:
@@ -373,17 +327,14 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: Icon(
-                                          Icons.edit_outlined,
-                                          color: StoreProfileTheme.accentPink,
-                                        ),
+                                        icon: Icon(Icons.edit_outlined,
+                                            color:
+                                                StoreProfileTheme.accentPink),
                                         onPressed: () => _openEditAddress(a),
                                       ),
                                       IconButton(
-                                        icon: Icon(
-                                          Icons.delete_outline,
-                                          color: StoreProfileTheme.ctaAction,
-                                        ),
+                                        icon: Icon(Icons.delete_outline,
+                                            color: StoreProfileTheme.ctaAction),
                                         onPressed: () => _deleteAddress(a),
                                       ),
                                     ],
@@ -413,16 +364,18 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Address Form
+// ---------------------------------------------------------------------------
+
 class AddressFormPage extends StatefulWidget {
   final String userId;
   final AddressModel? address;
-  // final VoidCallback? onSaved;
 
   const AddressFormPage({
     super.key,
     required this.userId,
     this.address,
-    // this.onSaved,
   });
 
   @override
@@ -431,6 +384,7 @@ class AddressFormPage extends StatefulWidget {
 
 class _AddressFormPageState extends State<AddressFormPage> {
   final _formKey = GlobalKey<FormState>();
+
   final _addressType = TextEditingController();
   final _addressLine1 = TextEditingController();
   final _addressLine2 = TextEditingController();
@@ -454,7 +408,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
   final _pincodeFocus = FocusNode();
 
   bool _submitted = false;
-
   bool _saving = false;
   bool _loadingLocation = false;
 
@@ -502,93 +455,159 @@ class _AddressFormPageState extends State<AddressFormPage> {
     super.dispose();
   }
 
+  bool get _hasLocation {
+    final lat = _lan.text.trim();
+    final lng = _lon.text.trim();
+    return lat.isNotEmpty && lng.isNotEmpty && lat != '0' && lng != '0';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Location
+  // ---------------------------------------------------------------------------
+
   Future<void> _getCurrentLocation() async {
     setState(() => _loadingLocation = true);
     try {
-      final status = await Permission.location.request();
-      if (!status.isGranted) {
-        if (mounted) {
-          ToastMessage.warning(
-            context: context,
-            msg: 'Location permission denied',
-          );
-        }
+      // 1. Check permission status first (without requesting yet)
+      var status = await Permission.location.status;
+
+      if (status.isPermanentlyDenied) {
+        // iOS: once denied, request() shows nothing. Must open Settings.
+        // Android: same behavior after "Don't ask again".
+        if (mounted) _showLocationSettingsDialog();
         setState(() => _loadingLocation = false);
         return;
       }
+
+      if (!status.isGranted) {
+        // First time or soft-denied — request permission
+        status = await Permission.location.request();
+      }
+
+      if (!status.isGranted) {
+        // User denied (first time or soft-deny).
+        // On iOS, once denied the permission moves to permanentlyDenied on
+        // next check — show the settings dialog immediately so the user
+        // knows how to fix it without needing a second attempt.
+        if (mounted) _showLocationSettingsDialog();
+        setState(() => _loadingLocation = false);
+        return;
+      }
+
+      // Permission granted — check if location service is on
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          ToastMessage.warning(
-            context: context,
-            msg: 'Location services are disabled',
-          );
+          _showLocationServiceDialog();
         }
         setState(() => _loadingLocation = false);
         return;
       }
+
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
         ),
       );
+
       if (mounted) {
         setState(() {
           _lon.text = position.longitude.toString();
           _lan.text = position.latitude.toString();
         });
-        ToastMessage.success(
-          context: context,
-          msg: 'Location updated',
-        );
+        ToastMessage.success(context: context, msg: 'Location captured');
       }
     } catch (e) {
       if (mounted) {
         ToastMessage.error(
-          context: context,
-          msg: 'Could not get location',
-        );
+            context: context, msg: 'Could not get location. Try again.');
       }
     } finally {
       if (mounted) setState(() => _loadingLocation = false);
     }
   }
 
+  void _showLocationSettingsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Permission Required'),
+        content: const Text(
+          'Location access has been denied. Please enable it in your device Settings to save an address.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings(); // permission_handler
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Services Off'),
+        content: const Text(
+          'Your device location is turned off. Please enable it from Settings to auto-fill coordinates.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Submit
+  // ---------------------------------------------------------------------------
+
   Future<void> _submit() async {
     if (_saving) return;
 
-    setState(() {
-      _submitted = true;
-    });
-    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitted = true);
+    await Future.delayed(Duration.zero);
+    if (!mounted) return;
+
+    final isValid = _formKey.currentState?.validate() ?? false;
+    FocusScope.of(context).unfocus();
+
+    if (!isValid) return;
+
+    if (!_hasLocation) {
+      ToastMessage.warning(
+        context: context,
+        msg: 'Please capture your current location before saving.',
+      );
+      return;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() => _saving = true);
+
     final at = _addressType.text.trim();
     final a1 = _addressLine1.text.trim();
-    final a2 = _addressLine2.text.trim();
-    final lm = _landmark.text.trim();
+    final a2 = _addressLine2.text.trim(); // optional — sent as empty string
+    final lm = _landmark.text.trim(); // optional — sent as empty string
     final ar = _area.text.trim();
     final ci = _city.text.trim();
-    final di = _district.text.trim();
+    final di = _district.text.trim(); // optional — sent as empty string
     final st = _state.text.trim();
     final pi = _pincode.text.trim();
     final lon = _lon.text.trim();
     final lan = _lan.text.trim();
-
-    // if (a1.isEmpty) {
-    //   ToastMessage.warning(context: context, msg: 'Address line 1 is required');
-    //   setState(() => _saving = false);
-    //   return;
-    // }
-
-    if (lon.isEmpty || lan.isEmpty || lon == '0' || lan == '0') {
-      ToastMessage.warning(
-        context: context,
-        msg: 'Please get current location before saving address',
-      );
-      setState(() => _saving = false);
-      return;
-    }
 
     bool success;
     if (widget.address != null) {
@@ -625,12 +644,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
     if (!mounted) return;
     setState(() => _saving = false);
+
     if (success) {
       ToastMessage.success(
         context: context,
         msg: widget.address != null ? 'Address updated' : 'Address added',
       );
-      // widget.onSaved?.call();
       Navigator.pop(context, true);
     } else {
       ToastMessage.error(
@@ -639,6 +658,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
       );
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -665,84 +688,89 @@ class _AddressFormPageState extends State<AddressFormPage> {
       body: Form(
         key: _formKey,
         autovalidateMode: _submitted
-            ? AutovalidateMode.onUserInteraction
-            : AutovalidateMode.disabled,
+            ? AutovalidateMode.always
+            : AutovalidateMode.onUserInteraction,
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(16),
           children: [
+            // Required fields — red star in label
             _buildField(
-              'Address type (e.g. Home, Work)',
-              _addressType,
-              required: true,
+              label: 'Address Type',
+              hint: 'e.g. Home, Work, Other',
+              controller: _addressType,
+              isRequired: true,
               focusNode: _addressTypeFocus,
               nextFocus: _addressLine1Focus,
             ),
             _buildField(
-              'Address line 1 *',
-              _addressLine1,
-              required: true,
+              label: 'Address Line 1',
+              hint: 'Building / Flat / Door No.',
+              controller: _addressLine1,
+              isRequired: true,
               focusNode: _addressLine1Focus,
               nextFocus: _addressLine2Focus,
             ),
+            // Optional fields — "(Optional)" in hint
             _buildField(
-              'Address line 2',
-              _addressLine2,
+              label: 'Address Line 2',
+              hint: 'Floor, Wing, Block (Optional)',
+              controller: _addressLine2,
               focusNode: _addressLine2Focus,
               nextFocus: _landmarkFocus,
             ),
             _buildField(
-              'Landmark',
-              _landmark,
+              label: 'Landmark',
+              hint: 'Near hospital, temple... (Optional)',
+              controller: _landmark,
               focusNode: _landmarkFocus,
               nextFocus: _areaFocus,
             ),
             _buildField(
-              'Area',
-              _area,
-              required: true,
+              label: 'Area',
+              hint: 'Locality / Colony',
+              controller: _area,
+              isRequired: true,
               focusNode: _areaFocus,
               nextFocus: _cityFocus,
             ),
             _buildField(
-              'City',
-              _city,
-              required: true,
+              label: 'City',
+              hint: 'City',
+              controller: _city,
+              isRequired: true,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r"[a-zA-Z\s]"),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))
               ],
               focusNode: _cityFocus,
               nextFocus: _districtFocus,
             ),
             _buildField(
-              'District',
-              _district,
+              label: 'District',
+              hint: 'District (Optional)',
+              controller: _district,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r"[a-zA-Z\s]"),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))
               ],
               focusNode: _districtFocus,
               nextFocus: _stateFocus,
             ),
             _buildField(
-              'State',
-              _state,
-              required: true,
+              label: 'State',
+              hint: 'State',
+              controller: _state,
+              isRequired: true,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r"[a-zA-Z\s]"),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))
               ],
               focusNode: _stateFocus,
               nextFocus: _pincodeFocus,
             ),
             _buildField(
-              'Pincode',
-              _pincode,
-              required: true,
+              label: 'Pincode',
+              hint: '6-digit pincode',
+              controller: _pincode,
+              isRequired: true,
               keyboardType: TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -750,115 +778,29 @@ class _AddressFormPageState extends State<AddressFormPage> {
               ],
               focusNode: _pincodeFocus,
               isLastField: true,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Pincode is required';
+                if (!RegExp(r'^\d{6}$').hasMatch(v.trim())) {
+                  return 'Enter a valid 6-digit pincode';
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Location (lat/lng)',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: StoreProfileTheme.textPrimary,
-              ),
+
+            // Location section
+            const SizedBox(height: 4),
+            _LocationSection(
+              latController: _lan,
+              lngController: _lon,
+              isLoading: _loadingLocation,
+              showError: _submitted && !_hasLocation,
+              onGetLocation: _getCurrentLocation,
             ),
-            if (_submitted &&
-                (_lon.text.trim().isEmpty ||
-                    _lan.text.trim().isEmpty ||
-                    _lon.text.trim() == '0' ||
-                    _lan.text.trim() == '0'))
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  'Please get current location',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _lan,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      hintText: 'Latitude',
-                      filled: true,
-                      fillColor: StoreProfileTheme.surfaceVariant,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: StoreProfileTheme.border,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _lon,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      hintText: 'Longitude',
-                      filled: true,
-                      fillColor: StoreProfileTheme.surfaceVariant,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: StoreProfileTheme.border,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: _loadingLocation ? null : _getCurrentLocation,
-                icon: _loadingLocation
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.my_location),
-                label: Text(
-                  _loadingLocation
-                      ? 'Getting location...'
-                      : 'Get current location',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: StoreProfileTheme.accentPink,
-                  side: BorderSide(color: StoreProfileTheme.accentPink),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+
             const SizedBox(height: 24),
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                // onPressed: _saving ||
-                //         _lon.text.trim().isEmpty ||
-                //         _lan.text.trim().isEmpty ||
-                //         _lon.text.trim() == '0' ||
-                //         _lan.text.trim() == '0'
-                //     ? null
-                //     : _submit,
                 onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: StoreProfileTheme.accentPink,
@@ -872,46 +814,55 @@ class _AddressFormPageState extends State<AddressFormPage> {
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : Text(
                         isEdit ? 'Update Address' : 'Save Address',
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildField(
-    String label,
-    TextEditingController controller, {
-    bool required = false,
+  Widget _buildField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    bool isRequired = false,
     FocusNode? focusNode,
     FocusNode? nextFocus,
     TextInputType keyboardType = TextInputType.text,
     bool isLastField = false,
     List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: StoreProfileTheme.textPrimary,
+          // Label with red star for required fields
+          RichText(
+            text: TextSpan(
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: StoreProfileTheme.textPrimary,
+              ),
+              children: [
+                TextSpan(text: label),
+                if (isRequired)
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Colors.red),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
@@ -931,6 +882,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               }
             },
             decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey[400],
+              ),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -945,27 +901,155 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 borderSide:
                     BorderSide(color: StoreProfileTheme.accentPink, width: 1.5),
               ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1.5),
+              ),
             ),
-            validator: required
-                ? (v) {
-                    if (v == null || v.toString().trim().isEmpty) {
-                      if (label.startsWith('Address type')) {
-                        return 'Please enter address type';
-                      }
-                      return 'Please enter $label';
-                    }
-                    if (label == 'Pincode') {
-                      if (!RegExp(r'^\d{6}$').hasMatch(v.trim())) {
-                        return 'Enter valid 6 digit pincode';
-                      }
-                    }
+            validator: (value) {
+              final text = value?.trim() ?? '';
 
-                    return null;
-                  }
-                : null,
+              if (validator != null) {
+                return validator(text);
+              }
+
+              if (isRequired && text.isEmpty) {
+                return '$label is required';
+              }
+
+              return null;
+            },
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Location section widget — extracted for clarity
+// ---------------------------------------------------------------------------
+
+class _LocationSection extends StatelessWidget {
+  const _LocationSection({
+    required this.latController,
+    required this.lngController,
+    required this.isLoading,
+    required this.showError,
+    required this.onGetLocation,
+  });
+
+  final TextEditingController latController;
+  final TextEditingController lngController;
+  final bool isLoading;
+  final bool showError;
+  final VoidCallback onGetLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: StoreProfileTheme.textPrimary,
+            ),
+            children: const [
+              TextSpan(text: 'Location (Lat / Lng)'),
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: _readOnlyCoord(
+                controller: latController,
+                hint: 'Latitude',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _readOnlyCoord(
+                controller: lngController,
+                hint: 'Longitude',
+              ),
+            ),
+          ],
+        ),
+        if (showError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Location is required. Tap "Get current location".',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 48,
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: isLoading ? null : onGetLocation,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location),
+            label: Text(
+              isLoading ? 'Getting location...' : 'Get current location',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: StoreProfileTheme.accentPink,
+              side: BorderSide(color: StoreProfileTheme.accentPink),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _readOnlyCoord({
+    required TextEditingController controller,
+    required String hint,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
+        filled: true,
+        fillColor: StoreProfileTheme.surfaceVariant,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: StoreProfileTheme.border),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      ),
+      style: GoogleFonts.poppins(fontSize: 12),
     );
   }
 }
