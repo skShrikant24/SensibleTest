@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:grabitt/l10n/app_localizations.dart';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:grabitt/models/address_model.dart';
 import 'package:grabitt/services/address_api_service.dart';
 import 'package:grabitt/services/auth_service.dart';
@@ -20,6 +21,8 @@ class AddressManagementPage extends StatefulWidget {
 }
 
 class _AddressManagementPageState extends State<AddressManagementPage> {
+  static const _tag = 'AddressManagementPage';
+
   List<AddressModel> _addresses = [];
   bool _loading = true;
   String? _userId;
@@ -32,11 +35,13 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
   }
 
   Future<void> _loadUserAndAddresses() async {
+    AppLogger.d(_tag, 'Loading user and addresses');
     setState(() => _loading = true);
     final user = await AuthService.instance.getSavedUser();
     final uid = user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
 
     if (uid.isEmpty) {
+      AppLogger.w(_tag, 'No saved user found while loading addresses');
       setState(() {
         _userId = null;
         _addresses = [];
@@ -119,6 +124,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
       ),
     );
     if (confirm != true || !mounted) return;
+    AppLogger.d(_tag, 'Deleting address id=${address.id}');
     final success = await deleteAddress(address.id);
     if (!mounted) return;
     if (success) {
@@ -383,6 +389,8 @@ class AddressFormPage extends StatefulWidget {
 }
 
 class _AddressFormPageState extends State<AddressFormPage> {
+  static const _tag = 'AddressFormPage';
+
   final _formKey = GlobalKey<FormState>();
 
   final _addressType = TextEditingController();
@@ -410,6 +418,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
   bool _submitted = false;
   bool _saving = false;
   bool _loadingLocation = false;
+  bool _formValid = false;
 
   @override
   void initState() {
@@ -428,6 +437,32 @@ class _AddressFormPageState extends State<AddressFormPage> {
       _lon.text = a.lon;
       _lan.text = a.lan;
     }
+
+    // Add listeners to all required field controllers
+    _addressType.addListener(_validateForm);
+    _addressLine1.addListener(_validateForm);
+    _area.addListener(_validateForm);
+    _city.addListener(_validateForm);
+    _state.addListener(_validateForm);
+    _pincode.addListener(_validateForm);
+    _lon.addListener(_validateForm);
+    _lan.addListener(_validateForm);
+
+    // Initial validation check
+    _validateForm();
+  }
+
+  void _validateForm() {
+    if (!mounted) return;
+    setState(() {
+      _formValid = _addressType.text.trim().isNotEmpty &&
+          _addressLine1.text.trim().isNotEmpty &&
+          _area.text.trim().isNotEmpty &&
+          _city.text.trim().isNotEmpty &&
+          _state.text.trim().isNotEmpty &&
+          _pincode.text.trim().isNotEmpty &&
+          _hasLocation;
+    });
   }
 
   @override
@@ -466,12 +501,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
   // ---------------------------------------------------------------------------
 
   Future<void> _getCurrentLocation() async {
+    AppLogger.d(_tag, 'Requesting current location');
     setState(() => _loadingLocation = true);
     try {
       // 1. Check permission status first (without requesting yet)
       var status = await Permission.location.status;
 
       if (status.isPermanentlyDenied) {
+        AppLogger.w(_tag, 'Location permission permanently denied');
         // iOS: once denied, request() shows nothing. Must open Settings.
         // Android: same behavior after "Don't ask again".
         if (mounted) _showLocationSettingsDialog();
@@ -480,11 +517,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
       }
 
       if (!status.isGranted) {
+        AppLogger.d(_tag, 'Location permission not granted, requesting');
         // First time or soft-denied — request permission
         status = await Permission.location.request();
       }
 
       if (!status.isGranted) {
+        AppLogger.w(_tag, 'Location permission denied by user');
         // User denied (first time or soft-deny).
         // On iOS, once denied the permission moves to permanentlyDenied on
         // next check — show the settings dialog immediately so the user
@@ -510,14 +549,17 @@ class _AddressFormPageState extends State<AddressFormPage> {
         ),
       );
 
+      AppLogger.d(_tag, 'Location captured: ${position.latitude}, ${position.longitude}');
       if (mounted) {
         setState(() {
           _lon.text = position.longitude.toString();
           _lan.text = position.latitude.toString();
         });
+        _validateForm();
         ToastMessage.success(context: context, msg: 'Location captured');
       }
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e(_tag, 'getCurrentLocation failed', e, st);
       if (mounted) {
         ToastMessage.error(
             context: context, msg: 'Could not get location. Try again.');
@@ -577,16 +619,19 @@ class _AddressFormPageState extends State<AddressFormPage> {
   Future<void> _submit() async {
     if (_saving) return;
 
+    AppLogger.d(_tag, 'Submitting address form');
     setState(() => _submitted = true);
     await Future.delayed(Duration.zero);
     if (!mounted) return;
 
     final isValid = _formKey.currentState?.validate() ?? false;
+    AppLogger.d(_tag, 'Form validation result: $isValid');
     FocusScope.of(context).unfocus();
 
     if (!isValid) return;
 
     if (!_hasLocation) {
+      AppLogger.w(_tag, 'Form submit prevented: location missing');
       ToastMessage.warning(
         context: context,
         msg: 'Please capture your current location before saving.',
@@ -608,9 +653,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final pi = _pincode.text.trim();
     final lon = _lon.text.trim();
     final lan = _lan.text.trim();
+    AppLogger.d(_tag, 'Address payload: type=$at, line1=$a1, city=$ci, state=$st, pincode=$pi, hasLocation=$_hasLocation');
 
     bool success;
     if (widget.address != null) {
+      AppLogger.d(_tag, 'Updating existing address id=${widget.address!.id}');
       success = await updateAddress(
         id: widget.address!.id,
         addressType: at,
@@ -626,6 +673,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
         lan: lan,
       );
     } else {
+      AppLogger.d(_tag, 'Adding new address for userId=${widget.userId}');
       success = await addAddress(
         userID: widget.userId,
         addressType: at,
@@ -801,7 +849,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: _saving ? null : _submit,
+                onPressed: _saving || !_formValid ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: StoreProfileTheme.accentPink,
                   foregroundColor: Colors.white,
@@ -913,12 +961,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
             validator: (value) {
               final text = value?.trim() ?? '';
 
-              if (validator != null) {
-                return validator(text);
-              }
-
               if (isRequired && text.isEmpty) {
                 return '$label is required';
+              }
+
+              if (validator != null) {
+                return validator(text);
               }
 
               return null;
