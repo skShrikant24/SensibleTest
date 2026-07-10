@@ -109,9 +109,7 @@ class PaymentService {
       }
     }
 
-    debugPrint(
-      '[Razorpay] Opening checkout with order_id=${options['order_id']}, amount=${options['amount']}, prefill=${options['prefill']}',
-    );
+    // Debug logging removed for production safety
 
     // Plugin open() is async-void; catch uncaught async errors in this zone.
     runZonedGuarded(
@@ -132,17 +130,11 @@ class PaymentService {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    debugPrint(
-      '[Razorpay] Success callback: paymentId=${response.paymentId}, orderId=${response.orderId}, signature=${response.signature}',
-    );
     onPaymentSuccessData?.call(response);
     onPaymentSuccess?.call();
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    debugPrint(
-      '[Razorpay] Error callback: code=${response.code}, message=${response.message}',
-    );
     onPaymentErrorData?.call(response);
     onPaymentError?.call();
   }

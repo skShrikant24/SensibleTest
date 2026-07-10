@@ -7,10 +7,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class OrderDetailsPage extends StatefulWidget {
   final OrderHistoryItem order;
+  final bool fromNotification;
 
   const OrderDetailsPage({
     super.key,
     required this.order,
+    this.fromNotification = false,
   });
 
   @override
@@ -116,49 +118,58 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Widget build(BuildContext context) {
     final order = _orderDetails ?? widget.order;
 
-    return Scaffold(
-      backgroundColor: StoreProfileTheme.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && widget.fromNotification) {
+          // When coming from notification, pop to order history
+          // This ensures consistent navigation regardless of app state
+        }
+      },
+      child: Scaffold(
         backgroundColor: StoreProfileTheme.background,
-        elevation: 0,
-        title: Text(
-          'Order Details',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Colors.black87,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.black87,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: StoreProfileTheme.accentPink,
-              ),
-            )
-          : RefreshIndicator(
-              color: StoreProfileTheme.accentPink,
-              onRefresh: _loadDetails,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _headerCard(order),
-                  const SizedBox(height: 14),
-                  _deliverySection(order),
-                  const SizedBox(height: 14),
-                  _priceSection(order),
-                  const SizedBox(height: 14),
-                  _itemsSection(),
-                ],
-              ),
+        appBar: AppBar(
+          backgroundColor: StoreProfileTheme.background,
+          elevation: 0,
+          title: Text(
+            'Order Details',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Colors.black87,
             ),
+          ),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Colors.black87,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: _loading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: StoreProfileTheme.accentPink,
+                ),
+              )
+            : RefreshIndicator(
+                color: StoreProfileTheme.accentPink,
+                onRefresh: _loadDetails,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _headerCard(order),
+                    const SizedBox(height: 14),
+                    _deliverySection(order),
+                    const SizedBox(height: 14),
+                    _priceSection(order),
+                    const SizedBox(height: 14),
+                    _itemsSection(),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 

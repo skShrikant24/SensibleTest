@@ -274,7 +274,11 @@ class _StorePageState extends State<StorePage> {
                   //   // onTap: () => widget.onSelectTab(1),
                   // ),
                   // const SizedBox(width: 10),
-
+                  HeaderPill(
+                    icon: Icons.person_outline,
+                    onTap: () => widget.onSelectTab(1),
+                  ),
+                  const SizedBox(width: 10),   
                   // Cart Icon
                   AnimatedBuilder(
                     animation: CartService.instance,
