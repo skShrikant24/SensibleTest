@@ -43,7 +43,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         builder: (context, localeProvider, _) {
           return MaterialApp(
             navigatorKey: NotificationService.navigatorKey,
-            // title: 'GrabIt',
             title: 'GraBiTT',
             debugShowCheckedModeBanner: false,
             theme: lightTheme,

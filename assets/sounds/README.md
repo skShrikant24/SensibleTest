@@ -1,6 +1,6 @@
 # Sound Assets
 
-This directory contains sound effects for the GrabIt app.
+This directory contains sound effects for the GraBiTT app.
 
 ## Required Sound Files
 
