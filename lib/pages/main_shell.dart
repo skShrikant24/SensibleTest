@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:grabitt/app_State/cart.dart';
 import 'package:grabitt/l10n/app_localizations.dart';
 import 'package:grabitt/pages/profile_page.dart';
 import 'package:grabitt/pages/store_page.dart';
@@ -50,6 +51,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
 
   Future<void> _runStartupChecks() async {
+    CartService.instance.syncCartFromServer();
     await _checkAppUpdate();
     if (!_isDialogShowing) await _checkHomeBanner();
   }

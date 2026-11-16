@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
@@ -23,6 +24,7 @@ import 'package:grabitt/services/address_api_service.dart';
 import 'package:grabitt/services/auth_service.dart';
 import 'package:grabitt/services/selected_address_storage.dart';
 import 'package:grabitt/services/store_feed_service.dart';
+import 'package:grabitt/utils/app_logger.dart';
 import 'package:grabitt/utils/constants.dart';
 import 'package:grabitt/utils/shared_classes.dart';
 import 'package:grabitt/widgets/address_selector_sheet.dart';
@@ -54,7 +56,7 @@ class _StorePageState extends State<StorePage> {
   // Location & Store Feed State
   StoreFeedResponse? _feedResponse;
   bool _loadingFeed = true;
-  String _currentPincode = '571105'; // Default to Hunsur
+  String _currentPincode = ''; // Resolved dynamically, no hardcoded Hunsur
   String _currentLat = '';
   String _currentLon = '';
   AddressModel? _selectedAddress;
@@ -80,6 +82,9 @@ class _StorePageState extends State<StorePage> {
 
   Future<void> _initLocationAndFeed() async {
     setState(() => _loadingFeed = true);
+
+    // Sync cart with server on startup / screen load
+    CartService.instance.syncCartFromServer();
 
     try {
       // 1. Check saved address from local storage
@@ -112,22 +117,87 @@ class _StorePageState extends State<StorePage> {
 
       if (activeAddress != null) {
         _selectedAddress = activeAddress;
-        _currentPincode = activeAddress.pincode.trim().isNotEmpty
-            ? activeAddress.pincode.trim()
-            : '571105';
+        _currentPincode = activeAddress.pincode.trim();
         _currentLat = activeAddress.lan;
         _currentLon = activeAddress.lon;
+      } else {
+        // No saved address: Attempt safe GPS auto-detection
+        await _autoDetectLocation();
       }
     } catch (_) {
-      // Fallback stays 571105
+      // Location initialization error
     }
 
     await _fetchFeed();
   }
 
+  /// Safe GPS Auto-Detection across all Android (10-15) and iOS versions
+  Future<void> _autoDetectLocation() async {
+    try {
+      // 1. Check if location hardware is enabled on device
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppLogger.d('StorePage', 'GPS hardware is turned off on device');
+        return;
+      }
+
+      // 2. Check and request permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        AppLogger.d('StorePage', 'Location permission denied: $permission');
+        return;
+      }
+
+      // 3. Permission granted: Fetch coordinates with 5s timeout
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+
+      _currentLat = position.latitude.toString();
+      _currentLon = position.longitude.toString();
+      _currentPincode = '';
+      _selectedAddress = null;
+    } catch (e) {
+      AppLogger.w('StorePage', 'GPS auto-detection skipped/failed: $e');
+    }
+  }
+
   Future<void> _fetchFeed() async {
     if (!mounted) return;
     setState(() => _loadingFeed = true);
+
+    // If neither pincode nor GPS coordinates are available, show location prompt
+    if (_currentPincode.isEmpty && _currentLat.isEmpty) {
+      setState(() {
+        _feedResponse = StoreFeedResponse(
+          status: 'NoLocation',
+          isServiceable: false,
+          city: '',
+          pincode: '',
+          message:
+              'Please select your delivery location or pincode to check available stores near you.',
+          categories: [],
+          vendors: [],
+          banners: [],
+          pagination: FeedPagination(
+            page: 1,
+            pageSize: 50,
+            totalCount: 0,
+            hasMore: false,
+          ),
+        );
+        _loadingFeed = false;
+      });
+      return;
+    }
 
     final lang = LocaleProvider.instance.languageCode;
     final feed = await StoreFeedService.instance.getStoreFeed(
@@ -141,6 +211,9 @@ class _StorePageState extends State<StorePage> {
     if (!mounted) return;
     setState(() {
       _feedResponse = feed;
+      if (_currentPincode.isEmpty && feed.pincode.isNotEmpty) {
+        _currentPincode = feed.pincode;
+      }
       _loadingFeed = false;
     });
   }
@@ -175,12 +248,83 @@ class _StorePageState extends State<StorePage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Location Selector
+  // Location Selector & Cart Location Safety
   // ---------------------------------------------------------------------------
 
+  /// Shows confirmation if cart contains items from a different store/location
+  Future<bool> _confirmLocationChangeIfCartNotEmpty() async {
+    final cartCount = CartService.instance.count;
+    if (cartCount == 0) return true;
+
+    final vendorName = CartService.instance.vendorName;
+    final displayName =
+        vendorName.isNotEmpty ? vendorName : 'a restaurant/store';
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Change Delivery Location?',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        content: Text(
+          'Your cart contains $cartCount item${cartCount > 1 ? "s" : ""} from $displayName. Changing delivery location will clear your current cart.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: Colors.grey[700],
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: StoreProfileTheme.accentPink,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Clear Cart & Proceed',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await CartService.instance.clearCart();
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _openLocationSelector() async {
-    if (_userId != null && _userId!.isNotEmpty) {
-      // Logged in: show saved addresses sheet
+    if (_userId != null && _userId!.isNotEmpty && _userAddresses.isNotEmpty) {
+      // Logged in with saved addresses: show saved addresses sheet
       final picked = await showModalBottomSheet<AddressModel>(
         context: context,
         isScrollControlled: true,
@@ -250,20 +394,28 @@ class _StorePageState extends State<StorePage> {
         await _applyAddressSelection(picked);
       }
     } else {
-      // Guest or no address: show Pincode picker bottom sheet
+      // Guest or logged-in user with no saved addresses: show Pincode picker bottom sheet
       await _showPincodePickerSheet();
     }
   }
 
   Future<void> _applyAddressSelection(AddressModel address) async {
+    if (_selectedAddress?.id == address.id &&
+        _currentPincode == address.pincode) {
+      return;
+    }
+
+    final proceed = await _confirmLocationChangeIfCartNotEmpty();
+    if (!proceed) return;
+
+    await SelectedAddressStorage.instance.save(address);
     setState(() {
       _selectedAddress = address;
       _currentPincode =
-          address.pincode.isNotEmpty ? address.pincode : '571105';
+          address.pincode.isNotEmpty ? address.pincode : '';
       _currentLat = address.lan;
       _currentLon = address.lon;
     });
-    await SelectedAddressStorage.instance.save(address);
     await _fetchFeed();
   }
 
@@ -309,8 +461,47 @@ class _StorePageState extends State<StorePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter your 6-digit delivery pincode to check availability',
+              'Detect your GPS location or enter 6-digit delivery pincode',
               style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 14),
+            // 🎯 GPS Detect Location Button
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final proceed = await _confirmLocationChangeIfCartNotEmpty();
+                if (!proceed) return;
+                await _autoDetectLocation();
+                await _fetchFeed();
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: StoreProfileTheme.lightPink.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: StoreProfileTheme.accentPink.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.my_location,
+                        size: 18, color: StoreProfileTheme.accentPink),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Use Current GPS Location',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: StoreProfileTheme.accentPink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -381,7 +572,16 @@ class _StorePageState extends State<StorePage> {
                         );
                         return;
                       }
+                      if (_currentPincode == val && _selectedAddress == null) {
+                        Navigator.pop(ctx);
+                        return;
+                      }
                       Navigator.pop(ctx);
+                      final proceed =
+                          await _confirmLocationChangeIfCartNotEmpty();
+                      if (!proceed) return;
+
+                      await SelectedAddressStorage.instance.clear();
                       setState(() {
                         _selectedAddress = null;
                         _currentPincode = val;
@@ -416,6 +616,33 @@ class _StorePageState extends State<StorePage> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
+              ),
+            ] else if (_userAddresses.isEmpty) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton.icon(
+                  icon: const Icon(Icons.add_location_alt_outlined,
+                      color: StoreProfileTheme.accentPink, size: 18),
+                  label: Text(
+                    'Add new delivery address',
+                    style: GoogleFonts.poppins(
+                      color: StoreProfileTheme.accentPink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    final result = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddressFormPage(userId: _userId!),
+                      ),
+                    );
+                    if (result == true && mounted) {
+                      await _initLocationAndFeed();
+                    }
+                  },
                 ),
               ),
             ],
@@ -648,7 +875,9 @@ class _StorePageState extends State<StorePage> {
                                         : _selectedAddress!.city)
                                     : (_feedResponse?.city.isNotEmpty == true
                                         ? _feedResponse!.city
-                                        : 'Deliver to'),
+                                        : (_currentPincode.isNotEmpty
+                                            ? 'Deliver to'
+                                            : 'Select Location')),
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -658,11 +887,17 @@ class _StorePageState extends State<StorePage> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                _currentPincode,
+                                _currentPincode.isNotEmpty
+                                    ? _currentPincode
+                                    : (_currentLat.isNotEmpty
+                                        ? 'GPS Location'
+                                        : 'Tap to choose area'),
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey[600],
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -726,6 +961,7 @@ class _StorePageState extends State<StorePage> {
     final bool isCompact = screenHeight < 720;
     final double lottieHeight = isCompact ? 130.0 : 175.0;
     final double totalBottomPadding = _bottomBarHeight + bottomInset + 16.0;
+    final bool hasNoLocation = _currentPincode.isEmpty && _currentLat.isEmpty;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -751,7 +987,7 @@ class _StorePageState extends State<StorePage> {
           ),
           SizedBox(height: isCompact ? 12 : 18),
           Text(
-            "We're not here yet!",
+            hasNoLocation ? "Select Delivery Location" : "We're not here yet!",
             style: GoogleFonts.poppins(
               fontSize: isCompact ? 20 : 22,
               fontWeight: FontWeight.w700,
@@ -765,7 +1001,9 @@ class _StorePageState extends State<StorePage> {
             child: Text(
               _feedResponse?.message.isNotEmpty == true
                   ? _feedResponse!.message
-                  : "GraBiTT is currently not delivering in $_currentPincode. We are expanding fast and coming soon to your area!",
+                  : (hasNoLocation
+                      ? "Please select your delivery location or enter your pincode to check available stores near you."
+                      : "GraBiTT is currently not delivering in $_currentPincode. We are expanding fast and coming soon to your area!"),
               style: GoogleFonts.poppins(
                 fontSize: isCompact ? 13 : 14,
                 color: Colors.grey[700],
@@ -778,9 +1016,10 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.location_on_outlined, color: Colors.white, size: 20),
+              icon: const Icon(Icons.location_on_outlined,
+                  color: Colors.white, size: 20),
               label: Text(
-                'Change Location',
+                hasNoLocation ? 'Select Location' : 'Change Location',
                 style: GoogleFonts.poppins(
                   fontSize: isCompact ? 14 : 15,
                   fontWeight: FontWeight.w600,
@@ -802,9 +1041,13 @@ class _StorePageState extends State<StorePage> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              icon: const Icon(Icons.refresh, color: StoreProfileTheme.accentPink, size: 20),
+              icon: Icon(
+                hasNoLocation ? Icons.my_location : Icons.refresh,
+                color: StoreProfileTheme.accentPink,
+                size: 20,
+              ),
               label: Text(
-                'Try Again',
+                hasNoLocation ? 'Detect My Location (GPS)' : 'Try Again',
                 style: GoogleFonts.poppins(
                   fontSize: isCompact ? 13 : 14,
                   fontWeight: FontWeight.w600,
@@ -812,13 +1055,19 @@ class _StorePageState extends State<StorePage> {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: StoreProfileTheme.accentPink, width: 1.5),
+                side: const BorderSide(
+                    color: StoreProfileTheme.accentPink, width: 1.5),
                 padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: _fetchFeed,
+              onPressed: hasNoLocation
+                  ? () async {
+                      await _autoDetectLocation();
+                      await _fetchFeed();
+                    }
+                  : _fetchFeed,
             ),
           ),
         ],

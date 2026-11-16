@@ -272,11 +272,21 @@ class CartService extends ChangeNotifier {
   }
 
   /// Clears all cart data and persists the empty state.
-  void clearCart() {
+  Future<void> clearCart({bool syncServer = true}) async {
     items.clear();
     _resetTotals();
     notifyListeners();
     _saveToStorage();
+    if (syncServer) {
+      try {
+        final ctx = await getUserContext();
+        final userId = ctx['userId'] ?? '';
+        final macId = ctx['macId'] ?? '';
+        if (userId.isNotEmpty || macId.isNotEmpty) {
+          await CartApiService.clearCart(userId: userId, macId: macId);
+        }
+      } catch (_) {}
+    }
   }
 
   // ---------------------------------------------------------------------------
