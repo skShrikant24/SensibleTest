@@ -53,7 +53,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   Future<void> _runStartupChecks() async {
     CartService.instance.syncCartFromServer();
     await _checkAppUpdate();
-    if (!_isDialogShowing) await _checkHomeBanner();
   }
 
   Future<void> _checkAppUpdate() async {
@@ -142,21 +141,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   // Build
   // ---------------------------------------------------------------------------
 
-  Widget _buildPage(int index) {
-    switch (index) {
-      case 0:
-        return StorePage(
-          onSelectTab: (i) => setState(() => _index = i),
-          onScrollDirection: (scrollingDown) =>
-              setState(() => _hideBottomBar = scrollingDown),
-        );
-      default:
-        return ProfilePage(
-          onSelectTab: (i) => setState(() => _index = i),
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final showBottomBar = _index != 0 || !_hideBottomBar;
@@ -165,7 +149,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       backgroundColor: const Color(0xFFF4F5F7),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildPage(_index)),
+          Positioned.fill(
+            child: IndexedStack(
+              index: _index,
+              children: [
+                StorePage(
+                  onSelectTab: (i) => setState(() => _index = i),
+                  onScrollDirection: (scrollingDown) =>
+                      setState(() => _hideBottomBar = scrollingDown),
+                ),
+                ProfilePage(
+                  onSelectTab: (i) => setState(() => _index = i),
+                ),
+              ],
+            ),
+          ),
           Positioned(
             left: 0,
             right: 0,

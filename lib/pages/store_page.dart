@@ -124,14 +124,25 @@ class _StorePageState extends State<StorePage> {
         _currentLon = activeAddress.lon;
         await _fetchFeed();
       } else {
-        // No saved address: Attempt safe GPS auto-detection
-        await _autoDetectLocation();
-        await _fetchFeed();
+        // No saved address: check if a pincode was previously selected
+        final savedPincode =
+            await SelectedAddressStorage.instance.loadPincode();
+        if (savedPincode != null && savedPincode.isNotEmpty) {
+          _selectedAddress = null;
+          _currentPincode = savedPincode;
+          _currentLat = '';
+          _currentLon = '';
+          await _fetchFeed();
+        } else {
+          // No saved address and no saved pincode: Attempt safe GPS auto-detection
+          await _autoDetectLocation();
+          await _fetchFeed();
 
-        // If location is STILL unknown (GPS off or permission denied):
-        // Automatically prompt with Pincode Picker sheet so user is not stuck!
-        if (_currentPincode.isEmpty && _currentLat.isEmpty && mounted) {
-          _showPincodePickerSheet();
+          // If location is STILL unknown (GPS off or permission denied):
+          // Automatically prompt with Pincode Picker sheet so user is not stuck!
+          if (_currentPincode.isEmpty && _currentLat.isEmpty && mounted) {
+            _showPincodePickerSheet();
+          }
         }
       }
     } catch (_) {
@@ -590,6 +601,7 @@ class _StorePageState extends State<StorePage> {
                       if (!proceed) return;
 
                       await SelectedAddressStorage.instance.clear();
+                      await SelectedAddressStorage.instance.savePincode(val);
                       setState(() {
                         _selectedAddress = null;
                         _currentPincode = val;
@@ -935,9 +947,11 @@ class _StorePageState extends State<StorePage> {
                   AnimatedBuilder(
                     animation: CartService.instance,
                     builder: (context, _) {
+                      final hasLocation =
+                          _currentPincode.isNotEmpty || _currentLat.isNotEmpty;
                       return HeaderPill(
                         icon: Icons.shopping_cart_outlined,
-                        badgeCount: CartService.instance.count,
+                        badgeCount: hasLocation ? CartService.instance.count : 0,
                         shouldAnimate: CartService.instance.shouldAnimateCart,
                         onTap: () {
                           Navigator.push(

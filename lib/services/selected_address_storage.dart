@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String _tag = 'SelectedAddressStorage';
 const String _keySelectedAddress = 'grabitt_selected_address';
+const String _keySelectedPincode = 'grabitt_selected_pincode';
 
 /// Saves and loads the selected checkout address for future use.
 class SelectedAddressStorage {
@@ -16,6 +17,7 @@ class SelectedAddressStorage {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keySelectedAddress, jsonEncode(address.toJson()));
+      await clearPincode();
     } catch (e, st) {
       AppLogger.e(_tag, 'save: failed to persist selected address', e, st);
     }
@@ -35,10 +37,36 @@ class SelectedAddressStorage {
     }
   }
 
+  Future<void> savePincode(String pincode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedPincode, pincode.trim());
+    } catch (e, st) {
+      AppLogger.e(_tag, 'savePincode failed', e, st);
+    }
+  }
+
+  Future<String?> loadPincode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final p = prefs.getString(_keySelectedPincode);
+      if (p != null && p.trim().isNotEmpty) return p.trim();
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> clearPincode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keySelectedPincode);
+    } catch (_) {}
+  }
+
   Future<void> clear() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keySelectedAddress);
+      await prefs.remove(_keySelectedPincode);
     } catch (e, st) {
       AppLogger.e(_tag, 'clear: failed to remove selected address', e, st);
     }
