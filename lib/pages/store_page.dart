@@ -70,7 +70,9 @@ class _StorePageState extends State<StorePage> {
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
     LocaleProvider.instance.addListener(_onLocaleChanged);
-    _initLocationAndFeed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initLocationAndFeed();
+    });
   }
 
   void _onSearchChanged() {
@@ -120,28 +122,27 @@ class _StorePageState extends State<StorePage> {
         _currentPincode = activeAddress.pincode.trim();
         _currentLat = activeAddress.lan;
         _currentLon = activeAddress.lon;
+        await _fetchFeed();
       } else {
         // No saved address: Attempt safe GPS auto-detection
         await _autoDetectLocation();
+        await _fetchFeed();
+
+        // If location is STILL unknown (GPS off or permission denied):
+        // Automatically prompt with Pincode Picker sheet so user is not stuck!
+        if (_currentPincode.isEmpty && _currentLat.isEmpty && mounted) {
+          _showPincodePickerSheet();
+        }
       }
     } catch (_) {
-      // Location initialization error
+      await _fetchFeed();
     }
-
-    await _fetchFeed();
   }
 
-  /// Safe GPS Auto-Detection across all Android (10-15) and iOS versions
+  /// Safe GPS Auto-Detection across all Android (Android 8 to 15) and iOS versions
   Future<void> _autoDetectLocation() async {
     try {
-      // 1. Check if location hardware is enabled on device
-      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        AppLogger.d('StorePage', 'GPS hardware is turned off on device');
-        return;
-      }
-
-      // 2. Check and request permission
+      // 1. Check and request location permission first
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -153,7 +154,14 @@ class _StorePageState extends State<StorePage> {
         return;
       }
 
-      // 3. Permission granted: Fetch coordinates with 5s timeout
+      // 2. Permission granted! Check if GPS hardware is turned ON
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppLogger.d('StorePage', 'GPS hardware is turned off on device');
+        return;
+      }
+
+      // 3. Both permission and GPS are ON: Fetch coordinates with 5s timeout
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
