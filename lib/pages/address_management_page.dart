@@ -418,7 +418,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
   bool _submitted = false;
   bool _saving = false;
   bool _loadingLocation = false;
-  bool _formValid = false;
 
   @override
   void initState() {
@@ -437,32 +436,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
       _lon.text = a.lon;
       _lan.text = a.lan;
     }
-
-    // Add listeners to all required field controllers
-    _addressType.addListener(_validateForm);
-    _addressLine1.addListener(_validateForm);
-    _area.addListener(_validateForm);
-    _city.addListener(_validateForm);
-    _state.addListener(_validateForm);
-    _pincode.addListener(_validateForm);
-    _lon.addListener(_validateForm);
-    _lan.addListener(_validateForm);
-
-    // Initial validation check
-    _validateForm();
-  }
-
-  void _validateForm() {
-    if (!mounted) return;
-    setState(() {
-      _formValid = _addressType.text.trim().isNotEmpty &&
-          _addressLine1.text.trim().isNotEmpty &&
-          _area.text.trim().isNotEmpty &&
-          _city.text.trim().isNotEmpty &&
-          _state.text.trim().isNotEmpty &&
-          _pincode.text.trim().isNotEmpty &&
-          _hasLocation;
-    });
   }
 
   @override
@@ -493,7 +466,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
   bool get _hasLocation {
     final lat = _lan.text.trim();
     final lng = _lon.text.trim();
-    return lat.isNotEmpty && lng.isNotEmpty && lat != '0' && lng != '0';
+    final latNum = double.tryParse(lat);
+    final lngNum = double.tryParse(lng);
+    return latNum != null && lngNum != null && latNum != 0 && lngNum != 0;
   }
 
   // ---------------------------------------------------------------------------
@@ -555,8 +530,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
           _lon.text = position.longitude.toString();
           _lan.text = position.latitude.toString();
         });
-        _validateForm();
-        ToastMessage.success(context: context, msg: 'Location captured');
+        ToastMessage.success(context: context, msg: 'GPS Location pinned successfully');
       }
     } catch (e, st) {
       AppLogger.e(_tag, 'getCurrentLocation failed', e, st);
@@ -750,6 +724,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               isRequired: true,
               focusNode: _addressTypeFocus,
               nextFocus: _addressLine1Focus,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Address Type is required';
+                if (v.trim().length < 2) return 'Address Type must be at least 2 characters';
+                return null;
+              },
             ),
             _buildField(
               label: 'Address Line 1',
@@ -758,6 +737,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               isRequired: true,
               focusNode: _addressLine1Focus,
               nextFocus: _addressLine2Focus,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Address Line 1 is required';
+                if (v.trim().length < 3) return 'Please enter a valid address';
+                return null;
+              },
             ),
             // Optional fields — "(Optional)" in hint
             _buildField(
@@ -781,6 +765,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               isRequired: true,
               focusNode: _areaFocus,
               nextFocus: _cityFocus,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Area is required';
+                if (v.trim().length < 2) return 'Please enter a valid area';
+                return null;
+              },
             ),
             _buildField(
               label: 'City',
@@ -792,6 +781,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               ],
               focusNode: _cityFocus,
               nextFocus: _districtFocus,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'City is required';
+                if (v.trim().length < 2) return 'Please enter a valid city name';
+                return null;
+              },
             ),
             _buildField(
               label: 'District',
@@ -813,6 +807,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               ],
               focusNode: _stateFocus,
               nextFocus: _pincodeFocus,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'State is required';
+                if (v.trim().length < 2) return 'Please enter a valid state name';
+                return null;
+              },
             ),
             _buildField(
               label: 'Pincode',
@@ -828,8 +827,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
               isLastField: true,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Pincode is required';
-                if (!RegExp(r'^\d{6}$').hasMatch(v.trim())) {
+                if (v.trim().length != 6 || !RegExp(r'^\d{6}$').hasMatch(v.trim())) {
                   return 'Enter a valid 6-digit pincode';
+                }
+                if (v.trim().startsWith('0')) {
+                  return 'Pincode cannot start with 0';
                 }
                 return null;
               },
@@ -849,7 +851,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: _saving || !_formValid ? null : _submit,
+                onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: StoreProfileTheme.accentPink,
                   foregroundColor: Colors.white,
@@ -999,6 +1001,13 @@ class _LocationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lat = latController.text.trim();
+    final lng = lngController.text.trim();
+    final latNum = double.tryParse(lat);
+    final lngNum = double.tryParse(lng);
+    final hasLocation =
+        latNum != null && lngNum != null && latNum != 0 && lngNum != 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1010,7 +1019,7 @@ class _LocationSection extends StatelessWidget {
               color: StoreProfileTheme.textPrimary,
             ),
             children: const [
-              TextSpan(text: 'Location (Lat / Lng)'),
+              TextSpan(text: 'Delivery Location (GPS Pin)'),
               TextSpan(
                 text: ' *',
                 style: TextStyle(color: Colors.red),
@@ -1018,86 +1027,134 @@ class _LocationSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            Expanded(
-              child: _readOnlyCoord(
-                controller: latController,
-                hint: 'Latitude',
-              ),
+        const SizedBox(height: 8),
+        if (hasLocation)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.shade300, width: 1),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _readOnlyCoord(
-                controller: lngController,
-                hint: 'Longitude',
-              ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    color: Color(0xFF2E7D32), size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GPS Location Captured',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1B5E20),
+                        ),
+                      ),
+                      Text(
+                        'Accurate pin saved for delivery partner',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                InkWell(
+                  onTap: isLoading ? null : onGetLocation,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: StoreProfileTheme.accentPink,
+                            ),
+                          )
+                        : Text(
+                            'Update Pin',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: StoreProfileTheme.accentPink,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        if (showError)
-          Padding(
-            padding: const EdgeInsets.only(top: 6, left: 4),
-            child: Text(
-              'Location is required. Tap "Get current location".',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: Colors.red,
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : onGetLocation,
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: StoreProfileTheme.accentPink,
+                          ),
+                        )
+                      : const Icon(Icons.my_location),
+                  label: Text(
+                    isLoading
+                        ? 'Detecting GPS location...'
+                        : 'Capture Current GPS Location',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: StoreProfileTheme.accentPink,
+                    side: BorderSide(
+                      color: showError
+                          ? Colors.red
+                          : StoreProfileTheme.accentPink,
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              if (showError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 14, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        'GPS location is required for accurate delivery',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 48,
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : onGetLocation,
-            icon: isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.my_location),
-            label: Text(
-              isLoading ? 'Getting location...' : 'Get current location',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: StoreProfileTheme.accentPink,
-              side: BorderSide(color: StoreProfileTheme.accentPink),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-
-  Widget _readOnlyCoord({
-    required TextEditingController controller,
-    required String hint,
-  }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
-        filled: true,
-        fillColor: StoreProfileTheme.surfaceVariant,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: StoreProfileTheme.border),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      ),
-      style: GoogleFonts.poppins(fontSize: 12),
     );
   }
 }
