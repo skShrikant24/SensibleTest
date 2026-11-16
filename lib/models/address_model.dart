@@ -74,4 +74,17 @@ class AddressModel {
       lan: str(json['lan']),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AddressModel &&
+          runtimeType == other.runtimeType &&
+          (id.isNotEmpty && other.id.isNotEmpty
+              ? id == other.id
+              : (addressLine1 == other.addressLine1 && pincode == other.pincode));
+
+  @override
+  int get hashCode =>
+      id.isNotEmpty ? id.hashCode : Object.hash(addressLine1, pincode);
 }

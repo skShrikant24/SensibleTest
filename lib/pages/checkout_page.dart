@@ -174,6 +174,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             await _loadAddressesAndSelection();
           }
         },
+        onEdit: (addressToEdit) async {
+          Navigator.pop(ctx);
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => AddressFormPage(
+                userId: _userId!,
+                address: addressToEdit,
+              ),
+            ),
+          );
+          if (mounted && result == true) {
+            await _loadAddressesAndSelection();
+          }
+        },
       ),
     );
 

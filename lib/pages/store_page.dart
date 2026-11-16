@@ -1,24 +1,34 @@
-import 'package:grabitt/models/vender.dart';
-import 'package:grabitt/pages/category_vendors_page.dart';
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'package:grabitt/app_State/cart.dart';
 import 'package:grabitt/app_State/locale_provider.dart';
 import 'package:grabitt/l10n/app_localizations.dart';
-import 'package:grabitt/pages/components/header_pill.dart';
+import 'package:grabitt/models/address_model.dart';
+import 'package:grabitt/models/category.dart';
+import 'package:grabitt/models/store_feed_model.dart';
+import 'package:grabitt/models/vender.dart';
+import 'package:grabitt/pages/address_management_page.dart';
 import 'package:grabitt/pages/cart_page.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../models/category.dart';
-import '../app_State/cart.dart';
-import '../utils/constants.dart';
+import 'package:grabitt/pages/category_vendors_page.dart';
+import 'package:grabitt/pages/components/header_pill.dart';
+import 'package:grabitt/pages/login_page.dart';
+import 'package:grabitt/services/address_api_service.dart';
+import 'package:grabitt/services/auth_service.dart';
+import 'package:grabitt/services/selected_address_storage.dart';
+import 'package:grabitt/services/store_feed_service.dart';
+import 'package:grabitt/utils/constants.dart';
+import 'package:grabitt/utils/shared_classes.dart';
+import 'package:grabitt/widgets/address_selector_sheet.dart';
 
 class StorePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
-
-  /// Called with true when user scrolls down (hide bar), false when scrolls up (show bar).
   final ValueChanged<bool>? onScrollDirection;
 
   const StorePage({
@@ -33,35 +43,111 @@ class StorePage extends StatefulWidget {
 
 class _StorePageState extends State<StorePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late Future<List<Category>> _categoriesFuture;
-  // late Future<List<Vendor>> _vendorsFuture;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   static const double _scrollThreshold = 10.0;
   double _lastScrollOffset = 0;
-
-  /// When true, bottom nav is hidden (scrolled down) → buttons sit at very bottom.
   bool _bottomBarHidden = false;
-
-  /// Approximate height of main_shell bottom bar (with padding) so buttons sit above it when visible.
   static const double _bottomBarHeight = 100.0;
+
+  // Location & Store Feed State
+  StoreFeedResponse? _feedResponse;
+  bool _loadingFeed = true;
+  String _currentPincode = '571105'; // Default to Hunsur
+  String _currentLat = '';
+  String _currentLon = '';
+  AddressModel? _selectedAddress;
+  List<AddressModel> _userAddresses = [];
+  String? _userId;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    final lang = LocaleProvider.instance.languageCode;
-    _categoriesFuture = fetchCategories(lang);
+    _searchController.addListener(_onSearchChanged);
     LocaleProvider.instance.addListener(_onLocaleChanged);
+    _initLocationAndFeed();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query != _searchQuery) {
+      setState(() => _searchQuery = query);
+    }
+  }
+
+  Future<void> _initLocationAndFeed() async {
+    setState(() => _loadingFeed = true);
+
+    try {
+      // 1. Check saved address from local storage
+      final saved = await SelectedAddressStorage.instance.load();
+
+      // 2. Check logged-in user and fetch addresses
+      final user = await AuthService.instance.getSavedUser();
+      final uid =
+          user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
+      _userId = uid.isNotEmpty ? uid : null;
+
+      if (_userId != null) {
+        _userAddresses = await getAddressByUser(_userId!);
+      }
+
+      AddressModel? activeAddress = saved;
+      if (saved != null && _userAddresses.isNotEmpty) {
+        try {
+          activeAddress = _userAddresses.firstWhere(
+            (a) => a.id == saved.id,
+            orElse: () => saved,
+          );
+        } catch (_) {
+          activeAddress = saved;
+        }
+      } else if (activeAddress == null && _userAddresses.isNotEmpty) {
+        activeAddress = _userAddresses.first;
+        await SelectedAddressStorage.instance.save(activeAddress);
+      }
+
+      if (activeAddress != null) {
+        _selectedAddress = activeAddress;
+        _currentPincode = activeAddress.pincode.trim().isNotEmpty
+            ? activeAddress.pincode.trim()
+            : '571105';
+        _currentLat = activeAddress.lan;
+        _currentLon = activeAddress.lon;
+      }
+    } catch (_) {
+      // Fallback stays 571105
+    }
+
+    await _fetchFeed();
+  }
+
+  Future<void> _fetchFeed() async {
+    if (!mounted) return;
+    setState(() => _loadingFeed = true);
+
+    final lang = LocaleProvider.instance.languageCode;
+    final feed = await StoreFeedService.instance.getStoreFeed(
+      pincode: _currentPincode,
+      lat: _currentLat,
+      lon: _currentLon,
+      lang: lang,
+      pageSize: 50,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _feedResponse = feed;
+      _loadingFeed = false;
+    });
   }
 
   void _onLocaleChanged() {
     if (!mounted) return;
-    final lang = LocaleProvider.instance.languageCode;
-    setState(() {
-      _categoriesFuture = fetchCategories(lang);
-    });
+    _fetchFeed();
   }
 
   void _onScroll() {
@@ -70,11 +156,11 @@ class _StorePageState extends State<StorePage> {
     if (delta > _scrollThreshold) {
       _lastScrollOffset = offset;
       setState(() => _bottomBarHidden = true);
-      widget.onScrollDirection?.call(true); // scrolling down → hide bar
+      widget.onScrollDirection?.call(true);
     } else if (delta < -_scrollThreshold) {
       _lastScrollOffset = offset;
       setState(() => _bottomBarHidden = false);
-      widget.onScrollDirection?.call(false); // scrolling up → show bar
+      widget.onScrollDirection?.call(false);
     }
   }
 
@@ -83,7 +169,260 @@ class _StorePageState extends State<StorePage> {
     LocaleProvider.instance.removeListener(_onLocaleChanged);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Location Selector
+  // ---------------------------------------------------------------------------
+
+  Future<void> _openLocationSelector() async {
+    if (_userId != null && _userId!.isNotEmpty) {
+      // Logged in: show saved addresses sheet
+      final picked = await showModalBottomSheet<AddressModel>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => AddressSelectorSheet(
+          addresses: _userAddresses,
+          selected: _selectedAddress,
+          userId: _userId!,
+          onAddNew: () async {
+            Navigator.pop(ctx);
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => AddressFormPage(userId: _userId!),
+              ),
+            );
+            if (result == true && mounted) {
+              _userAddresses = await getAddressByUser(_userId!);
+              if (_userAddresses.isNotEmpty) {
+                final newest = _userAddresses.first;
+                await _applyAddressSelection(newest);
+              }
+            }
+          },
+          onEdit: (addressToEdit) async {
+            Navigator.pop(ctx);
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => AddressFormPage(
+                  userId: _userId!,
+                  address: addressToEdit,
+                ),
+              ),
+            );
+            if (result == true && mounted) {
+              _userAddresses = await getAddressByUser(_userId!);
+              final updated = _userAddresses.firstWhere(
+                (a) => a.id == addressToEdit.id,
+                orElse: () => _userAddresses.first,
+              );
+              await _applyAddressSelection(updated);
+            }
+          },
+          onManage: () async {
+            Navigator.pop(ctx);
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AddressManagementPage(),
+              ),
+            );
+            if (mounted) {
+              _userAddresses = await getAddressByUser(_userId!);
+              final saved = await SelectedAddressStorage.instance.load();
+              if (saved != null &&
+                  _userAddresses.any((a) => a.id == saved.id)) {
+                final match =
+                    _userAddresses.firstWhere((a) => a.id == saved.id);
+                await _applyAddressSelection(match);
+              } else if (_userAddresses.isNotEmpty) {
+                await _applyAddressSelection(_userAddresses.first);
+              }
+            }
+          },
+        ),
+      );
+
+      if (picked != null && mounted) {
+        await _applyAddressSelection(picked);
+      }
+    } else {
+      // Guest or no address: show Pincode picker bottom sheet
+      await _showPincodePickerSheet();
+    }
+  }
+
+  Future<void> _applyAddressSelection(AddressModel address) async {
+    setState(() {
+      _selectedAddress = address;
+      _currentPincode =
+          address.pincode.isNotEmpty ? address.pincode : '571105';
+      _currentLat = address.lan;
+      _currentLon = address.lon;
+    });
+    await SelectedAddressStorage.instance.save(address);
+    await _fetchFeed();
+  }
+
+  Future<void> _showPincodePickerSheet() async {
+    final pinController = TextEditingController(text: _currentPincode);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Select Delivery Location',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: StoreProfileTheme.accentPink,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Enter your 6-digit delivery pincode to check availability',
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: pinController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              decoration: InputDecoration(
+                hintText: 'Enter 6-digit Pincode',
+                counterText: '',
+                prefixIcon: const Icon(Icons.pin_drop_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Popular Areas:',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('Hunsur (571105)'),
+                  onPressed: () {
+                    pinController.text = '571105';
+                  },
+                ),
+                ActionChip(
+                  label: const Text('Pune (411057)'),
+                  onPressed: () {
+                    pinController.text = '411057';
+                  },
+                ),
+                ActionChip(
+                  label: const Text('Mumbai (400001)'),
+                  onPressed: () {
+                    pinController.text = '400001';
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: StoreProfileTheme.accentPink,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final val = pinController.text.trim();
+                      if (val.length != 6) {
+                        ToastMessage.warning(
+                          context: ctx,
+                          msg: 'Please enter a valid 6-digit pincode',
+                        );
+                        return;
+                      }
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _selectedAddress = null;
+                        _currentPincode = val;
+                        _currentLat = '';
+                        _currentLon = '';
+                      });
+                      await _fetchFeed();
+                    },
+                    child: Text(
+                      'Apply Location',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_userId == null) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  },
+                  child: Text(
+                    'Login to use saved addresses',
+                    style: GoogleFonts.poppins(
+                      color: StoreProfileTheme.accentPink,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   void _showLanguageSheet(BuildContext context) {
@@ -97,7 +436,8 @@ class _StorePageState extends State<StorePage> {
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: StoreProfileTheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -137,8 +477,14 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Build Main Screen
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
+    final isServiceable = _feedResponse?.isServiceable ?? true;
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: StoreProfileTheme.background,
@@ -149,43 +495,65 @@ class _StorePageState extends State<StorePage> {
               child: CustomScrollView(
                 controller: _scrollController,
                 slivers: [
-                  // 🔝 Top Header Section
+                  // 🔝 Top Header Section (Location, Lang, Profile, Cart)
                   SliverToBoxAdapter(
                     child: _buildTopHeader(),
                   ),
 
-                  // 🔍 Search Bar
-                  SliverToBoxAdapter(
-                    child: _buildSearchBar(),
-                  ),
-
-                  // 🏷️ Categories Section
-                  SliverToBoxAdapter(
-                    child: _buildVendorGrid(),
-                  ),
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 50,
+                  // Loading State
+                  if (_loadingFeed)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: _bottomBarHeight),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: StoreProfileTheme.accentPink,
+                          ),
+                        ),
+                      ),
+                    )
+                  // 🚫 Unserviceable / Coming Soon State
+                  else if (!isServiceable)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildUnserviceableWidget(),
+                    )
+                  // ✅ Serviceable State: Search, Categories, Stores
+                  else ...[
+                    // 🔍 Search Bar
+                    SliverToBoxAdapter(
+                      child: _buildSearchBar(),
                     ),
-                  ),
+
+                    // 🏷️ Categories Section
+                    SliverToBoxAdapter(
+                      child: _buildVendorGrid(),
+                    ),
+
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 40),
+                    ),
+                  ],
                 ],
               ),
             ),
-            // 🚀 Fixed bottom: Pick & Deliver + Quick Order (sticky; when bottom bar hides, sits at bottom)
-            _buildFixedActionButtons(),
+            // Fixed bottom quick order button (only when serviceable)
+            if (!_loadingFeed && isServiceable) _buildFixedActionButtons(),
           ],
         ),
       ),
     );
   }
 
-  // 🔝 Top Header: Delivery info, Location, Language, Icons
+  // 🔝 Top Header: Delivery info, Location Dropdown, Language, Icons
   Widget _buildTopHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // First Row: Delivery & Language
+          // First Row: Delivery in mins & Language
           Consumer<LocaleProvider>(
             builder: (context, localeProvider, _) {
               final l10n = AppLocalizations.of(context)!;
@@ -195,7 +563,7 @@ class _StorePageState extends State<StorePage> {
                   Text(
                     l10n.deliveryInMins,
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Colors.green[700],
                     ),
@@ -204,12 +572,14 @@ class _StorePageState extends State<StorePage> {
                     onTap: () => _showLanguageSheet(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color:
                             StoreProfileTheme.lightPink.withValues(alpha: 0.5),
                         border: Border.all(color: StoreProfileTheme.border),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         children: [
@@ -223,8 +593,11 @@ class _StorePageState extends State<StorePage> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_drop_down,
-                              size: 18, color: Colors.grey[600]),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            size: 18,
+                            color: Colors.grey[700],
+                          ),
                         ],
                       ),
                     ),
@@ -234,52 +607,88 @@ class _StorePageState extends State<StorePage> {
             },
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Second Row: Location & Icons
+          // Second Row: Location Selector & Action Icons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // GRABIIT REVIEW: location selector commented out (not wired
-              // to a real location picker yet) — kept for client, not
-              // removed, can be re-enabled when ready.
-              // GestureDetector(
-              //   onTap: () {
-              //     // Open location selector
-              //   },
-              //   child: Row(
-              //     children: [
-              //       Text(
-              //         AppLocalizations.of(context)!.location,
-              //         style: GoogleFonts.poppins(
-              //           fontSize: 13,
-              //           color: Colors.grey[700],
-              //         ),
-              //       ),
-              //       const Icon(Icons.arrow_forward_ios,
-              //           size: 12, color: Colors.grey),
-              //     ],
-              //   ),
-              // ),
-              const SizedBox.shrink(),
+              // 📍 Location Dropdown Selector
+              Expanded(
+                child: GestureDetector(
+                  onTap: _openLocationSelector,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: StoreProfileTheme.border.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 18,
+                          color: StoreProfileTheme.accentPink,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _selectedAddress != null
+                                    ? (_selectedAddress!.area.isNotEmpty
+                                        ? _selectedAddress!.area
+                                        : _selectedAddress!.city)
+                                    : (_feedResponse?.city.isNotEmpty == true
+                                        ? _feedResponse!.city
+                                        : 'Deliver to'),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                _currentPincode,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: Colors.black87,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
-              // Icons: Profile, Cart, Notification
+              const SizedBox(width: 12),
+
+              // Icons: Profile, Cart
               Row(
                 children: [
-                  // GRABIIT REVIEW: Grab Points pill commented out —
-                  // backend for the points system isn't ready yet.
-                  // HeaderPill(
-                  //   icon: Icons.monetization_on,
-                  //   text: '25',
-                  //   // onTap: () => widget.onSelectTab(1),
-                  // ),
-                  // const SizedBox(width: 10),
                   HeaderPill(
                     icon: Icons.person_outline,
                     onTap: () => widget.onSelectTab(1),
                   ),
-                  const SizedBox(width: 10),   
-                  // Cart Icon
+                  const SizedBox(width: 8),
                   AnimatedBuilder(
                     animation: CartService.instance,
                     builder: (context, _) {
@@ -290,24 +699,14 @@ class _StorePageState extends State<StorePage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CartPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const CartPage(),
+                            ),
                           );
                         },
                       );
                     },
                   ),
-                  const SizedBox(width: 10),
-
-                  // Notification Icon
-                  /*  HeaderPill(
-                    icon: Icons.notifications_none_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                      );
-                    },
-                  ),*/
                 ],
               ),
             ],
@@ -317,10 +716,120 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
+  // 🚫 Unserviceable / Coming Soon Screen (Blocks Category & Store Display)
+  Widget _buildUnserviceableWidget() {
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final bottomInset = mediaQuery.padding.bottom;
+
+    // Adaptive sizing for compact screens (e.g. Galaxy A7 2017, iPhone SE, etc.)
+    final bool isCompact = screenHeight < 720;
+    final double lottieHeight = isCompact ? 130.0 : 175.0;
+    final double totalBottomPadding = _bottomBarHeight + bottomInset + 16.0;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        isCompact ? 12 : 24,
+        24,
+        totalBottomPadding,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: lottieHeight,
+            child: Lottie.asset(
+              'assets/animations/Delivery.json',
+              repeat: true,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.location_off_rounded,
+                size: isCompact ? 70 : 90,
+                color: StoreProfileTheme.accentPink,
+              ),
+            ),
+          ),
+          SizedBox(height: isCompact ? 12 : 18),
+          Text(
+            "We're not here yet!",
+            style: GoogleFonts.poppins(
+              fontSize: isCompact ? 20 : 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: isCompact ? 6 : 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              _feedResponse?.message.isNotEmpty == true
+                  ? _feedResponse!.message
+                  : "GraBiTT is currently not delivering in $_currentPincode. We are expanding fast and coming soon to your area!",
+              style: GoogleFonts.poppins(
+                fontSize: isCompact ? 13 : 14,
+                color: Colors.grey[700],
+                height: 1.35,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: isCompact ? 18 : 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.location_on_outlined, color: Colors.white, size: 20),
+              label: Text(
+                'Change Location',
+                style: GoogleFonts.poppins(
+                  fontSize: isCompact ? 14 : 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: StoreProfileTheme.accentPink,
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              onPressed: _openLocationSelector,
+            ),
+          ),
+          SizedBox(height: isCompact ? 10 : 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.refresh, color: StoreProfileTheme.accentPink, size: 20),
+              label: Text(
+                'Try Again',
+                style: GoogleFonts.poppins(
+                  fontSize: isCompact ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: StoreProfileTheme.accentPink,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: StoreProfileTheme.accentPink, width: 1.5),
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _fetchFeed,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 🔍 Search Bar
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
           color: StoreProfileTheme.surface,
@@ -342,6 +851,14 @@ class _StorePageState extends State<StorePage> {
               color: Colors.grey[600],
             ),
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                    },
+                  )
+                : null,
             border: InputBorder.none,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -352,56 +869,65 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
+  // 🏷️ Categories Grid
   Widget _buildVendorGrid() {
+    final allCategories = _feedResponse?.categories ?? [];
+    final filteredCategories = _searchQuery.isEmpty
+        ? allCategories
+        : allCategories
+            .where((c) => c.name.toLowerCase().contains(_searchQuery))
+            .toList();
+
+    if (filteredCategories.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text(
+                "No categories found for this area",
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: FutureBuilder<List<Category>>(
-        future: _categoriesFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: filteredCategories.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.82,
+        ),
+        itemBuilder: (context, index) {
+          final category = filteredCategories[index];
 
-          final categories = snapshot.data!;
-
-          if (categories.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(child: Text("No vendors found")),
-            );
-          }
-
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: categories.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.82,
-            ),
-            itemBuilder: (context, index) {
-              final vendor = categories[index];
-
-              return _CategoryGridTile(
-                label: vendor.name,
-                imageUrl: vendor.imageUrl,
-                isSelected: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CategoryVendorsPage(
-                        categoryName: vendor.name,
-                        categoryId: vendor.id,
-                      ),
-                    ),
-                  );
-                },
+          return _CategoryGridTile(
+            label: category.name,
+            imageUrl: category.imageUrl,
+            isSelected: false,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CategoryVendorsPage(
+                    categoryName: category.name,
+                    categoryId: category.id,
+                    pincode: _currentPincode,
+                  ),
+                ),
               );
             },
           );
@@ -410,7 +936,7 @@ class _StorePageState extends State<StorePage> {
     );
   }
 
-  // 🚀 Fixed bottom action buttons: Pick & Deliver, Quick Order (sticky when bottom bar hides)
+  // 🚀 Fixed bottom action buttons
   Widget _buildFixedActionButtons() {
     return Container(
       width: double.infinity,
@@ -434,22 +960,6 @@ class _StorePageState extends State<StorePage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // SizedBox(
-          //   width: double.infinity,
-          //   child: _ActionButton(
-          //     title: AppLocalizations.of(context)!.pickAndDeliver,
-          //     icon: Icons.local_shipping_outlined,
-          //     onTap: () {
-          //       Navigator.push(
-          //         context,
-          //         MaterialPageRoute<void>(
-          //           builder: (_) => const PickDeliverOrderPage(),
-          //         ),
-          //       );
-          //     },
-          //   ),
-          // ),
-          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: _ActionButton(
@@ -479,29 +989,17 @@ class _StorePageState extends State<StorePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: StoreProfileTheme.accentPink.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.warning_amber_rounded,
-                    size: 40,
-                    color: StoreProfileTheme.accentPink,
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  "Disclaimer",
+                  "Prescription & Order Notice",
                   style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: StoreProfileTheme.accentPink,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "GraB iTT! is a medicine delivery service platform. We do not provide medical advice, diagnosis, or treatment. All medicines are delivered based on valid prescriptions from licensed medical practitioners. Please consult with a qualified healthcare professional before using any medication. We are not responsible for any adverse effects or complications arising from the use of medicines ordered through our platform. Also, Pesticides for lawful use only. Follow label instructions. Keep away from children. GraB iTT! is not responsible for any misuse.",
+                  "GraB iTT! is a delivery service platform. We do not provide medical advice or diagnosis. All medicines are delivered based on valid prescriptions. Please consult with a qualified healthcare professional.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -522,9 +1020,9 @@ class _StorePageState extends State<StorePage> {
                       Navigator.pop(context);
                       await _openQuickOrderWhatsApp(context);
                     },
-                    child: Text(
+                    child: const Text(
                       "OKAY",
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -541,7 +1039,6 @@ class _StorePageState extends State<StorePage> {
         "Hi GraB iTT!, I want to place a Quick Order. I will share my prescription or grocery list.";
     final whatsappUri = Uri.parse(
       "https://wa.me/916360974868?text=${Uri.encodeComponent(message)}",
-      // "https://wa.me/919764658896?text=${Uri.encodeComponent(message)}",
     );
 
     if (await canLaunchUrl(whatsappUri)) {
@@ -556,7 +1053,7 @@ class _StorePageState extends State<StorePage> {
   }
 }
 
-// 🏷️ Category grid tile: image + name (like reference layout)
+// 🏷️ Category grid tile
 class _CategoryGridTile extends StatelessWidget {
   final String label;
   final String? imageUrl;
@@ -608,40 +1105,20 @@ class _CategoryGridTile extends StatelessWidget {
                   memCacheWidth: 300,
                   maxWidthDiskCache: 400,
                   fadeInDuration: const Duration(milliseconds: 150),
-                  placeholder: (context, url) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        ),
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                    );
-                  },
-                  errorWidget: (_, __, ___) {
-                    return CachedNetworkImage(
-                      imageUrl: _placeholder,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (context, url) {
-                        return Container(
-                          color: Colors.grey[200],
-                        );
-                      },
-                      errorWidget: (_, __, ___) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: const Icon(
-                            Icons.broken_image_outlined,
-                          ),
-                        );
-                      },
-                    );
-                  },
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.broken_image_outlined),
+                  ),
                 ),
               ),
             ),
@@ -720,159 +1197,49 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// Backward-compatible fallback functions
 Future<List<Category>> fetchCategories([String lang = 'en']) async {
-  final response = await http.get(
-    Uri.parse('https://grabitt.in/webservice.asmx/GetCategory').replace(
-      queryParameters: {'lang': lang},
-    ),
-  );
+  try {
+    final response = await http.get(
+      Uri.parse('https://grabitt.in/webservice.asmx/GetCategory').replace(
+        queryParameters: {'lang': lang},
+      ),
+    );
 
-  if (response.statusCode == 200) {
-    final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
-    final List data = json.decode(jsonString);
-    return data.map((e) => Category.fromJson(e)).toList();
-  } else {
-    throw Exception('Failed to load categories');
-  }
+    if (response.statusCode == 200) {
+      final jsonString = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      final List data = json.decode(jsonString);
+      return data.map((e) => Category.fromJson(e)).toList();
+    }
+  } catch (_) {}
+  return [];
 }
 
-Future<List<Vendor>> fetchVendorsByCategory(String category,
-    [String lang = 'en']) async {
+Future<List<Vendor>> fetchVendorsByCategory(
+  String category, [
+  String lang = 'en',
+]) async {
   try {
     final url =
         'https://grabitt.in/webservice.asmx/GetVendorsCategoryWiseImages?categoryid=${Uri.encodeComponent(category)}&lang=${Uri.encodeComponent(lang)}';
     final response = await http.get(Uri.parse(url));
-
     if (response.statusCode != 200) return [];
-
-    /// Remove XML wrapper
     final cleaned = response.body.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-
-    /// 🚨 HANDLE NON JSON RESPONSES
     if (cleaned.isEmpty ||
         cleaned.toLowerCase() == 'no data' ||
         cleaned.toLowerCase() == 'fail' ||
         cleaned == 'null') {
       return [];
     }
-
-    /// Sometimes API returns single object instead of array
     dynamic decoded = json.decode(cleaned);
-
     if (decoded is List) {
       return decoded.map((e) => Vendor.fromJson(e)).toList();
     }
-
     if (decoded is Map) {
-      final map = Map<String, dynamic>.from(decoded);
-      return [Vendor.fromJson(map)];
+      return [Vendor.fromJson(Map<String, dynamic>.from(decoded))];
     }
-
     return [];
-  } catch (e) {
+  } catch (_) {
     return [];
-  }
-}
-
-class Restaurant {
-  final String id;
-  final String name;
-  final String category;
-  final String? imageUrl;
-  final double? rating;
-  final String? address;
-
-  Restaurant({
-    required this.id,
-    required this.name,
-    required this.category,
-    this.imageUrl,
-    this.rating,
-    this.address,
-  });
-
-  // Factory constructor for API response (future use)
-  factory Restaurant.fromJson(Map<String, dynamic> json) {
-    return Restaurant(
-      id: json['RestaurantID'] ?? json['id'] ?? '',
-      name: json['RestaurantName'] ?? json['name'] ?? '',
-      category: json['Category'] ?? json['category'] ?? '',
-      imageUrl: json['ImageUrl'] ?? json['imageUrl'],
-      rating: json['Rating'] != null
-          ? double.tryParse(json['Rating'].toString())
-          : null,
-      address: json['Address'] ?? json['address'],
-    );
-  }
-
-  // Convert to JSON for API calls (future use)
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'category': category,
-      'imageUrl': imageUrl,
-      'rating': rating,
-      'address': address,
-    };
-  }
-}
-
-// 🌐 API Function for Restaurants (Production Ready)
-Future<List<Restaurant>> fetchRestaurantsByCategory(String category) async {
-  // Replace with actual API call when backend is ready
-  return _getDummyRestaurants(category);
-}
-
-// 📦 Dummy Data Generator (Replace with API call)
-List<Restaurant> _getDummyRestaurants(String category) {
-  final categoryLower = category.toLowerCase();
-
-  if (categoryLower == 'all' || categoryLower.isEmpty) {
-    return List.generate(
-        4,
-        (index) => Restaurant(
-              id: 'rest_${index + 1}',
-              name: 'Restaurant ${index + 1}',
-              category: 'Restaurant',
-              rating: 4.0 + (index * 0.2),
-            ));
-  } else if (categoryLower.contains('restaurant')) {
-    return List.generate(
-        4,
-        (index) => Restaurant(
-              id: 'rest_${index + 1}',
-              name: 'Restaurant ${index + 1}',
-              category: 'Restaurant',
-              rating: 4.0 + (index * 0.2),
-            ));
-  } else if (categoryLower.contains('grocery')) {
-    return List.generate(
-        3,
-        (index) => Restaurant(
-              id: 'grocery_${index + 1}',
-              name: 'Grocery Store ${index + 1}',
-              category: 'Grocery',
-              rating: 4.2 + (index * 0.1),
-            ));
-  } else if (categoryLower.contains('medical') ||
-      categoryLower.contains('pharmacy')) {
-    return List.generate(
-        3,
-        (index) => Restaurant(
-              id: 'medical_${index + 1}',
-              name: 'Medical Store ${index + 1}',
-              category: 'Medical',
-              rating: 4.5 + (index * 0.1),
-            ));
-  } else {
-    return List.generate(
-        2,
-        (index) => Restaurant(
-              id: 'store_${index + 1}',
-              name: '$category Store ${index + 1}',
-              category: category,
-              rating: 4.0,
-            ));
   }
 }

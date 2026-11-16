@@ -3,6 +3,7 @@ import 'package:grabitt/l10n/app_localizations.dart';
 import 'package:grabitt/models/vender.dart';
 import 'package:grabitt/pages/store_page.dart';
 import 'package:grabitt/pages/vendor_products_page.dart';
+import 'package:grabitt/services/store_feed_service.dart';
 import 'package:grabitt/utils/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +12,13 @@ import 'package:google_fonts/google_fonts.dart';
 class CategoryVendorsPage extends StatefulWidget {
   final String categoryName;
   final String categoryId;
+  final String? pincode;
 
   const CategoryVendorsPage({
     super.key,
     required this.categoryName,
     required this.categoryId,
+    this.pincode,
   });
 
   @override
@@ -39,7 +42,24 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
   Future<void> _loadVendors() async {
     try {
       final lang = LocaleProvider.instance.languageCode;
-      final vendors = await fetchVendorsByCategory(widget.categoryId, lang);
+      List<Vendor> vendors = [];
+
+      // If pincode is provided, fetch location-aware vendors
+      if (widget.pincode != null && widget.pincode!.trim().isNotEmpty) {
+        final feed = await StoreFeedService.instance.getStoreFeed(
+          pincode: widget.pincode!,
+          categoryId: widget.categoryId,
+          lang: lang,
+          pageSize: 50,
+        );
+        vendors = feed.vendors;
+      }
+
+      // Fallback if empty or no pincode provided
+      if (vendors.isEmpty) {
+        vendors = await fetchVendorsByCategory(widget.categoryId, lang);
+      }
+
       _allVendors = vendors;
       _filteredVendors = vendors;
     } catch (_) {
@@ -47,7 +67,7 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
       _filteredVendors = [];
     }
 
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   void _onSearchChanged(String query) {

@@ -1,6 +1,7 @@
 class Vendor {
   final String id;
   final String name;
+  final String categoryId;
   final String categoryName;
   final String city;
   final String mobileNo;
@@ -12,6 +13,7 @@ class Vendor {
   Vendor({
     required this.id,
     required this.name,
+    this.categoryId = '',
     required this.categoryName,
     required this.city,
     required this.mobileNo,
@@ -39,8 +41,9 @@ class Vendor {
     ].whereType<String>().toList(); // removes nulls
 
     return Vendor(
-      id: json['VendorID']?.toString() ?? '',
+      id: json['VendorID']?.toString() ?? json['id']?.toString() ?? '',
       name: json['VendorName']?.toString() ?? '',
+      categoryId: json['CategoryID']?.toString() ?? '',
       categoryName: json['CategoryName']?.toString() ?? '',
       city: json['City']?.toString() ?? '',
       mobileNo: json['MobileNo']?.toString() ?? '',

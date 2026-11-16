@@ -1,0 +1,170 @@
+================================================================================
+GRABITT - LOCATION BASED STORE FEED API SPECIFICATION (v2.0 - UPDATED)
+================================================================================
+
+Target URL: https://grabitt.in/webservice.asmx/GetStoreFeedByLocation
+Method: GET or POST
+
+--------------------------------------------------------------------------------
+1. REQUEST PARAMETERS
+--------------------------------------------------------------------------------
+- pincode     : string (Required if lat/lon not passed) -> e.g. "400001", "411001"
+- lat         : string/double (Optional) -> e.g. "18.9220"
+- lon         : string/double (Optional) -> e.g. "72.8347"
+- lang        : string (Optional, default: "en") -> "en" or "kn"
+- category_id : string (Optional, default: "") -> Category-wise vendor filter
+- page        : int (Optional, default: 1) -> Page number
+- pageSize    : int (Optional, default: 10) -> Items per page
+
+--------------------------------------------------------------------------------
+2. LOCATION PRIORITY & RULES (IMPORTANT)
+--------------------------------------------------------------------------------
+1. Priority 1 (lat & lon):
+   Agar GPS coordinates aayein, toh vendor ke delivery radius (lat/lon) se check karein.
+2. Priority 2 (pincode):
+   Agar coordinates na hon, toh pincode delivery coverage se check karein.
+3. Delivery Coverage vs Vendor Address:
+   Serviceability vendor ki dukan ke pincode se nahi, balki vendor ke 
+   "Delivery Serviceable Pincodes" se match hogi.
+4. is_serviceable vs ShopStatus:
+   - is_serviceable = true: Area me delivery available hai.
+   - ShopStatus = false: Dukan abhi temporarily closed hai (raat ko ya off-time).
+   - Area unserviceable tabhi hoga jab wahan koi delivery service hi na ho.
+
+--------------------------------------------------------------------------------
+3. RESPONSE JSON FORMAT (CONSISTENT SCHEMA ACROSS ALL CASES)
+--------------------------------------------------------------------------------
+
+A) WHEN SERVICEABLE (Area covered & vendors found):
+{
+  "status": "Success",
+  "is_serviceable": true,
+  "city": "Mumbai",
+  "pincode": "400001",
+  "message": "Store feed loaded successfully",
+  "categories": [
+    {
+      "id": "1",
+      "CategoryName": "Restaurants",
+      "CategoryImage": "https://grabitt.in/uploads/categories/food.png"
+    },
+    {
+      "id": "2",
+      "CategoryName": "Grocery",
+      "CategoryImage": "https://grabitt.in/uploads/categories/grocery.png"
+    }
+  ],
+  "vendors": [
+    {
+      "VendorID": "101",
+      "VendorName": "Mumbai Spice Hub",
+      "CategoryID": "1",
+      "CategoryName": "Restaurants",
+      "City": "Mumbai",
+      "MobileNo": "9876543210",
+      "OpeningTime": "09:00 AM",
+      "ClosingTime": "11:00 PM",
+      "ShopStatus": true,
+      "Distance": "2.4 km",
+      "Image1": "https://grabitt.in/uploads/vendors/vd1.jpg",
+      "Image2": "https://grabitt.in/uploads/vendors/vd2.jpg",
+      "Image3": null,
+      "Image4": null,
+      "Image5": null
+    }
+  ],
+  "banners": [
+    {
+      "BannerID": "1",
+      "Image": "https://grabitt.in/uploads/banners/mumbai_welcome.jpg",
+      "ImageTitle": "Welcome to Mumbai",
+      "ImageDescription": "Flat 50% off",
+      "IsActive": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "pageSize": 10,
+    "totalCount": 24,
+    "hasMore": true
+  }
+}
+
+B) WHEN NOT SERVICEABLE (Coming Soon):
+{
+  "status": "Success",
+  "is_serviceable": false,
+  "city": "Pune",
+  "pincode": "411001",
+  "message": "Sorry, we are not delivering in this area yet! We are coming soon to your area.",
+  "categories": [],
+  "vendors": [],
+  "banners": [],
+  "pagination": {
+    "page": 1,
+    "pageSize": 10,
+    "totalCount": 0,
+    "hasMore": false
+  }
+}
+
+C) WHEN ERROR / INVALID INPUT (Consistent Schema):
+{
+  "status": "Fail",
+  "is_serviceable": false,
+  "city": "",
+  "pincode": "",
+  "message": "Invalid pincode or coordinates provided",
+  "categories": [],
+  "vendors": [],
+  "banners": [],
+  "pagination": {
+    "page": 1,
+    "pageSize": 10,
+    "totalCount": 0,
+    "hasMore": false
+  }
+}
+
+--------------------------------------------------------------------------------
+4. SQL SERVER QUERIES & PAGINATION
+--------------------------------------------------------------------------------
+
+Table: Vendor_Serviceable_Pincodes
+CREATE TABLE Vendor_Serviceable_Pincodes (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    VendorID INT NOT NULL,
+    Pincode VARCHAR(10) NOT NULL,
+    City VARCHAR(50) NULL,
+    IsActive BIT DEFAULT 1,
+    CONSTRAINT FK_Vendor FOREIGN KEY (VendorID) REFERENCES Vendors(VendorID)
+);
+
+Query for Paged Vendors (with Lang & CategoryID & Full Image URLs):
+DECLARE @offset INT = (@page - 1) * @pageSize;
+
+SELECT 
+    v.VendorID,
+    CASE WHEN @lang = 'kn' AND ISNULL(v.VendorName_KN, '') <> '' THEN v.VendorName_KN ELSE v.VendorName END AS VendorName,
+    v.CategoryID,
+    CASE WHEN @lang = 'kn' AND ISNULL(c.CategoryName_KN, '') <> '' THEN c.CategoryName_KN ELSE c.CategoryName END AS CategoryName,
+    v.City,
+    v.MobileNo,
+    v.OpeningTime,
+    v.ClosingTime,
+    v.ShopStatus,
+    CASE WHEN v.Image1 IS NOT NULL AND v.Image1 <> '' THEN 'https://grabitt.in/' + v.Image1 ELSE NULL END AS Image1,
+    CASE WHEN v.Image2 IS NOT NULL AND v.Image2 <> '' THEN 'https://grabitt.in/' + v.Image2 ELSE NULL END AS Image2,
+    CASE WHEN v.Image3 IS NOT NULL AND v.Image3 <> '' THEN 'https://grabitt.in/' + v.Image3 ELSE NULL END AS Image3,
+    CASE WHEN v.Image4 IS NOT NULL AND v.Image4 <> '' THEN 'https://grabitt.in/' + v.Image4 ELSE NULL END AS Image4,
+    CASE WHEN v.Image5 IS NOT NULL AND v.Image5 <> '' THEN 'https://grabitt.in/' + v.Image5 ELSE NULL END AS Image5
+FROM Vendors v
+INNER JOIN Categories c ON v.CategoryID = c.id
+INNER JOIN Vendor_Serviceable_Pincodes vp ON v.VendorID = vp.VendorID
+WHERE vp.Pincode = @pincode 
+  AND vp.IsActive = 1 
+  AND v.IsActive = 1
+  AND (@category_id IS NULL OR @category_id = '' OR v.CategoryID = @category_id)
+ORDER BY v.ShopStatus DESC, v.VendorID ASC
+OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
+================================================================================
