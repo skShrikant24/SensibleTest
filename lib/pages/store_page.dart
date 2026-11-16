@@ -270,14 +270,57 @@ class _StorePageState extends State<StorePage> {
   // Location Selector & Cart Location Safety
   // ---------------------------------------------------------------------------
 
-  /// Shows confirmation if cart contains items from a different store/location
-  Future<bool> _confirmLocationChangeIfCartNotEmpty() async {
+  /// Shows confirmation if cart contains items from a different store/location.
+  /// If target location matches the cart items' vendor city/pincode, returns true without prompting.
+  Future<bool> _confirmLocationChangeIfCartNotEmpty({
+    String? targetPincode,
+    String? targetCity,
+    AddressModel? targetAddress,
+  }) async {
     final cartCount = CartService.instance.count;
     if (cartCount == 0) return true;
 
+    final cartPin = CartService.instance.vendorPincode.trim();
+    final cartC = CartService.instance.vendorCity.trim().toUpperCase();
+
+    final targetPin = (targetPincode ?? targetAddress?.pincode ?? '').trim();
+    final targetC =
+        (targetCity ?? targetAddress?.city ?? '').trim().toUpperCase();
+
+    // Determine if target location matches the cart's vendor location
+    bool isSameLocation = false;
+    if (targetPin.isNotEmpty && cartPin.isNotEmpty && targetPin == cartPin) {
+      isSameLocation = true;
+    } else if (targetC.isNotEmpty &&
+        cartC.isNotEmpty &&
+        (targetC == cartC ||
+            targetC.contains(cartC) ||
+            cartC.contains(targetC))) {
+      isSameLocation = true;
+    } else if (targetPin == '571105' &&
+        (cartC.isEmpty || cartC == 'HUNSUR')) {
+      // Default / Hunsur base
+      isSameLocation = true;
+    } else if (targetC == 'HUNSUR' &&
+        (cartPin.isEmpty || cartPin == '571105')) {
+      isSameLocation = true;
+    }
+
+    if (isSameLocation) {
+      // Same delivery zone: keep cart items completely intact!
+      return true;
+    }
+
+    // Different city / delivery zone: Ask user for confirmation
     final vendorName = CartService.instance.vendorName;
     final displayName =
         vendorName.isNotEmpty ? vendorName : 'a restaurant/store';
+    final currentLocName = cartC.isNotEmpty
+        ? cartC
+        : (cartPin.isNotEmpty ? 'Pincode $cartPin' : 'your current location');
+    final targetLocName = targetPin.isNotEmpty
+        ? 'Pincode $targetPin'
+        : (targetC.isNotEmpty ? targetC : 'a new location');
 
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -295,7 +338,7 @@ class _StorePageState extends State<StorePage> {
           ),
         ),
         content: Text(
-          'Your cart contains $cartCount item${cartCount > 1 ? "s" : ""} from $displayName. Changing delivery location will clear your current cart.',
+          'Your cart contains $cartCount item${cartCount > 1 ? "s" : ""} from $displayName ($currentLocName).\n\nChanging delivery location to $targetLocName will clear your current cart.',
           style: GoogleFonts.poppins(
             fontSize: 13,
             color: Colors.grey[700],
@@ -424,7 +467,11 @@ class _StorePageState extends State<StorePage> {
       return;
     }
 
-    final proceed = await _confirmLocationChangeIfCartNotEmpty();
+    final proceed = await _confirmLocationChangeIfCartNotEmpty(
+      targetAddress: address,
+      targetPincode: address.pincode,
+      targetCity: address.city,
+    );
     if (!proceed) return;
 
     await SelectedAddressStorage.instance.save(address);
@@ -489,10 +536,36 @@ class _StorePageState extends State<StorePage> {
               borderRadius: BorderRadius.circular(10),
               onTap: () async {
                 Navigator.pop(ctx);
-                final proceed = await _confirmLocationChangeIfCartNotEmpty();
-                if (!proceed) return;
                 await _autoDetectLocation();
-                await _fetchFeed();
+                if (_currentLat.isNotEmpty && _currentLon.isNotEmpty) {
+                  final lang = LocaleProvider.instance.languageCode;
+                  final feed = await StoreFeedService.instance.getStoreFeed(
+                    pincode: _currentPincode,
+                    lat: _currentLat,
+                    lon: _currentLon,
+                    lang: lang,
+                    pageSize: 50,
+                  );
+                  final proceed = await _confirmLocationChangeIfCartNotEmpty(
+                    targetPincode: feed.pincode,
+                    targetCity: feed.city,
+                  );
+                  if (!proceed) return;
+                  if (mounted) {
+                    setState(() {
+                      _feedResponse = feed;
+                      _currentPincode = feed.pincode;
+                      _loadingFeed = false;
+                    });
+                  }
+                } else {
+                  if (mounted) {
+                    ToastMessage.warning(
+                      context: context,
+                      msg: 'Unable to detect GPS. Please enter pincode below.',
+                    );
+                  }
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -597,7 +670,9 @@ class _StorePageState extends State<StorePage> {
                       }
                       Navigator.pop(ctx);
                       final proceed =
-                          await _confirmLocationChangeIfCartNotEmpty();
+                          await _confirmLocationChangeIfCartNotEmpty(
+                        targetPincode: val,
+                      );
                       if (!proceed) return;
 
                       await SelectedAddressStorage.instance.clear();
@@ -947,11 +1022,9 @@ class _StorePageState extends State<StorePage> {
                   AnimatedBuilder(
                     animation: CartService.instance,
                     builder: (context, _) {
-                      final hasLocation =
-                          _currentPincode.isNotEmpty || _currentLat.isNotEmpty;
                       return HeaderPill(
                         icon: Icons.shopping_cart_outlined,
-                        badgeCount: hasLocation ? CartService.instance.count : 0,
+                        badgeCount: CartService.instance.count,
                         shouldAnimate: CartService.instance.shouldAnimateCart,
                         onTap: () {
                           Navigator.push(

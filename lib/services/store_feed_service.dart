@@ -12,7 +12,7 @@ class StoreFeedService {
 
   /// Fetches the location-based store feed (categories, vendors, banners, serviceability).
   Future<StoreFeedResponse> getStoreFeed({
-    required String pincode,
+    String pincode = '',
     String lat = '',
     String lon = '',
     String lang = 'en',

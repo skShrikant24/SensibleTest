@@ -399,6 +399,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             VendorBanner(
               vendorName: _cart.vendorName,
               vendorCategory: _cart.vendorCategory,
+              vendorCity: _cart.vendorCity,
             ),
             _SectionTitle(l10n.shippingAddress),
             CheckoutAddressCard(

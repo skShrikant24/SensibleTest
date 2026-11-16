@@ -66,8 +66,10 @@ class _CartPageState extends State<CartPage> {
                               // index 0 = vendor banner
                               if (index == 0) {
                                 return VendorBanner(
-                                    vendorName: cart.vendorName,
-                                    vendorCategory: cart.vendorCategory);
+                                  vendorName: cart.vendorName,
+                                  vendorCategory: cart.vendorCategory,
+                                  vendorCity: cart.vendorCity,
+                                );
                               }
                               return _cartItem(cart.items[index - 1]);
                             },

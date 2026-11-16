@@ -83,6 +83,8 @@ class CartService extends ChangeNotifier {
   String _vendorId = '';
   String _vendorName = '';
   String _vendorCategory = '';
+  String _vendorCity = '';
+  String _vendorPincode = '';
 
   // ---------------------------------------------------------------------------
   // Getters
@@ -124,6 +126,8 @@ class CartService extends ChangeNotifier {
   String get vendorId => _vendorId;
   String get vendorName => _vendorName;
   String get vendorCategory => _vendorCategory;
+  String get vendorCity => _vendorCity;
+  String get vendorPincode => _vendorPincode;
 
   bool isProductUpdating(String productId) =>
       _updatingProducts.contains(productId);
@@ -150,6 +154,12 @@ class CartService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_cartStorageKey);
+      _vendorId = prefs.getString('cart_vendor_id') ?? '';
+      _vendorName = prefs.getString('cart_vendor_name') ?? '';
+      _vendorCategory = prefs.getString('cart_vendor_category') ?? '';
+      _vendorCity = prefs.getString('cart_vendor_city') ?? '';
+      _vendorPincode = prefs.getString('cart_vendor_pincode') ?? '';
+
       if (raw == null || raw.isEmpty) return;
       final list = jsonDecode(raw);
       if (list is! List) return;
@@ -174,6 +184,11 @@ class CartService extends ChangeNotifier {
         _cartStorageKey,
         jsonEncode(items.map((e) => e.toJson()).toList()),
       );
+      await prefs.setString('cart_vendor_id', _vendorId);
+      await prefs.setString('cart_vendor_name', _vendorName);
+      await prefs.setString('cart_vendor_category', _vendorCategory);
+      await prefs.setString('cart_vendor_city', _vendorCity);
+      await prefs.setString('cart_vendor_pincode', _vendorPincode);
     } catch (e, st) {
       AppLogger.e(_tag, '_saveToStorage failed', e, st);
     }
@@ -330,6 +345,26 @@ class CartService extends ChangeNotifier {
       _vendorId = response['VendorID']?.toString() ?? '';
       _vendorName = response['VendorName']?.toString() ?? '';
       _vendorCategory = response['VendorCategory']?.toString() ?? '';
+
+      final respCity = response['City']?.toString() ??
+          response['VendorCity']?.toString() ??
+          '';
+      final respPin = response['Pincode']?.toString() ??
+          response['VendorPincode']?.toString() ??
+          '';
+      if (respCity.isNotEmpty) {
+        _vendorCity = respCity;
+        _vendorPincode = respPin;
+      } else if (_vendorId == '67') {
+        _vendorCity = 'Pune';
+        _vendorPincode = '411057';
+      } else if (_vendorId.isNotEmpty) {
+        _vendorCity = 'Hunsur';
+        _vendorPincode = '571105';
+      } else {
+        _vendorCity = '';
+        _vendorPincode = '';
+      }
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);
       _gst = _toDouble(response['GST']);
@@ -490,6 +525,8 @@ class CartService extends ChangeNotifier {
     _vendorId = '';
     _vendorName = '';
     _vendorCategory = '';
+    _vendorCity = '';
+    _vendorPincode = '';
   }
 
   double _toDouble(dynamic value) {

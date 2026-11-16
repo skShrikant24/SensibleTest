@@ -7,15 +7,24 @@ class VendorBanner extends StatelessWidget {
     super.key,
     required this.vendorName,
     required this.vendorCategory,
+    this.vendorCity,
   });
 
   final String vendorName;
   final String vendorCategory;
+  final String? vendorCity;
 
   @override
   Widget build(BuildContext context) {
     // Backend hasn't returned vendor info yet — render nothing.
     if (vendorName.isEmpty) return const SizedBox.shrink();
+
+    final city = vendorCity?.trim() ?? '';
+    final category = vendorCategory.trim();
+    final subtitle = [
+      if (category.isNotEmpty) category,
+      if (city.isNotEmpty) city,
+    ].join(' • ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -57,10 +66,10 @@ class VendorBanner extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-                if (vendorCategory.isNotEmpty) ...[
+                if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    vendorCategory,
+                    subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey.shade600,
