@@ -28,6 +28,7 @@ import 'package:grabitt/utils/app_logger.dart';
 import 'package:grabitt/utils/constants.dart';
 import 'package:grabitt/utils/shared_classes.dart';
 import 'package:grabitt/widgets/address_selector_sheet.dart';
+import 'package:grabitt/widgets/home_banner_slider.dart';
 
 class StorePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
@@ -234,6 +235,45 @@ class _StorePageState extends State<StorePage> {
         _currentPincode = feed.pincode;
       }
       _loadingFeed = false;
+    });
+
+    if (feed.isServiceable && feed.banners.isNotEmpty) {
+      _checkAndShowLocationBanners(feed.banners);
+    }
+  }
+
+  bool _isBannerPopupShowing = false;
+  static final Set<String> _shownBannerLocations = {};
+
+  Future<void> _checkAndShowLocationBanners(List<HomeBannerModel> banners) async {
+    if (_isBannerPopupShowing || banners.isEmpty || !mounted) return;
+
+    final locationKey = _currentPincode.isNotEmpty
+        ? _currentPincode
+        : (_feedResponse?.city ?? 'loc');
+    if (_shownBannerLocations.contains(locationKey)) return;
+
+    _isBannerPopupShowing = true;
+    _shownBannerLocations.add(locationKey);
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) {
+      _isBannerPopupShowing = false;
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => HomeBannerPopup(
+        banners: banners,
+        onClose: () {
+          _isBannerPopupShowing = false;
+          if (mounted) Navigator.pop(context);
+        },
+      ),
+    ).then((_) {
+      _isBannerPopupShowing = false;
     });
   }
 
@@ -1027,6 +1067,16 @@ class _StorePageState extends State<StorePage> {
                         badgeCount: CartService.instance.count,
                         shouldAnimate: CartService.instance.shouldAnimateCart,
                         onTap: () {
+                          if (_currentPincode.isEmpty &&
+                              _currentLat.isEmpty &&
+                              _selectedAddress == null) {
+                            ToastMessage.warning(
+                              context: context,
+                              msg: 'Please select delivery location first',
+                            );
+                            _openLocationSelector();
+                            return;
+                          }
                           Navigator.push(
                             context,
                             MaterialPageRoute(
