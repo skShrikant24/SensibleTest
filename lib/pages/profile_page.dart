@@ -14,7 +14,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
-  const ProfilePage({super.key, required this.onSelectTab});
+  final bool isVisible;
+
+  const ProfilePage({
+    super.key,
+    required this.onSelectTab,
+    this.isVisible = true,
+  });
 
   /// Safe string from saved user map (API keys: Name, Email, phone, Sex, DateOfBirth, lan, lon).
   static String _str(Map<String, dynamic>? user, String key) {
@@ -87,20 +93,26 @@ class ProfilePage extends StatefulWidget {
       if (selectedAddress != null) {
         address = selectedAddress.displaySummary;
       } else {
-        // Fallback: fetch address from API after app reinstall/data clear
-        final uid =
-            user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
+        final savedPincode =
+            await SelectedAddressStorage.instance.loadPincode();
+        if (savedPincode != null && savedPincode.isNotEmpty) {
+          address = 'Delivery Pincode: $savedPincode';
+        } else {
+          // Fallback: fetch address from API after app reinstall/data clear
+          final uid =
+              user?['ID']?.toString() ?? user?['UserID']?.toString() ?? '';
 
-        if (uid.isNotEmpty) {
-          final addresses = await getAddressByUser(uid);
+          if (uid.isNotEmpty) {
+            final addresses = await getAddressByUser(uid);
 
-          if (addresses.isNotEmpty) {
-            final firstAddress = addresses.first;
+            if (addresses.isNotEmpty) {
+              final firstAddress = addresses.first;
 
-            // Save it locally so next time no API fallback is needed
-            await SelectedAddressStorage.instance.save(firstAddress);
+              // Save it locally so next time no API fallback is needed
+              await SelectedAddressStorage.instance.save(firstAddress);
 
-            address = firstAddress.displaySummary;
+              address = firstAddress.displaySummary;
+            }
           }
         }
       }
@@ -201,6 +213,27 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadProfile();
+    SelectedAddressStorage.instance.addListener(_onAddressStorageChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfilePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible && !oldWidget.isVisible) {
+      _refreshProfile();
+    }
+  }
+
+  @override
+  void dispose() {
+    SelectedAddressStorage.instance.removeListener(_onAddressStorageChanged);
+    super.dispose();
+  }
+
+  void _onAddressStorageChanged() {
+    if (mounted) {
+      _refreshProfile();
+    }
   }
 
   void _loadProfile() {
@@ -208,9 +241,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _refreshProfile() async {
-    setState(() {
-      _loadProfile();
-    });
+    if (mounted) {
+      setState(() {
+        _loadProfile();
+      });
+    }
   }
 
   Future<void> _handleDeleteAccount() async {

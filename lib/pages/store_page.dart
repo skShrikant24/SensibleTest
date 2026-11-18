@@ -136,7 +136,13 @@ class _StorePageState extends State<StorePage> {
           await _fetchFeed();
         } else {
           // No saved address and no saved pincode: Attempt safe GPS auto-detection
-          await _autoDetectLocation();
+          final pos = await _getGpsPosition();
+          if (pos != null) {
+            _currentLat = pos.latitude.toString();
+            _currentLon = pos.longitude.toString();
+            _currentPincode = '';
+            _selectedAddress = null;
+          }
           await _fetchFeed();
 
           // If location is STILL unknown (GPS off or permission denied):
@@ -151,8 +157,9 @@ class _StorePageState extends State<StorePage> {
     }
   }
 
-  /// Safe GPS Auto-Detection across all Android (Android 8 to 15) and iOS versions
-  Future<void> _autoDetectLocation() async {
+  /// Safe, non-mutating GPS position fetcher across all Android (Android 8 to 15) and iOS versions.
+  /// Returns Position if permission is granted and GPS is on, or null otherwise.
+  Future<Position?> _getGpsPosition() async {
     try {
       // 1. Check and request location permission first
       LocationPermission permission = await Geolocator.checkPermission();
@@ -163,30 +170,26 @@ class _StorePageState extends State<StorePage> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         AppLogger.d('StorePage', 'Location permission denied: $permission');
-        return;
+        return null;
       }
 
       // 2. Permission granted! Check if GPS hardware is turned ON
       final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         AppLogger.d('StorePage', 'GPS hardware is turned off on device');
-        return;
+        return null;
       }
 
       // 3. Both permission and GPS are ON: Fetch coordinates with 5s timeout
-      final position = await Geolocator.getCurrentPosition(
+      return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
           timeLimit: Duration(seconds: 5),
         ),
       );
-
-      _currentLat = position.latitude.toString();
-      _currentLon = position.longitude.toString();
-      _currentPincode = '';
-      _selectedAddress = null;
     } catch (e) {
-      AppLogger.w('StorePage', 'GPS auto-detection skipped/failed: $e');
+      AppLogger.w('StorePage', 'GPS position fetch skipped/failed: $e');
+      return null;
     }
   }
 
@@ -236,6 +239,10 @@ class _StorePageState extends State<StorePage> {
       }
       _loadingFeed = false;
     });
+
+    if (_selectedAddress == null && _currentPincode.isNotEmpty) {
+      SelectedAddressStorage.instance.savePincode(_currentPincode);
+    }
 
     if (feed.isServiceable && feed.banners.isNotEmpty) {
       _checkAndShowLocationBanners(feed.banners);
@@ -311,17 +318,19 @@ class _StorePageState extends State<StorePage> {
   // ---------------------------------------------------------------------------
 
   /// Shows confirmation if cart contains items from a different store/location.
-  /// If target location matches the cart items' vendor city/pincode, returns true without prompting.
+  /// If target location matches the cart items' vendor city/pincode or the vendor is present in targetVendors, returns true without prompting.
   Future<bool> _confirmLocationChangeIfCartNotEmpty({
     String? targetPincode,
     String? targetCity,
     AddressModel? targetAddress,
+    List<Vendor>? targetVendors,
   }) async {
     final cartCount = CartService.instance.count;
     if (cartCount == 0) return true;
 
     final cartPin = CartService.instance.vendorPincode.trim();
     final cartC = CartService.instance.vendorCity.trim().toUpperCase();
+    final cartVendorId = CartService.instance.vendorId.trim();
 
     final targetPin = (targetPincode ?? targetAddress?.pincode ?? '').trim();
     final targetC =
@@ -331,23 +340,16 @@ class _StorePageState extends State<StorePage> {
     bool isSameLocation = false;
     if (targetPin.isNotEmpty && cartPin.isNotEmpty && targetPin == cartPin) {
       isSameLocation = true;
-    } else if (targetC.isNotEmpty &&
-        cartC.isNotEmpty &&
-        (targetC == cartC ||
-            targetC.contains(cartC) ||
-            cartC.contains(targetC))) {
+    } else if (targetC.isNotEmpty && cartC.isNotEmpty && targetC == cartC) {
       isSameLocation = true;
-    } else if (targetPin == '571105' &&
-        (cartC.isEmpty || cartC == 'HUNSUR')) {
-      // Default / Hunsur base
-      isSameLocation = true;
-    } else if (targetC == 'HUNSUR' &&
-        (cartPin.isEmpty || cartPin == '571105')) {
+    } else if (cartVendorId.isNotEmpty &&
+        targetVendors != null &&
+        targetVendors.any((v) => v.id.trim() == cartVendorId)) {
       isSameLocation = true;
     }
 
     if (isSameLocation) {
-      // Same delivery zone: keep cart items completely intact!
+      // Same delivery zone or store is available in this zone: keep cart items intact!
       return true;
     }
 
@@ -418,7 +420,17 @@ class _StorePageState extends State<StorePage> {
     );
 
     if (confirm == true) {
-      await CartService.instance.clearCart();
+      final success = await CartService.instance.clearCart(syncServer: true);
+      if (!success) {
+        if (mounted) {
+          ToastMessage.error(
+            context: context,
+            msg:
+                'Failed to clear cart on server. Please check your internet connection and try again.',
+          );
+        }
+        return false;
+      }
       return true;
     }
     return false;
@@ -576,35 +588,49 @@ class _StorePageState extends State<StorePage> {
               borderRadius: BorderRadius.circular(10),
               onTap: () async {
                 Navigator.pop(ctx);
-                await _autoDetectLocation();
-                if (_currentLat.isNotEmpty && _currentLon.isNotEmpty) {
-                  final lang = LocaleProvider.instance.languageCode;
-                  final feed = await StoreFeedService.instance.getStoreFeed(
-                    pincode: _currentPincode,
-                    lat: _currentLat,
-                    lon: _currentLon,
-                    lang: lang,
-                    pageSize: 50,
-                  );
-                  final proceed = await _confirmLocationChangeIfCartNotEmpty(
-                    targetPincode: feed.pincode,
-                    targetCity: feed.city,
-                  );
-                  if (!proceed) return;
-                  if (mounted) {
-                    setState(() {
-                      _feedResponse = feed;
-                      _currentPincode = feed.pincode;
-                      _loadingFeed = false;
-                    });
-                  }
-                } else {
+                final position = await _getGpsPosition();
+                if (position == null) {
                   if (mounted) {
                     ToastMessage.warning(
                       context: context,
                       msg: 'Unable to detect GPS. Please enter pincode below.',
                     );
                   }
+                  return;
+                }
+
+                final newLat = position.latitude.toString();
+                final newLon = position.longitude.toString();
+                final lang = LocaleProvider.instance.languageCode;
+                final previewFeed =
+                    await StoreFeedService.instance.getStoreFeed(
+                  lat: newLat,
+                  lon: newLon,
+                  lang: lang,
+                  pageSize: 50,
+                );
+
+                final proceed = await _confirmLocationChangeIfCartNotEmpty(
+                  targetPincode: previewFeed.pincode,
+                  targetCity: previewFeed.city,
+                  targetVendors: previewFeed.vendors,
+                );
+                if (!proceed) return;
+
+                await SelectedAddressStorage.instance.clear();
+                if (previewFeed.pincode.isNotEmpty) {
+                  await SelectedAddressStorage.instance
+                      .savePincode(previewFeed.pincode);
+                }
+
+                if (mounted) {
+                  setState(() {
+                    _selectedAddress = null;
+                    _currentLat = newLat;
+                    _currentLon = newLon;
+                    _currentPincode = previewFeed.pincode;
+                  });
+                  await _fetchFeed();
                 }
               },
               child: Container(
@@ -1209,7 +1235,13 @@ class _StorePageState extends State<StorePage> {
               ),
               onPressed: hasNoLocation
                   ? () async {
-                      await _autoDetectLocation();
+                      final pos = await _getGpsPosition();
+                      if (pos != null) {
+                        _currentLat = pos.latitude.toString();
+                        _currentLon = pos.longitude.toString();
+                        _currentPincode = '';
+                        _selectedAddress = null;
+                      }
                       await _fetchFeed();
                     }
                   : _fetchFeed,

@@ -178,6 +178,7 @@ class _CategoryVendorsPageState extends State<CategoryVendorsPage> {
                                       vendorId: vendor.id,
                                       vendorName: vendor.name,
                                       catergoryId: widget.categoryId,
+                                      vendorCity: vendor.city,
                                     ),
                                   ),
                                 );

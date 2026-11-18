@@ -218,12 +218,29 @@ class CartService extends ChangeNotifier {
 
   /// Adds [product] to cart. Returns the backend response so the UI can show
   /// a toast (e.g. a server message or confirmation).
-  Future<Map?> addItem(Product product) async {
+  Future<Map?> addItem(
+    Product product, {
+    String? vendorId,
+    String? vendorName,
+    String? vendorCategory,
+    String? vendorCity,
+    String? vendorPincode,
+  }) async {
     final id = product.id.toString();
     if (_updatingProducts.contains(id)) return null;
     _updatingProducts.add(id);
 
     try {
+      if (vendorId != null && vendorId.isNotEmpty) _vendorId = vendorId;
+      if (vendorName != null && vendorName.isNotEmpty) _vendorName = vendorName;
+      if (vendorCategory != null && vendorCategory.isNotEmpty) {
+        _vendorCategory = vendorCategory;
+      }
+      if (vendorCity != null && vendorCity.isNotEmpty) _vendorCity = vendorCity;
+      if (vendorPincode != null && vendorPincode.isNotEmpty) {
+        _vendorPincode = vendorPincode;
+      }
+
       final index = items.indexWhere((e) => e.product.id == product.id);
       if (index >= 0) {
         items[index].quantity++;
@@ -287,21 +304,47 @@ class CartService extends ChangeNotifier {
   }
 
   /// Clears all cart data and persists the empty state.
-  Future<void> clearCart({bool syncServer = true}) async {
-    items.clear();
-    _resetTotals();
-    notifyListeners();
-    _saveToStorage();
+  /// If [syncServer] is true, calls the backend API first.
+  /// Returns `true` if server clear succeeded (or was offline/guest),
+  /// and `false` if the server returned a failure or threw an error.
+  Future<bool> clearCart({bool syncServer = true}) async {
     if (syncServer) {
       try {
         final ctx = await getUserContext();
         final userId = ctx['userId'] ?? '';
         final macId = ctx['macId'] ?? '';
         if (userId.isNotEmpty || macId.isNotEmpty) {
-          await CartApiService.clearCart(userId: userId, macId: macId);
+          final res =
+              await CartApiService.clearCart(userId: userId, macId: macId);
+          if (res == null) {
+            AppLogger.w(_tag, 'clearCart: server returned null');
+            return false;
+          }
+          if (res is String) {
+            final lower = res.trim().toLowerCase();
+            if (lower.contains('fail') || lower.contains('error')) {
+              AppLogger.w(_tag, 'clearCart: server returned failure: $res');
+              return false;
+            }
+          } else if (res is Map) {
+            final status = res['status']?.toString().toLowerCase();
+            if (status == 'false' || status == 'failed' || status == 'error') {
+              AppLogger.w(_tag, 'clearCart: server returned error map: $res');
+              return false;
+            }
+          }
         }
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.e(_tag, 'clearCart: server API call threw exception', e, st);
+        return false;
+      }
     }
+
+    items.clear();
+    _resetTotals();
+    notifyListeners();
+    await _saveToStorage();
+    return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -354,16 +397,9 @@ class CartService extends ChangeNotifier {
           '';
       if (respCity.isNotEmpty) {
         _vendorCity = respCity;
-        _vendorPincode = respPin;
-      } else if (_vendorId == '67') {
-        _vendorCity = 'Pune';
-        _vendorPincode = '411057';
-      } else if (_vendorId.isNotEmpty) {
-        _vendorCity = 'Hunsur';
-        _vendorPincode = '571105';
-      } else {
-        _vendorCity = '';
-        _vendorPincode = '';
+        if (respPin.isNotEmpty) {
+          _vendorPincode = respPin;
+        }
       }
       _cartTotal = _toDouble(response['CartTotal']);
       _deliveryCharge = _toDouble(response['DeliveryCharge']);

@@ -18,12 +18,14 @@ class VendorProductsPage extends StatefulWidget {
   final String vendorId;
   final String vendorName;
   final String catergoryId;
+  final String vendorCity;
 
   const VendorProductsPage({
     super.key,
     required this.vendorId,
     required this.vendorName,
     required this.catergoryId,
+    this.vendorCity = '',
   });
 
   @override
@@ -196,6 +198,10 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
                                 final p = _filteredVendorsProduct[index];
                                 return _ProductCard(
                                   vendorProduct: p,
+                                  vendorId: widget.vendorId,
+                                  vendorName: widget.vendorName,
+                                  categoryId: widget.catergoryId,
+                                  vendorCity: widget.vendorCity,
                                   onTap: () {
                                     final product = Product.fromVendor(p);
                                     Navigator.push(
@@ -221,10 +227,18 @@ class _VendorProductsPageState extends State<VendorProductsPage> {
 
 class _ProductCard extends StatelessWidget {
   final VendorProduct vendorProduct;
+  final String vendorId;
+  final String vendorName;
+  final String categoryId;
+  final String vendorCity;
   final VoidCallback onTap;
 
   const _ProductCard({
     required this.vendorProduct,
+    required this.vendorId,
+    required this.vendorName,
+    required this.categoryId,
+    required this.vendorCity,
     required this.onTap,
   });
 
@@ -305,7 +319,13 @@ class _ProductCard extends StatelessWidget {
                           isLoading:
                               cart.isProductUpdating(product.id.toString()),
                           onPressed: () async {
-                            final res = await cart.addItem(product);
+                            final res = await cart.addItem(
+                              product,
+                              vendorId: vendorId,
+                              vendorName: vendorName,
+                              vendorCategory: categoryId,
+                              vendorCity: vendorCity,
+                            );
                             if (!context.mounted) return;
 
                             final status = res != null

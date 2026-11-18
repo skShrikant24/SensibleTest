@@ -160,6 +160,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 ),
                 ProfilePage(
                   onSelectTab: (i) => setState(() => _index = i),
+                  isVisible: _index == 1,
                 ),
               ],
             ),
