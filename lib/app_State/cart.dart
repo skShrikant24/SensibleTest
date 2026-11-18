@@ -316,19 +316,25 @@ class CartService extends ChangeNotifier {
         if (userId.isNotEmpty || macId.isNotEmpty) {
           final res =
               await CartApiService.clearCart(userId: userId, macId: macId);
-          if (res == null) {
+          if (res == null || res == false || res == 0) {
             AppLogger.w(_tag, 'clearCart: server returned null');
             return false;
           }
           if (res is String) {
             final lower = res.trim().toLowerCase();
-            if (lower.contains('fail') || lower.contains('error')) {
+            if (lower.isEmpty || lower == 'false' || lower == '0' ||
+                lower.contains('fail') || lower.contains('error')) {
               AppLogger.w(_tag, 'clearCart: server returned failure: $res');
               return false;
             }
           } else if (res is Map) {
-            final status = res['status']?.toString().toLowerCase();
-            if (status == 'false' || status == 'failed' || status == 'error') {
+            final normalized = {
+              for (final entry in res.entries)
+                entry.key.toString().toLowerCase(): entry.value,
+            };
+            final status = normalized['status']?.toString().trim().toLowerCase();
+            if (status == 'false' || status == '0' ||
+                status == 'fail' || status == 'failed' || status == 'error') {
               AppLogger.w(_tag, 'clearCart: server returned error map: $res');
               return false;
             }

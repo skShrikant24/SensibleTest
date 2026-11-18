@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:grabitt/l10n/app_localizations.dart';
 import 'package:grabitt/utils/app_logger.dart';
@@ -468,12 +469,96 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final lng = _lon.text.trim();
     final latNum = double.tryParse(lat);
     final lngNum = double.tryParse(lng);
-    return latNum != null && lngNum != null && latNum != 0 && lngNum != 0;
+    return _validDeliveryCoordinates(latNum, lngNum);
   }
 
   // ---------------------------------------------------------------------------
   // Location
   // ---------------------------------------------------------------------------
+
+  Future<void> _chooseOtherLocation() async {
+    var coordinates = '';
+    String? validationError;
+    final selected = await showDialog<List<double>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, updateDialog) => AlertDialog(
+          title: const Text('Set delivery pin'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Open Maps, find the delivery address and long-press the exact '
+                  'entrance. Copy its latitude and longitude and paste them below. '
+                  'You can also ask the recipient to send these coordinates.',
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Open address in Maps'),
+                  onPressed: () async {
+                    final address = [
+                      _addressLine1.text, _area.text, _city.text,
+                      _state.text, _pincode.text,
+                    ].where((part) => part.trim().isNotEmpty).join(', ');
+                    final uri = Uri.https('www.google.com', '/maps/search/', {
+                      'api': '1',
+                      'query': address.isEmpty ? 'India' : address,
+                    });
+                    try {
+                      final opened = await launchUrl(
+                        uri, mode: LaunchMode.externalApplication,
+                      );
+                      if (!opened && dialogContext.mounted) {
+                        updateDialog(() => validationError = 'Could not open Maps.');
+                      }
+                    } catch (_) {
+                      if (dialogContext.mounted) {
+                        updateDialog(() => validationError = 'Could not open Maps.');
+                      }
+                    }
+                  },
+                ),
+                TextField(
+                  onChanged: (value) => coordinates = value,
+                  decoration: InputDecoration(
+                    labelText: 'Latitude, longitude',
+                    hintText: '18.5204, 73.8567',
+                    errorText: validationError,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final parts = coordinates.trim().split(',');
+                final lat = parts.length == 2 ? double.tryParse(parts[0].trim()) : null;
+                final lng = parts.length == 2 ? double.tryParse(parts[1].trim()) : null;
+                if (!_validDeliveryCoordinates(lat, lng)) {
+                  updateDialog(() => validationError = 'Enter valid latitude, longitude coordinates.');
+                  return;
+                }
+                Navigator.pop(dialogContext, <double>[lat!, lng!]);
+              },
+              child: const Text('Use delivery pin'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() {
+      _lan.text = selected[0].toString();
+      _lon.text = selected[1].toString();
+    });
+  }
 
   Future<void> _getCurrentLocation() async {
     AppLogger.d(_tag, 'Requesting current location');
@@ -608,7 +693,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
       AppLogger.w(_tag, 'Form submit prevented: location missing');
       ToastMessage.warning(
         context: context,
-        msg: 'Please capture your current location before saving.',
+        msg: 'Please set a pin for the delivery address before saving.',
       );
       return;
     }
@@ -845,6 +930,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
               isLoading: _loadingLocation,
               showError: _submitted && !_hasLocation,
               onGetLocation: _getCurrentLocation,
+              onChooseLocation: _chooseOtherLocation,
             ),
 
             const SizedBox(height: 24),
@@ -991,6 +1077,7 @@ class _LocationSection extends StatelessWidget {
     required this.isLoading,
     required this.showError,
     required this.onGetLocation,
+    required this.onChooseLocation,
   });
 
   final TextEditingController latController;
@@ -998,6 +1085,7 @@ class _LocationSection extends StatelessWidget {
   final bool isLoading;
   final bool showError;
   final VoidCallback onGetLocation;
+  final VoidCallback onChooseLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -1006,7 +1094,7 @@ class _LocationSection extends StatelessWidget {
     final latNum = double.tryParse(lat);
     final lngNum = double.tryParse(lng);
     final hasLocation =
-        latNum != null && lngNum != null && latNum != 0 && lngNum != 0;
+        _validDeliveryCoordinates(latNum, lngNum);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,7 +1107,7 @@ class _LocationSection extends StatelessWidget {
               color: StoreProfileTheme.textPrimary,
             ),
             children: const [
-              TextSpan(text: 'Delivery Location (GPS Pin)'),
+              TextSpan(text: 'Delivery Location Pin'),
               TextSpan(
                 text: ' *',
                 style: TextStyle(color: Colors.red),
@@ -1047,7 +1135,7 @@ class _LocationSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'GPS Location Captured',
+                        'Delivery Pin Set',
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -1055,7 +1143,7 @@ class _LocationSection extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Accurate pin saved for delivery partner',
+                        'Confirm this pin matches the delivery address',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: const Color(0xFF2E7D32),
@@ -1080,7 +1168,7 @@ class _LocationSection extends StatelessWidget {
                             ),
                           )
                         : Text(
-                            'Update Pin',
+                            'Use GPS',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1143,7 +1231,7 @@ class _LocationSection extends StatelessWidget {
                           size: 14, color: Colors.red),
                       const SizedBox(width: 4),
                       Text(
-                        'GPS location is required for accurate delivery',
+                        'Set a pin for the delivery address',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: Colors.red,
@@ -1154,7 +1242,19 @@ class _LocationSection extends StatelessWidget {
                 ),
             ],
           ),
+        TextButton.icon(
+          onPressed: isLoading ? null : onChooseLocation,
+          icon: const Icon(Icons.edit_location_alt_outlined),
+          label: const Text('Set pin for another location'),
+        ),
       ],
     );
   }
+}
+
+
+bool _validDeliveryCoordinates(double? lat, double? lng) {
+  return lat != null && lng != null && lat.isFinite && lng.isFinite &&
+      lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 &&
+      !(lat == 0 && lng == 0);
 }

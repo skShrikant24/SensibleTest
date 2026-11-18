@@ -92,6 +92,7 @@ class _StorePageState extends State<StorePage> {
     try {
       // 1. Check saved address from local storage
       final saved = await SelectedAddressStorage.instance.load();
+      final savedPincode = await SelectedAddressStorage.instance.loadPincode();
 
       // 2. Check logged-in user and fetch addresses
       final user = await AuthService.instance.getSavedUser();
@@ -113,7 +114,9 @@ class _StorePageState extends State<StorePage> {
         } catch (_) {
           activeAddress = saved;
         }
-      } else if (activeAddress == null && _userAddresses.isNotEmpty) {
+      } else if (activeAddress == null &&
+          (savedPincode == null || savedPincode.isEmpty) &&
+          _userAddresses.isNotEmpty) {
         activeAddress = _userAddresses.first;
         await SelectedAddressStorage.instance.save(activeAddress);
       }
@@ -126,8 +129,6 @@ class _StorePageState extends State<StorePage> {
         await _fetchFeed();
       } else {
         // No saved address: check if a pincode was previously selected
-        final savedPincode =
-            await SelectedAddressStorage.instance.loadPincode();
         if (savedPincode != null && savedPincode.isNotEmpty) {
           _selectedAddress = null;
           _currentPincode = savedPincode;
